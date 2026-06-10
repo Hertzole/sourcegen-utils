@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -9,60 +10,11 @@ using Microsoft.CodeAnalysis.Text;
 namespace Hertzole.SourceGenUtils;
 
 [Generator]
-public class Generator : IIncrementalGenerator
+public sealed partial class Generator : IIncrementalGenerator
 {
     private static readonly Dictionary<string, TypeSource> TypesToGenerate = new Dictionary<string, TypeSource>
     {
-        ["CodeWriter"] = new TypeSource
-        {
-            Signature = "internal sealed class CodeWriter",
-            Fields = new Dictionary<string, FieldSource>
-            {
-                ["_items"] = new FieldSource
-                {
-                    Signature = "private System.Collections.Generic.List<object> _items;",
-                    Dependencies = new[] { "CodeWriter.Test" }
-                }
-            },
-            Properties = new Dictionary<string, PropertySource>
-            {
-                ["Items"] = new PropertySource
-                {
-                    Signature = "public System.Collections.Generic.List<object> Items { get; set; }"
-                    // Dependencies = new[] { "CodeWriter.Test" }
-                }
-            },
-            Methods = new Dictionary<string, MethodSource>
-            {
-                ["Test"] = new MethodSource
-                {
-                    Signature = "public void Test()",
-                    ReturnStub = string.Empty,
-                    Implementation = "throw new System.NotImplementedException();",
-                    Dependencies = new[] { "ArrayBuilder.Add" }
-                },
-                ["StaticTest"] = new MethodSource
-                {
-                    Signature = "public static void StaticTest()",
-                    ReturnStub = string.Empty,
-                    Implementation = "throw new System.NotImplementedException();",
-                    Dependencies = new[] { "ArrayBuilder.Add" }
-                }
-            }
-        },
-        ["ArrayBuilder"] = new TypeSource
-        {
-            Signature = "internal sealed class ArrayBuilder",
-            Methods = new Dictionary<string, MethodSource>
-            {
-                ["Add"] = new MethodSource
-                {
-                    Signature = "public void Add<T>(T item)",
-                    ReturnStub = string.Empty,
-                    Implementation = "throw new System.NotImplementedException();"
-                }
-            }
-        }
+        ["CodeWriter"] = CreateCodeWriter()
     };
 
     private static readonly HashSet<string> AllClassNames;
@@ -74,29 +26,33 @@ public class Generator : IIncrementalGenerator
         AllClassNames = new HashSet<string>(TypesToGenerate.Keys);
         AllMethodNames = new HashSet<string>();
         MethodToUniqueType = new Dictionary<string, string>();
-        Dictionary<string, int> methodCounts = new Dictionary<string, int>();
+        Dictionary<string, HashSet<string>> typesPerName = new Dictionary<string, HashSet<string>>();
 
         foreach (KeyValuePair<string, TypeSource> typeKvp in TypesToGenerate)
         {
-            foreach (string methodName in typeKvp.Value.Methods.Keys)
+            foreach (MethodSource method in typeKvp.Value.Methods)
             {
-                AllMethodNames.Add(methodName);
-                methodCounts.TryGetValue(methodName, out int count);
-                methodCounts[methodName] = count + 1;
-                MethodToUniqueType[methodName] = typeKvp.Key;
+                AllMethodNames.Add(method.Name);
+                if (!typesPerName.TryGetValue(method.Name, out HashSet<string>? types))
+                {
+                    types = new HashSet<string>();
+                    typesPerName[method.Name] = types;
+                }
+
+                types.Add(typeKvp.Key);
             }
         }
 
-        foreach (KeyValuePair<string, int> kvp in methodCounts)
+        foreach (KeyValuePair<string, HashSet<string>> kvp in typesPerName)
         {
-            if (kvp.Value != 1)
+            if (kvp.Value.Count == 1)
             {
-                MethodToUniqueType.Remove(kvp.Key);
+                MethodToUniqueType[kvp.Key] = kvp.Value.First();
             }
         }
     }
 
-    private const string Namespace = "Hertzole.SourceGen";
+    private const string NAMESPACE = "Hertzole.SourceGen";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -112,6 +68,7 @@ public class Generator : IIncrementalGenerator
                            InvocationExpressionSyntax invocation = (InvocationExpressionSyntax) ctx.Node;
                            MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
                            string methodName = maes.Name.Identifier.Text;
+                           int argCount = invocation.ArgumentList.Arguments.Count;
 
                            // Direct type.Method() call — syntactic, works even on first build
                            if (maes.Expression is IdentifierNameSyntax id
@@ -119,7 +76,7 @@ public class Generator : IIncrementalGenerator
                                && TypesToGenerate.TryGetValue(id.Identifier.Text, out TypeSource? type)
                                && type.ContainsMethod(methodName))
                            {
-                               return $"{id.Identifier.Text}.{methodName}";
+                               return $"{id.Identifier.Text}.{methodName}:{argCount}";
                            }
 
                            // Instance call — use semantic model to check the containing type
@@ -131,10 +88,16 @@ public class Generator : IIncrementalGenerator
                                string containingType = methodSymbol.ContainingType.ToDisplayString();
                                foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
                                {
-                                   if (containingType == $"{Namespace}.{kvp.Key}"
+                                   if (containingType == $"{NAMESPACE}.{kvp.Key}"
                                        && kvp.Value.ContainsMethod(methodName))
                                    {
-                                       return $"{kvp.Key}.{methodName}";
+                                       if (methodSymbol.Parameters.Length == 0)
+                                       {
+                                           return $"{kvp.Key}.{methodName}";
+                                       }
+
+                                       string paramKey = string.Join(",", methodSymbol.Parameters.Select(p => p.Type.ToDisplayString()));
+                                       return $"{kvp.Key}.{methodName}({paramKey})";
                                    }
                                }
                            }
@@ -143,7 +106,7 @@ public class Generator : IIncrementalGenerator
                            // assume this invocation targets it (handles first-build instance calls).
                            if (MethodToUniqueType.TryGetValue(methodName, out string? uniqueType))
                            {
-                               return $"{uniqueType}.{methodName}";
+                               return $"{uniqueType}.{methodName}:{argCount}";
                            }
 
                            return null;
@@ -151,12 +114,13 @@ public class Generator : IIncrementalGenerator
                    .Where(name => name != null)
                    .Collect();
 
-        context.RegisterSourceOutput(calledMethods,
+        context.RegisterImplementationSourceOutput(calledMethods,
             (ctx, t) =>
             {
                 HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
+                HashSet<string> directCalled = new HashSet<string>(calledSet);
                 calledSet = ExpandDependencies(calledSet);
-                GenerateCode(ctx, calledSet);
+                GenerateCode(ctx, directCalled, calledSet);
             });
     }
 
@@ -169,94 +133,133 @@ public class Generator : IIncrementalGenerator
 
         foreach (string dep in dependencies)
         {
-            if (!calledMethods.Contains(dep))
+            if (calledMethods.Contains(dep))
             {
-                return false;
+                return true;
+            }
+
+            // Match overload-specific keys like "Type.Method:N" or "Type.Method(string)"
+            foreach (string called in calledMethods)
+            {
+                if (called.StartsWith(dep + ":", StringComparison.Ordinal)
+                    || called.StartsWith(dep + "(", StringComparison.Ordinal))
+                {
+                    return true;
+                }
             }
         }
 
-        return true;
+        return false;
     }
 
-    private static void GenerateCode(SourceProductionContext context, HashSet<string> calledMethods)
+    private static void GenerateCode(SourceProductionContext context, HashSet<string> directCalled, HashSet<string> expandedCalled)
     {
         foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
         {
             string className = kvp.Key;
-            Dictionary<string, MethodSource> methods = kvp.Value.Methods;
 
-            StringBuilder body = new StringBuilder();
+            CodeWriter writer = new CodeWriter();
 
-            if (kvp.Value.Fields != null)
-            {
-                foreach (KeyValuePair<string, FieldSource> fieldKvp in kvp.Value.Fields)
-                {
-                    if (MemberDependenciesMet(fieldKvp.Value.Dependencies, calledMethods))
-                    {
-                        body.AppendLine($"        {fieldKvp.Value.Signature}");
-                    }
-                }
-            }
+            writer.AppendNullable();
+            writer.AppendNamespace(NAMESPACE);
 
-            if (kvp.Value.Properties != null)
-            {
-                foreach (KeyValuePair<string, PropertySource> propKvp in kvp.Value.Properties)
-                {
-                    if (MemberDependenciesMet(propKvp.Value.Dependencies, calledMethods))
-                    {
-                        body.AppendLine($"        {propKvp.Value.Signature}");
-                    }
-                }
-            }
+            AppendType(kvp.Value, kvp.Key, writer, expandedCalled, directCalled);
 
-            body.AppendLine();
-
-            foreach (KeyValuePair<string, MethodSource> methodKvp in methods)
-            {
-                string methodName = methodKvp.Key;
-                string signature = methodKvp.Value.Signature;
-                string returnStub = methodKvp.Value.ReturnStub;
-                string fullName = $"{className}.{methodName}";
-
-                body.AppendLine($"        {signature}");
-                if (calledMethods.Contains(fullName))
-                {
-                    body.AppendLine("        {");
-                    body.AppendLine(methodKvp.Value.Implementation);
-                    if (returnStub.Length > 0)
-                    {
-                        body.AppendLine($"            {returnStub}");
-                    }
-
-                    body.AppendLine("        }");
-                }
-                else
-                {
-                    body.AppendLine("        {");
-                    if (returnStub.Length > 0)
-                    {
-                        body.AppendLine($"            {returnStub}");
-                    }
-
-                    body.AppendLine("        }");
-                }
-
-                body.AppendLine();
-            }
-
-            string code = $@"// <auto-generated/>
-
-namespace {Namespace}
-{{
-    {kvp.Value.Signature}
-    {{
-{body.ToString().TrimEnd()}
-    }}
-}}
-";
-
-            context.AddSource($"{className}.g.cs", SourceText.From(code, Encoding.UTF8));
+            context.AddSource($"{className}.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
         }
+    }
+
+    private static void AppendType(TypeSource typeSource, string typeName, CodeWriter writer, HashSet<string> calledMethods, HashSet<string>? directCalled = null)
+    {
+        MethodSource[] methods = typeSource.Methods;
+        writer.AppendLine(typeSource.Signature);
+        writer.AppendLine("{");
+        writer.Indent++;
+
+        if (typeSource.Fields != null)
+        {
+            foreach (KeyValuePair<string, FieldSource> fieldKvp in typeSource.Fields)
+            {
+                if (MemberDependenciesMet(fieldKvp.Value.Dependencies, calledMethods))
+                {
+                    writer.AppendLine(fieldKvp.Value.Signature);
+                }
+            }
+
+            writer.AppendLine();
+        }
+
+        if (typeSource.Properties != null)
+        {
+            foreach (KeyValuePair<string, PropertySource> propKvp in typeSource.Properties)
+            {
+                if (MemberDependenciesMet(propKvp.Value.Dependencies, calledMethods))
+                {
+                    writer.AppendLine(propKvp.Value.Signature);
+                }
+            }
+
+            writer.AppendLine();
+        }
+
+        HashSet<string> emittedNames = new HashSet<string>();
+
+        foreach (MethodSource method in methods)
+        {
+            if (!emittedNames.Add(method.Name))
+            {
+                continue;
+            }
+
+            string fullName = $"{typeName}.{method.Name}";
+            bool isCalled = calledMethods.Contains(fullName);
+
+            foreach (MethodSource overload in methods)
+            {
+                if (overload.Name != method.Name)
+                {
+                    continue;
+                }
+
+                int pc = overload.ParameterCount;
+                string typesKey = pc > 0 ? $"{typeName}.{overload.Name}({overload.ParameterTypesKey})" : fullName;
+                string overloadKey = pc >= 0 ? $"{typeName}.{overload.Name}:{pc}" : fullName;
+                bool isOverloadCalled = calledMethods.Contains(typesKey) || calledMethods.Contains(overloadKey) || calledMethods.Contains(fullName);
+
+                // Also treat as called when any dependency is directly called (field-like behavior)
+                if (!isOverloadCalled && overload.Dependencies != null && directCalled != null)
+                {
+                    isOverloadCalled = MemberDependenciesMet(overload.Dependencies, directCalled);
+                }
+
+                writer.AppendLine(overload.Signature);
+                writer.AppendLine("{");
+                writer.Indent++;
+                if (isOverloadCalled)
+                {
+                    overload.Implementation.Invoke(writer);
+                }
+                else if (overload.EmptyStub.Length > 0)
+                {
+                    writer.AppendLine(overload.EmptyStub);
+                }
+
+                writer.Indent--;
+                writer.AppendLine("}");
+                writer.AppendLine();
+            }
+        }
+
+        if (typeSource.Types != null)
+        {
+            foreach (KeyValuePair<string, TypeSource> typeKvp in typeSource.Types)
+            {
+                AppendType(typeKvp.Value, $"{typeName}.{typeKvp.Key}", writer, calledMethods, directCalled);
+            }
+        }
+
+        writer.Indent--;
+        writer.AppendLine("}");
     }
 
     private static HashSet<string> ExpandDependencies(HashSet<string> calledMethods)
@@ -274,17 +277,56 @@ namespace {Namespace}
             }
 
             string className = current.Substring(0, dot);
-            string methodName = current.Substring(dot + 1);
+            string rest = current.Substring(dot + 1);
 
-            if (TypesToGenerate.TryGetValue(className, out TypeSource? typeSource)
-                && typeSource.Methods.TryGetValue(methodName, out MethodSource? methodSource)
-                && methodSource.Dependencies != null)
+            string methodPath;
+            int? paramCount = null;
+            string? paramTypesKey = null;
+
+            int openParen = rest.IndexOf('(');
+            if (openParen >= 0)
             {
-                foreach (string dep in methodSource.Dependencies)
+                methodPath = rest.Substring(0, openParen);
+                int closeParen = rest.LastIndexOf(')');
+                if (closeParen > openParen)
                 {
-                    if (expanded.Add(dep))
+                    paramTypesKey = rest.Substring(openParen + 1, closeParen - openParen - 1);
+                }
+            }
+            else
+            {
+                int colon = rest.IndexOf(':');
+                if (colon >= 0 && int.TryParse(rest.Substring(colon + 1), out int pc))
+                {
+                    methodPath = rest.Substring(0, colon);
+                    paramCount = pc;
+                }
+                else
+                {
+                    methodPath = rest;
+                }
+            }
+
+            if (TypesToGenerate.TryGetValue(className, out TypeSource? typeSource))
+            {
+                string[]? deps;
+                if (paramTypesKey != null)
+                {
+                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramTypesKey);
+                }
+                else
+                {
+                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramCount);
+                }
+
+                if (deps != null)
+                {
+                    foreach (string dep in deps)
                     {
-                        queue.Enqueue(dep);
+                        if (expanded.Add(dep))
+                        {
+                            queue.Enqueue(dep);
+                        }
                     }
                 }
             }

@@ -8,7 +8,7 @@ partial class Generator
     {
         return new TypeSource
         {
-            Signature = "internal sealed class CodeWriter",
+            Signature = "internal sealed partial class CodeWriter",
             Fields = new Dictionary<string, FieldSource>
             {
                 ["builder"] = new FieldSource
@@ -19,7 +19,7 @@ partial class Generator
                 ["shouldWriteIndent"] = new FieldSource
                 {
                     Signature = "private bool shouldWriteIndent = false;",
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded"]
+                    Dependencies = ["CodeWriter.WriteIndentIfNeeded", "CodeWriter.AppendLine"]
                 },
                 ["hasNamespace"] = new FieldSource
                 {
@@ -49,7 +49,7 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "AppendNullable",
-                    Signature = "public void AppendNullable()",
+                    Signature = "public partial void AppendNullable()",
                     Implementation = writer =>
                     {
                         writer.AppendLine("builder.AppendLine(\"#nullable enable\");");
@@ -59,44 +59,43 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public void Append(string value)",
+                    Signature = "public partial void Append(string value)",
                     Implementation = AppendImplementation,
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded"]
+                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public void Append(char value)",
+                    Signature = "public partial void Append(char value)",
                     Implementation = AppendImplementation,
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded"]
+                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
                     Name = "AppendLine",
-                    Signature = "public void AppendLine()",
+                    Signature = "public partial void AppendLine()",
                     Implementation = writer =>
                     {
                         writer.AppendLine("builder.AppendLine();");
                         writer.AppendLine("shouldWriteIndent = true;");
-                    },
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded"]
+                    }
                 },
                 new MethodSource
                 {
                     Name = "AppendLine",
-                    Signature = "public void AppendLine(string value)",
+                    Signature = "public partial void AppendLine(string value)",
                     Implementation = writer =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
                         writer.AppendLine("builder.AppendLine(value);");
                         writer.AppendLine("shouldWriteIndent = true;");
                     },
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded"]
+                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
                     Name = "AppendNamespace",
-                    Signature = "public void AppendNamespace(global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol)",
+                    Signature = "public partial void AppendNamespace(global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol)",
                     Implementation = writer =>
                     {
                         writer.AppendLine("if (symbol == null || symbol.IsGlobalNamespace)");
@@ -115,12 +114,12 @@ partial class Generator
                         writer.AppendLine();
                         writer.AppendLine("AppendNamespace(symbol.ToDisplayString());");
                     },
-                    Dependencies = ["CodeWriter.AppendNamespace"]
+                    Dependencies = ["CodeWriter.AppendNamespace(string)"]
                 },
                 new MethodSource
                 {
                     Name = "AppendNamespace",
-                    Signature = "public void AppendNamespace(string value)",
+                    Signature = "public partial void AppendNamespace(string value)",
                     Implementation = writer =>
                     {
                         writer.AppendLine("if (string.IsNullOrEmpty(value))");
@@ -138,7 +137,7 @@ partial class Generator
                         writer.AppendLine("Indent++;");
                         writer.AppendLine("shouldWriteIndent = true;");
                     },
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded"]
+                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
@@ -155,12 +154,13 @@ partial class Generator
                         writer.AppendLine();
                         writer.AppendLine("shouldWriteIndent = false;");
                         writer.AppendLine("builder.Append(' ', Indent * 4);");
-                    }
+                    },
+                    SkipPartial = true
                 },
                 new MethodSource
                 {
                     Name = "ToString",
-                    Signature = "public override string ToString()",
+                    Signature = "public override partial string ToString()",
                     EmptyStub = "return string.Empty;",
                     Implementation = writer =>
                     {
@@ -189,9 +189,10 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "WithBlock",
-                    Signature = "public global::" + NAMESPACE + ".CodeWriter.BlockScope WithBlock()",
+                    Signature = "public partial global::" + NAMESPACE + ".CodeWriter.BlockScope WithBlock()",
                     EmptyStub = "return default;",
-                    Implementation = writer => { writer.AppendLine("return new global::" + NAMESPACE + ".CodeWriter.BlockScope(this);"); }
+                    Implementation = writer => { writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.BlockScope(this);"); },
+                    Dependencies = ["CodeWriter.BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)"]
                 }
             ],
             Types = new Dictionary<string, TypeSource>
@@ -203,7 +204,7 @@ partial class Generator
                     {
                         ["writer"] = new FieldSource
                         {
-                            Signature = "private readonly global::" + NAMESPACE + ".CodeWriter writer;",
+                            Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
                             Dependencies = ["CodeWriter.WithBlock"]
                         }
                     },
@@ -212,14 +213,14 @@ partial class Generator
                         new MethodSource
                         {
                             Name = "BlockScope",
-                            Signature = "public BlockScope(global::" + NAMESPACE + ".CodeWriter writer)",
+                            Signature = $"public BlockScope(global::{NAMESPACE}.CodeWriter writer)",
                             Implementation = writer =>
                             {
                                 writer.AppendLine("this.writer = writer;");
                                 writer.AppendLine("writer.AppendLine(\"{\");");
                                 writer.AppendLine("writer.Indent++;");
                             },
-                            Dependencies = ["CodeWriter.WithBlock"]
+                            Dependencies = ["CodeWriter.BlockScope.Dispose()"]
                         },
                         new MethodSource
                         {

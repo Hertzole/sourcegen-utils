@@ -89,7 +89,6 @@ internal sealed class CodeWriter
     {
         if (hasNamespace && !hasWrittenNamespace)
         {
-            sb.AppendLine();
             Indent--;
             sb.AppendLine("}");
 

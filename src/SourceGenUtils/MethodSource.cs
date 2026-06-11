@@ -10,6 +10,8 @@ internal sealed class MethodSource
     public string EmptyStub { get; init; } = string.Empty;
     public required Action<CodeWriter> Implementation { get; init; }
     public string[]? Dependencies { get; init; }
+    public Guid Identifier { get; } = Guid.NewGuid();
+    public bool SkipPartial { get; init; } = false;
 
     private int? parameterCount;
     private string? parameterTypesKey;
@@ -75,6 +77,7 @@ internal sealed class MethodSource
             if (openParen < 0 || closeParen <= openParen + 1)
             {
                 parameterTypesKey = string.Empty;
+                Log.Info(Name + " Empty 1");
                 return string.Empty;
             }
 
@@ -82,6 +85,7 @@ internal sealed class MethodSource
             if (inner.Length == 0)
             {
                 parameterTypesKey = string.Empty;
+                Log.Info(Name + " Empty 2");
                 return string.Empty;
             }
 
@@ -109,6 +113,7 @@ internal sealed class MethodSource
             types.Add(ExtractTypeName(inner.Substring(start)));
 
             parameterTypesKey = string.Join(",", types);
+            Log.Info<MethodSource>($"{Name}: {parameterTypesKey}");
             return parameterTypesKey;
         }
     }

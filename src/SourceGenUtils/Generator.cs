@@ -19,13 +19,11 @@ public sealed partial class Generator : IIncrementalGenerator
 
     private static readonly HashSet<string> AllClassNames;
     private static readonly HashSet<string> AllMethodNames;
-    private static readonly Dictionary<string, string> MethodToUniqueType;
 
     static Generator()
     {
         AllClassNames = new HashSet<string>(TypesToGenerate.Keys);
         AllMethodNames = new HashSet<string>();
-        MethodToUniqueType = new Dictionary<string, string>();
         Dictionary<string, HashSet<string>> typesPerName = new Dictionary<string, HashSet<string>>();
 
         foreach (KeyValuePair<string, TypeSource> typeKvp in TypesToGenerate)
@@ -40,14 +38,6 @@ public sealed partial class Generator : IIncrementalGenerator
                 }
 
                 types.Add(typeKvp.Key);
-            }
-        }
-
-        foreach (KeyValuePair<string, HashSet<string>> kvp in typesPerName)
-        {
-            if (kvp.Value.Count == 1)
-            {
-                MethodToUniqueType[kvp.Key] = kvp.Value.First();
             }
         }
     }
@@ -107,7 +97,7 @@ public sealed partial class Generator : IIncrementalGenerator
                                            return $"{kvp.Key}.{methodName}()";
                                        }
 
-                                       string paramKey = string.Join(",", methodSymbol.Parameters.Select(p => p.Type.ToDisplayString()));
+                                       string paramKey = string.Join(",", methodSymbol.Parameters.Select(static p => p.Type.ToDisplayString()));
                                        return $"{kvp.Key}.{methodName}({paramKey})";
                                    }
                                }
@@ -121,6 +111,7 @@ public sealed partial class Generator : IIncrementalGenerator
         context.RegisterImplementationSourceOutput(calledMethods,
             (ctx, t) =>
             {
+                // PERF: Pool collections
                 HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
                 HashSet<string> directCalled = new HashSet<string>(calledSet);
                 calledSet = ExpandDependencies(calledSet);
@@ -259,6 +250,7 @@ public sealed partial class Generator : IIncrementalGenerator
             writer.AppendLine();
         }
 
+        // PERF: Pool
         HashSet<Guid> emittedIdentifiers = new HashSet<Guid>();
 
         foreach (MethodSource method in methods)
@@ -321,9 +313,11 @@ public sealed partial class Generator : IIncrementalGenerator
 
     private static HashSet<string> ExpandDependencies(HashSet<string> calledMethods)
     {
+        // PERF: Pool collections
         HashSet<string> expanded = new HashSet<string>(calledMethods);
         Queue<string> queue = new Queue<string>(calledMethods);
 
+        // PERF: Use spans 
         while (queue.Count > 0)
         {
             string current = queue.Dequeue();

@@ -110,7 +110,7 @@ internal sealed class MethodSource : BaseSource
 
             types.Add(ExtractTypeName(inner.Substring(start)));
 
-            parameterTypesKey = string.Join(",", types);
+            parameterTypesKey = string.Join(", ", types);
             Log.Info<MethodSource>($"{Name}: {parameterTypesKey}");
             return parameterTypesKey;
         }

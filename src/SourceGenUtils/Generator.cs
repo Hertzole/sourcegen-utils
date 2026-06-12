@@ -82,9 +82,9 @@ public sealed partial class Generator : IIncrementalGenerator
                            IMethodSymbol? methodSymbol =
                                ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
 
-                           Log.Info($"Symbol: {ctx.SemanticModel.GetSymbolInfo(invocation).Symbol} | Method symbol: {methodSymbol}");
+                           Log.Info($"Symbol: {ctx.SemanticModel.GetSymbolInfo(invocation).Symbol} | Method symbol: {methodSymbol} | {methodSymbol?.ContainingNamespace.ToDisplayString()}");
 
-                           if (methodSymbol?.ContainingType != null)
+                           if (methodSymbol?.ContainingNamespace != null && methodSymbol.ContainingNamespace.ToDisplayString() == NAMESPACE)
                            {
                                string containingType = methodSymbol.ContainingType.ToDisplayString();
                                foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
@@ -92,13 +92,7 @@ public sealed partial class Generator : IIncrementalGenerator
                                    if (containingType == $"{NAMESPACE}.{kvp.Key}"
                                        && kvp.Value.ContainsMethod(methodName))
                                    {
-                                       if (methodSymbol.Parameters.Length == 0)
-                                       {
-                                           return $"{kvp.Key}.{methodName}()";
-                                       }
-
-                                       string paramKey = string.Join(",", methodSymbol.Parameters.Select(static p => p.Type.ToDisplayString()));
-                                       return $"{kvp.Key}.{methodName}({paramKey})";
+                                       return methodSymbol.ToDisplayString();
                                    }
                                }
                            }
@@ -111,11 +105,19 @@ public sealed partial class Generator : IIncrementalGenerator
         context.RegisterImplementationSourceOutput(calledMethods,
             (ctx, t) =>
             {
-                // PERF: Pool collections
-                HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
-                HashSet<string> directCalled = new HashSet<string>(calledSet);
-                calledSet = ExpandDependencies(calledSet);
-                GenerateCode(ctx, directCalled, calledSet);
+                try
+                {
+                    // PERF: Pool collections
+                    HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
+                    HashSet<string> directCalled = new HashSet<string>(calledSet);
+                    calledSet = ExpandDependencies(calledSet);
+                    GenerateCode(ctx, directCalled, calledSet);
+                }
+
+                catch (Exception e)
+                {
+                    Log.Error(e);
+                }
             });
     }
 
@@ -148,25 +150,28 @@ public sealed partial class Generator : IIncrementalGenerator
         context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
     }
 
-    private static bool MemberDependenciesMet(string[]? dependencies, HashSet<string> calledMethods)
+    private static bool AreAnyDependenciesMet(string[]? dependencies, HashSet<string> calledMethods)
     {
         if (dependencies == null || dependencies.Length == 0)
         {
             return true;
         }
 
+        // PERF: Pool collection
+        HashSet<string> calledMethodsWithoutArgs = new HashSet<string>(calledMethods, OnlyMethodNameEquality.Instance);
+
         foreach (string dep in dependencies)
         {
-            if (calledMethods.Contains(dep))
+            if (!dep.Contains('(') && !dep.Contains(')'))
             {
-                return true;
+                if (calledMethodsWithoutArgs.Contains(dep))
+                {
+                    return true;
+                }
             }
-
-            // Match overload-specific keys like "Type.Method:N" or "Type.Method(string)"
-            foreach (string called in calledMethods)
+            else
             {
-                if (called.StartsWith(dep + ":", StringComparison.Ordinal)
-                    || called.StartsWith(dep + "(", StringComparison.Ordinal))
+                if (calledMethods.Contains(dep))
                 {
                     return true;
                 }
@@ -176,8 +181,41 @@ public sealed partial class Generator : IIncrementalGenerator
         return false;
     }
 
+    private static bool AreAllDependenciesMet(string[]? dependencies, HashSet<string> calledMethods)
+    {
+        if (dependencies == null || dependencies.Length == 0)
+        {
+            return true;
+        }
+
+        // PERF: Pool collection
+        HashSet<string> calledMethodsWithoutArgs = new HashSet<string>(calledMethods, OnlyMethodNameEquality.Instance);
+
+        foreach (string dep in dependencies)
+        {
+            if (!dep.Contains('(') && !dep.Contains(')'))
+            {
+                if (!calledMethodsWithoutArgs.Contains(dep))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (!calledMethods.Contains(dep))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     private static void GenerateCode(SourceProductionContext context, HashSet<string> directCalled, HashSet<string> expandedCalled)
     {
+        ImplementationContext implementationContext = new ImplementationContext(expandedCalled);
+
         foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
         {
             string className = kvp.Key;
@@ -211,13 +249,13 @@ public sealed partial class Generator : IIncrementalGenerator
             }
 #endif
 
-            AppendType(kvp.Value, kvp.Key, writer, expandedCalled, directCalled);
+            AppendType(kvp.Value, $"{NAMESPACE}.{kvp.Key}", writer, expandedCalled, implementationContext);
 
             context.AddSource($"{className}.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
         }
     }
 
-    private static void AppendType(TypeSource typeSource, string typeName, CodeWriter writer, HashSet<string> calledMethods, HashSet<string>? directCalled = null)
+    private static void AppendType(TypeSource typeSource, string typeName, CodeWriter writer, HashSet<string> calledMethods, in ImplementationContext implementationContext)
     {
         MethodSource[] methods = typeSource.Methods;
         writer.AppendLine(typeSource.Signature);
@@ -228,7 +266,7 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, FieldSource> fieldKvp in typeSource.Fields)
             {
-                if (MemberDependenciesMet(fieldKvp.Value.Dependencies, calledMethods))
+                if (AreAnyDependenciesMet(fieldKvp.Value.Dependencies, calledMethods) && AreAllDependenciesMet(fieldKvp.Value.RequiredDependencies, calledMethods))
                 {
                     writer.AppendLine(fieldKvp.Value.Signature);
                 }
@@ -241,7 +279,7 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, PropertySource> propKvp in typeSource.Properties)
             {
-                if (MemberDependenciesMet(propKvp.Value.Dependencies, calledMethods))
+                if (AreAnyDependenciesMet(propKvp.Value.Dependencies, calledMethods) && AreAllDependenciesMet(propKvp.Value.RequiredDependencies, calledMethods))
                 {
                     writer.AppendLine(propKvp.Value.Signature);
                 }
@@ -282,9 +320,9 @@ public sealed partial class Generator : IIncrementalGenerator
                 writer.AppendLine(overload.Signature);
                 writer.AppendLine("{");
                 writer.Indent++;
-                if (isOverloadCalled)
+                if (isOverloadCalled && AreAllDependenciesMet(method.RequiredDependencies, calledMethods))
                 {
-                    overload.Implementation.Invoke(writer);
+                    overload.Implementation.Invoke(writer, in implementationContext);
                 }
                 else if (overload.EmptyStub.Length > 0)
                 {
@@ -303,7 +341,7 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, TypeSource> typeKvp in typeSource.Types)
             {
-                AppendType(typeKvp.Value, $"{typeName}.{typeKvp.Key}", writer, calledMethods, directCalled);
+                AppendType(typeKvp.Value, $"{typeName}.{typeKvp.Key}", writer, calledMethods, in implementationContext);
             }
         }
 
@@ -321,6 +359,12 @@ public sealed partial class Generator : IIncrementalGenerator
         while (queue.Count > 0)
         {
             string current = queue.Dequeue();
+            int namespaceStart = current.IndexOf(NAMESPACE, StringComparison.Ordinal);
+            if (namespaceStart >= 0)
+            {
+                current = current.Substring(namespaceStart + NAMESPACE.Length + 1);
+            }
+
             int dot = current.IndexOf('.');
             if (dot < 0)
             {

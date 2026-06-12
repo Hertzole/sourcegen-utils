@@ -4,6 +4,8 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string CODE_WRITER = NAMESPACE + ".CodeWriter";
+
     private static TypeSource CreateCodeWriter()
     {
         return new TypeSource
@@ -14,27 +16,27 @@ partial class Generator
                 ["builder"] = new FieldSource
                 {
                     Signature = "private global::System.Text.StringBuilder builder = new global::System.Text.StringBuilder(1024);",
-                    Dependencies = ["CodeWriter.Append", "CodeWriter.AppendLine", "CodeWriter.AppendNamespace", "CodeWriter.AppendNullable"]
+                    Dependencies = [CODE_WRITER + ".Append", CODE_WRITER + ".AppendLine", CODE_WRITER + ".AppendNamespace", CODE_WRITER + ".AppendNullable"]
                 },
                 ["shouldWriteIndent"] = new FieldSource
                 {
                     Signature = "private bool shouldWriteIndent = false;",
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded", "CodeWriter.AppendLine"]
+                    RequiredDependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
                 },
                 ["hasNamespace"] = new FieldSource
                 {
                     Signature = "private bool hasNamespace = false;",
-                    Dependencies = ["CodeWriter.AppendNamespace", "CodeWriter.ToString"]
+                    Dependencies = [CODE_WRITER + ".AppendNamespace(string)"]
                 },
                 ["hasWrittenNamespace"] = new FieldSource
                 {
                     Signature = "private bool hasWrittenNamespace = false;",
-                    Dependencies = ["CodeWriter.AppendNamespace", "CodeWriter.ToString"]
+                    RequiredDependencies = [CODE_WRITER + ".AppendNamespace(string)", NAMESPACE + ".CodeWriter.ToString()"]
                 },
                 ["isNullable"] = new FieldSource
                 {
                     Signature = "private bool isNullable = false;",
-                    Dependencies = ["CodeWriter.AppendNullable", "CodeWriter.ToString"]
+                    RequiredDependencies = [CODE_WRITER + ".AppendNullable()", NAMESPACE + ".CodeWriter.ToString()"]
                 }
             },
             Properties = new Dictionary<string, PropertySource>
@@ -50,10 +52,13 @@ partial class Generator
                 {
                     Name = "AppendNullable",
                     Signature = "public partial void AppendNullable()",
-                    Implementation = writer =>
+                    Implementation = (writer, in ctx) =>
                     {
                         writer.AppendLine("builder.AppendLine(\"#nullable enable\");");
-                        writer.AppendLine("isNullable = true;");
+                        if (ctx.HasCalledMethod(NAMESPACE + ".CodeWriter.ToString()"))
+                        {
+                            writer.AppendLine("isNullable = true;");
+                        }
                     }
                 },
                 new MethodSource
@@ -61,20 +66,20 @@ partial class Generator
                     Name = "Append",
                     Signature = "public partial void Append(string value)",
                     Implementation = AppendImplementation,
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
                     Name = "Append",
                     Signature = "public partial void Append(char value)",
                     Implementation = AppendImplementation,
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
                     Name = "AppendLine",
                     Signature = "public partial void AppendLine()",
-                    Implementation = writer =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("builder.AppendLine();");
                         writer.AppendLine("shouldWriteIndent = true;");
@@ -84,19 +89,19 @@ partial class Generator
                 {
                     Name = "AppendLine",
                     Signature = "public partial void AppendLine(string value)",
-                    Implementation = writer =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
                         writer.AppendLine("builder.AppendLine(value);");
                         writer.AppendLine("shouldWriteIndent = true;");
                     },
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
                     Name = "AppendNamespace",
                     Signature = "public partial void AppendNamespace(global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol)",
-                    Implementation = writer =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (symbol == null || symbol.IsGlobalNamespace)");
                         using (writer.WithBlock())
@@ -114,13 +119,13 @@ partial class Generator
                         writer.AppendLine();
                         writer.AppendLine("AppendNamespace(symbol.ToDisplayString());");
                     },
-                    Dependencies = ["CodeWriter.AppendNamespace(string)"]
+                    Dependencies = [CODE_WRITER + ".AppendNamespace(string)"]
                 },
                 new MethodSource
                 {
                     Name = "AppendNamespace",
                     Signature = "public partial void AppendNamespace(string value)",
-                    Implementation = writer =>
+                    Implementation = (writer, in ctx) =>
                     {
                         writer.AppendLine("if (string.IsNullOrEmpty(value))");
                         writer.AppendLine("{");
@@ -130,20 +135,27 @@ partial class Generator
                         writer.AppendLine("}\n");
 
                         writer.AppendLine("hasNamespace = true;");
-                        writer.AppendLine("hasWrittenNamespace = false;");
                         writer.AppendLine("builder.Append(\"namespace \");");
                         writer.AppendLine("builder.AppendLine(value);");
                         writer.AppendLine("builder.AppendLine(\"{\");");
                         writer.AppendLine("Indent++;");
-                        writer.AppendLine("shouldWriteIndent = true;");
+
+                        if (ctx.HasCalledMethod(CODE_WRITER + ".ToString()"))
+                        {
+                            writer.AppendLine("hasWrittenNamespace = false;");
+                        }
+
+                        if (ctx.HasCalledMethod(CODE_WRITER + ".WriteIndentIfNeeded()"))
+                        {
+                            writer.AppendLine("shouldWriteIndent = true;");
+                        }
                     },
-                    Dependencies = ["CodeWriter.WriteIndentIfNeeded()"]
                 },
                 new MethodSource
                 {
                     Name = "WriteIndentIfNeeded",
                     Signature = "private void WriteIndentIfNeeded()",
-                    Implementation = writer =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (!shouldWriteIndent)");
                         writer.AppendLine("{");
@@ -162,27 +174,40 @@ partial class Generator
                     Name = "ToString",
                     Signature = "public override partial string ToString()",
                     EmptyStub = "return string.Empty;",
-                    Implementation = writer =>
+                    Implementation = (writer, in ctx) =>
                     {
-                        writer.AppendLine("if (hasNamespace && !hasWrittenNamespace)");
-                        writer.AppendLine("{");
-                        writer.Indent++;
-                        writer.AppendLine("builder.AppendLine();");
-                        writer.AppendLine("Indent--;");
-                        writer.AppendLine("builder.AppendLine(\"}\");");
-                        writer.AppendLine("hasWrittenNamespace = true;");
-                        writer.AppendLine("hasNamespace = false;");
-                        writer.Indent--;
-                        writer.AppendLine("}");
-
-                        writer.AppendLine();
-                        writer.AppendLine("if (isNullable)");
-                        using (writer.WithBlock())
+                        if (!HasWrittenAnything(in ctx))
                         {
-                            writer.AppendLine("builder.AppendLine(\"#nullable restore\");");
+                            writer.AppendLine("return string.Empty;");
+                            return;
                         }
 
-                        writer.AppendLine();
+                        if (ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)"))
+                        {
+                            writer.AppendLine("if (hasNamespace && !hasWrittenNamespace)");
+                            writer.AppendLine("{");
+                            writer.Indent++;
+                            writer.AppendLine("builder.AppendLine();");
+                            writer.AppendLine("Indent--;");
+                            writer.AppendLine("builder.AppendLine(\"}\");");
+                            writer.AppendLine("hasWrittenNamespace = true;");
+                            writer.AppendLine("hasNamespace = false;");
+                            writer.Indent--;
+                            writer.AppendLine("}");
+                            writer.AppendLine();
+                        }
+
+                        if (ctx.HasCalledMethod(NAMESPACE + ".CodeWriter.AppendNullable()"))
+                        {
+                            writer.AppendLine("if (isNullable)");
+                            using (writer.WithBlock())
+                            {
+                                writer.AppendLine("builder.AppendLine(\"#nullable restore\");");
+                            }
+
+                            writer.AppendLine();
+                        }
+
                         writer.AppendLine("return builder.ToString();");
                     }
                 },
@@ -191,8 +216,8 @@ partial class Generator
                     Name = "WithBlock",
                     Signature = "public partial global::" + NAMESPACE + ".CodeWriter.BlockScope WithBlock()",
                     EmptyStub = "return default;",
-                    Implementation = writer => { writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.BlockScope(this);"); },
-                    Dependencies = ["CodeWriter.BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)"]
+                    Implementation = (writer, in _) => { writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.BlockScope(this);"); },
+                    Dependencies = [CODE_WRITER + ".BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)"]
                 }
             ],
             Types = new Dictionary<string, TypeSource>
@@ -205,7 +230,7 @@ partial class Generator
                         ["writer"] = new FieldSource
                         {
                             Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
-                            Dependencies = ["CodeWriter.WithBlock"]
+                            Dependencies = [CODE_WRITER + ".WithBlock"]
                         }
                     },
                     Methods =
@@ -214,24 +239,24 @@ partial class Generator
                         {
                             Name = "BlockScope",
                             Signature = $"public BlockScope(global::{NAMESPACE}.CodeWriter writer)",
-                            Implementation = writer =>
+                            Implementation = (writer, in _) =>
                             {
                                 writer.AppendLine("this.writer = writer;");
                                 writer.AppendLine("writer.AppendLine(\"{\");");
                                 writer.AppendLine("writer.Indent++;");
                             },
-                            Dependencies = ["CodeWriter.BlockScope.Dispose()"]
+                            Dependencies = [CODE_WRITER + ".BlockScope.Dispose()"]
                         },
                         new MethodSource
                         {
                             Name = "Dispose",
                             Signature = "public void Dispose()",
-                            Implementation = writer =>
+                            Implementation = (writer, in _) =>
                             {
                                 writer.AppendLine("writer.Indent--;");
                                 writer.AppendLine("writer.AppendLine(\"}\");");
                             },
-                            Dependencies = ["CodeWriter.WithBlock"]
+                            Dependencies = [CODE_WRITER + ".WithBlock"]
                         }
                     ]
                 }
@@ -239,9 +264,15 @@ partial class Generator
         };
     }
 
-    private static void AppendImplementation(CodeWriter writer)
+    private static void AppendImplementation(CodeWriter writer, in ImplementationContext ctx)
     {
         writer.AppendLine("WriteIndentIfNeeded();\n");
         writer.AppendLine("builder.Append(value);");
+    }
+
+    private static bool HasWrittenAnything(in ImplementationContext ctx)
+    {
+        return ctx.HasCalledMethod(CODE_WRITER + ".Append") || ctx.HasCalledMethod(CODE_WRITER + ".AppendLine") || ctx.HasCalledMethod(CODE_WRITER + ".AppendNullable()") ||
+               ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)");
     }
 }

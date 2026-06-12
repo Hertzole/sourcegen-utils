@@ -3,13 +3,11 @@ using System.Collections.Generic;
 
 namespace Hertzole.SourceGenUtils;
 
-internal sealed class MethodSource
+internal sealed class MethodSource : BaseSource
 {
     public required string Name { get; init; }
-    public required string Signature { get; init; }
     public string EmptyStub { get; init; } = string.Empty;
-    public required Action<CodeWriter> Implementation { get; init; }
-    public string[]? Dependencies { get; init; }
+    public required ImplementationHandler Implementation { get; init; }
     public Guid Identifier { get; } = Guid.NewGuid();
     public bool SkipPartial { get; init; } = false;
 

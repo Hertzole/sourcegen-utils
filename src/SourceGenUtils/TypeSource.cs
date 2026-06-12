@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Hertzole.SourceGenUtils;
 
@@ -10,10 +11,12 @@ internal sealed class TypeSource()
     public Dictionary<string, PropertySource>? Properties { get; init; }
     public Dictionary<string, TypeSource>? Types { get; init; }
 
-    public bool ContainsMethod(string methodName)
+    public bool ContainsMethod(string methodName, CancellationToken cancellationToken)
     {
         foreach (MethodSource m in Methods)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (m.Name == methodName)
             {
                 return true;
@@ -24,7 +27,9 @@ internal sealed class TypeSource()
         {
             foreach (KeyValuePair<string, TypeSource> kvp in Types)
             {
-                if (kvp.Value.ContainsMethod(methodName))
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (kvp.Value.ContainsMethod(methodName, cancellationToken))
                 {
                     return true;
                 }
@@ -34,11 +39,13 @@ internal sealed class TypeSource()
         return false;
     }
 
-    public string[]? GetMethodDependencies(string methodName, int? paramCount = null)
+    public string[]? GetMethodDependencies(string methodName, int? paramCount, CancellationToken cancellationToken)
     {
         List<string>? deps = null;
         foreach (MethodSource m in Methods)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (m.Name == methodName
                 && (!paramCount.HasValue || m.ParameterCount == paramCount.Value)
                 && m.Dependencies != null)
@@ -57,8 +64,10 @@ internal sealed class TypeSource()
         return deps?.ToArray();
     }
 
-    public string[]? GetMethodDependencies(string methodName, string parameterTypesKey)
+    public string[]? GetMethodDependencies(string methodName, string parameterTypesKey, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         foreach (MethodSource m in Methods)
         {
             if (m.Name == methodName && m.ParameterTypesKey == parameterTypesKey)
@@ -70,12 +79,14 @@ internal sealed class TypeSource()
         return null;
     }
 
-    public string[]? GetMethodDependenciesRecursive(string methodPath, string parameterTypesKey)
+    public string[]? GetMethodDependenciesRecursive(string methodPath, string parameterTypesKey, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         int dot = methodPath.IndexOf('.');
         if (dot < 0)
         {
-            return GetMethodDependencies(methodPath, parameterTypesKey);
+            return GetMethodDependencies(methodPath, parameterTypesKey, cancellationToken);
         }
 
         string nestedName = methodPath.Substring(0, dot);
@@ -83,18 +94,18 @@ internal sealed class TypeSource()
 
         if (Types != null && Types.TryGetValue(nestedName, out TypeSource? nested))
         {
-            return nested.GetMethodDependenciesRecursive(rest, parameterTypesKey);
+            return nested.GetMethodDependenciesRecursive(rest, parameterTypesKey, cancellationToken);
         }
 
         return null;
     }
 
-    public string[]? GetMethodDependenciesRecursive(string methodPath, int? paramCount = null)
+    public string[]? GetMethodDependenciesRecursive(string methodPath, int? paramCount, CancellationToken cancellationToken)
     {
         int dot = methodPath.IndexOf('.');
         if (dot < 0)
         {
-            return GetMethodDependencies(methodPath, paramCount);
+            return GetMethodDependencies(methodPath, paramCount, cancellationToken);
         }
 
         string nestedName = methodPath.Substring(0, dot);
@@ -102,7 +113,7 @@ internal sealed class TypeSource()
 
         if (Types != null && Types.TryGetValue(nestedName, out TypeSource? nested))
         {
-            return nested.GetMethodDependenciesRecursive(rest, paramCount);
+            return nested.GetMethodDependenciesRecursive(rest, paramCount, cancellationToken);
         }
 
         return null;

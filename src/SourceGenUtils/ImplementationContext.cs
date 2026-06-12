@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Hertzole.SourceGenUtils;
 
@@ -8,10 +9,13 @@ internal readonly struct ImplementationContext
     private readonly HashSet<string> calledMethods;
     private readonly HashSet<string> calledMethodsWithoutArgs;
 
-    public ImplementationContext(HashSet<string> calledMethods)
+    public readonly CancellationToken CancellationToken;
+
+    public ImplementationContext(HashSet<string> calledMethods, CancellationToken cancellationToken)
     {
         this.calledMethods = calledMethods;
         calledMethodsWithoutArgs = new HashSet<string>(calledMethods, OnlyMethodNameEquality.Instance);
+        CancellationToken = cancellationToken;
     }
 
     public bool HasCalledMethod(string method)

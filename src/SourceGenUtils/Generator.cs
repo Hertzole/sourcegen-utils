@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -62,7 +63,7 @@ public sealed partial class Generator : IIncrementalGenerator
                                  && invocation.Expression is MemberAccessExpressionSyntax maes
                                  && maes.Name is IdentifierNameSyntax name
                                  && AllMethodNames.Contains(name.Identifier.Text),
-                       (ctx, _) =>
+                       (ctx, cancelToken) =>
                        {
                            InvocationExpressionSyntax invocation = (InvocationExpressionSyntax) ctx.Node;
                            MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
@@ -73,7 +74,7 @@ public sealed partial class Generator : IIncrementalGenerator
                            if (maes.Expression is IdentifierNameSyntax id
                                && AllClassNames.Contains(id.Identifier.Text)
                                && TypesToGenerate.TryGetValue(id.Identifier.Text, out TypeSource? type)
-                               && type.ContainsMethod(methodName))
+                               && type.ContainsMethod(methodName, cancelToken))
                            {
                                return $"{id.Identifier.Text}.{methodName}:{argCount}";
                            }
@@ -90,7 +91,7 @@ public sealed partial class Generator : IIncrementalGenerator
                                foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
                                {
                                    if (containingType == $"{NAMESPACE}.{kvp.Key}"
-                                       && kvp.Value.ContainsMethod(methodName))
+                                       && kvp.Value.ContainsMethod(methodName, cancelToken))
                                    {
                                        return methodSymbol.ToDisplayString();
                                    }
@@ -110,7 +111,7 @@ public sealed partial class Generator : IIncrementalGenerator
                     // PERF: Pool collections
                     HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
                     HashSet<string> directCalled = new HashSet<string>(calledSet);
-                    calledSet = ExpandDependencies(calledSet);
+                    calledSet = ExpandDependencies(calledSet, ctx.CancellationToken);
                     GenerateCode(ctx, directCalled, calledSet);
                 }
 
@@ -132,6 +133,8 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             for (int i = 0; i < type.Methods.Length; i++)
             {
+                context.CancellationToken.ThrowIfCancellationRequested();
+
                 if (type.Methods[i].SkipPartial)
                 {
                     continue;
@@ -150,7 +153,7 @@ public sealed partial class Generator : IIncrementalGenerator
         context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
     }
 
-    private static bool AreAnyDependenciesMet(string[]? dependencies, HashSet<string> calledMethods)
+    private static bool AreAnyDependenciesMet(string[]? dependencies, HashSet<string> calledMethods, CancellationToken cancellationToken)
     {
         if (dependencies == null || dependencies.Length == 0)
         {
@@ -162,6 +165,8 @@ public sealed partial class Generator : IIncrementalGenerator
 
         foreach (string dep in dependencies)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!dep.Contains('(') && !dep.Contains(')'))
             {
                 if (calledMethodsWithoutArgs.Contains(dep))
@@ -181,7 +186,7 @@ public sealed partial class Generator : IIncrementalGenerator
         return false;
     }
 
-    private static bool AreAllDependenciesMet(string[]? dependencies, HashSet<string> calledMethods)
+    private static bool AreAllDependenciesMet(string[]? dependencies, HashSet<string> calledMethods, CancellationToken cancellationToken)
     {
         if (dependencies == null || dependencies.Length == 0)
         {
@@ -193,6 +198,8 @@ public sealed partial class Generator : IIncrementalGenerator
 
         foreach (string dep in dependencies)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!dep.Contains('(') && !dep.Contains(')'))
             {
                 if (!calledMethodsWithoutArgs.Contains(dep))
@@ -214,10 +221,12 @@ public sealed partial class Generator : IIncrementalGenerator
 
     private static void GenerateCode(SourceProductionContext context, HashSet<string> directCalled, HashSet<string> expandedCalled)
     {
-        ImplementationContext implementationContext = new ImplementationContext(expandedCalled);
+        ImplementationContext implementationContext = new ImplementationContext(expandedCalled, context.CancellationToken);
 
         foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
             string className = kvp.Key;
 
             CodeWriter writer = new CodeWriter();
@@ -266,7 +275,10 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, FieldSource> fieldKvp in typeSource.Fields)
             {
-                if (AreAnyDependenciesMet(fieldKvp.Value.Dependencies, calledMethods) && AreAllDependenciesMet(fieldKvp.Value.RequiredDependencies, calledMethods))
+                implementationContext.CancellationToken.ThrowIfCancellationRequested();
+
+                if (AreAnyDependenciesMet(fieldKvp.Value.Dependencies, calledMethods, implementationContext.CancellationToken) &&
+                    AreAllDependenciesMet(fieldKvp.Value.RequiredDependencies, calledMethods, implementationContext.CancellationToken))
                 {
                     writer.AppendLine(fieldKvp.Value.Signature);
                 }
@@ -279,7 +291,10 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, PropertySource> propKvp in typeSource.Properties)
             {
-                if (AreAnyDependenciesMet(propKvp.Value.Dependencies, calledMethods) && AreAllDependenciesMet(propKvp.Value.RequiredDependencies, calledMethods))
+                implementationContext.CancellationToken.ThrowIfCancellationRequested();
+
+                if (AreAnyDependenciesMet(propKvp.Value.Dependencies, calledMethods, implementationContext.CancellationToken) &&
+                    AreAllDependenciesMet(propKvp.Value.RequiredDependencies, calledMethods, implementationContext.CancellationToken))
                 {
                     writer.AppendLine(propKvp.Value.Signature);
                 }
@@ -293,6 +308,8 @@ public sealed partial class Generator : IIncrementalGenerator
 
         foreach (MethodSource method in methods)
         {
+            implementationContext.CancellationToken.ThrowIfCancellationRequested();
+
             if (!emittedIdentifiers.Add(method.Identifier))
             {
                 continue;
@@ -305,6 +322,8 @@ public sealed partial class Generator : IIncrementalGenerator
 #endif
             foreach (MethodSource overload in methods)
             {
+                implementationContext.CancellationToken.ThrowIfCancellationRequested();
+
                 if (overload.Name != method.Name)
                 {
                     // Not an overload as names don't match, skip.
@@ -320,7 +339,7 @@ public sealed partial class Generator : IIncrementalGenerator
                 writer.AppendLine(overload.Signature);
                 writer.AppendLine("{");
                 writer.Indent++;
-                if (isOverloadCalled && AreAllDependenciesMet(method.RequiredDependencies, calledMethods))
+                if (isOverloadCalled && AreAllDependenciesMet(method.RequiredDependencies, calledMethods, implementationContext.CancellationToken))
                 {
                     overload.Implementation.Invoke(writer, in implementationContext);
                 }
@@ -341,6 +360,7 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, TypeSource> typeKvp in typeSource.Types)
             {
+                implementationContext.CancellationToken.ThrowIfCancellationRequested();
                 AppendType(typeKvp.Value, $"{typeName}.{typeKvp.Key}", writer, calledMethods, in implementationContext);
             }
         }
@@ -349,7 +369,7 @@ public sealed partial class Generator : IIncrementalGenerator
         writer.AppendLine("}");
     }
 
-    private static HashSet<string> ExpandDependencies(HashSet<string> calledMethods)
+    private static HashSet<string> ExpandDependencies(HashSet<string> calledMethods, CancellationToken cancellationToken)
     {
         // PERF: Pool collections
         HashSet<string> expanded = new HashSet<string>(calledMethods);
@@ -358,6 +378,8 @@ public sealed partial class Generator : IIncrementalGenerator
         // PERF: Use spans 
         while (queue.Count > 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             string current = queue.Dequeue();
             int namespaceStart = current.IndexOf(NAMESPACE, StringComparison.Ordinal);
             if (namespaceStart >= 0)
@@ -407,17 +429,19 @@ public sealed partial class Generator : IIncrementalGenerator
                 string[]? deps;
                 if (paramTypesKey != null)
                 {
-                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramTypesKey);
+                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramTypesKey, cancellationToken);
                 }
                 else
                 {
-                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramCount);
+                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramCount, cancellationToken);
                 }
 
                 if (deps != null)
                 {
                     foreach (string dep in deps)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+
                         if (expanded.Add(dep))
                         {
                             queue.Enqueue(dep);

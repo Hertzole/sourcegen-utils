@@ -267,6 +267,8 @@ public sealed partial class Generator : IIncrementalGenerator
     private static void AppendType(TypeSource typeSource, string typeName, CodeWriter writer, HashSet<string> calledMethods, in ImplementationContext implementationContext)
     {
         MethodSource[] methods = typeSource.Methods;
+        writer.AppendGeneratedCodeAttribute("Hertzole.SourceGenUtils.Generator", "1.0.0.0");
+        writer.AppendExcludeFromCodeCoverageAttribute();
         writer.AppendLine(typeSource.Signature);
         writer.AppendLine("{");
         writer.Indent++;

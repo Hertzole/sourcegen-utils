@@ -16,7 +16,11 @@ partial class Generator
                 ["builder"] = new FieldSource
                 {
                     Signature = "private global::System.Text.StringBuilder builder = new global::System.Text.StringBuilder(1024);",
-                    Dependencies = [CODE_WRITER + ".Append", CODE_WRITER + ".AppendLine", CODE_WRITER + ".AppendNamespace", CODE_WRITER + ".AppendNullable"]
+                    Dependencies =
+                    [
+                        CODE_WRITER + ".Append", CODE_WRITER + ".AppendLine", CODE_WRITER + ".AppendNamespace", CODE_WRITER + ".AppendNullable", CODE_WRITER + ".AppendGeneratedCodeAttribute",
+                        CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute"
+                    ]
                 },
                 ["shouldWriteIndent"] = new FieldSource
                 {
@@ -71,7 +75,124 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "Append",
+                    Signature = "public partial void Append(global::System.ReadOnlySpan<char> value)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("WriteIndentIfNeeded();");
+                        writer.AppendLine("builder.Append(value.ToString());");
+                    },
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
                     Signature = "public partial void Append(char value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(char value, int repeatCount)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("WriteIndentIfNeeded();\n");
+                        writer.AppendLine("builder.Append(value, repeatCount);");
+                    },
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(char[] value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(char[] value, int startIndex, int charCount)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("WriteIndentIfNeeded();");
+                        writer.AppendLine("builder.Append(value, startIndex, charCount);");
+                    },
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(byte value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(sbyte value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(short value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(ushort value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(int value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(uint value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(float value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(double value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(decimal value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(bool value)",
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = "public partial void Append(object value)",
                     Implementation = AppendImplementation,
                     Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
                 },
@@ -93,6 +214,18 @@ partial class Generator
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
                         writer.AppendLine("builder.AppendLine(value);");
+                        writer.AppendLine("shouldWriteIndent = true;");
+                    },
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = "public partial void AppendLine(global::System.ReadOnlySpan<char> value)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("WriteIndentIfNeeded();");
+                        writer.AppendLine("builder.AppendLine(value.ToString());");
                         writer.AppendLine("shouldWriteIndent = true;");
                     },
                     Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
@@ -150,6 +283,49 @@ partial class Generator
                             writer.AppendLine("shouldWriteIndent = true;");
                         }
                     },
+                },
+                new MethodSource
+                {
+                    Name = "AppendGeneratedCodeAttribute",
+                    Signature = "public partial void AppendGeneratedCodeAttribute(string generator, string version)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("WriteIndentIfNeeded();");
+                        writer.AppendLine("builder.Append(\"[global::System.CodeDom.Compiler.GeneratedCode(\\\"\");");
+                        writer.AppendLine("builder.Append(generator);");
+                        writer.AppendLine("builder.Append(\"\\\", \\\"\");");
+                        writer.AppendLine("builder.Append(version);");
+                        writer.AppendLine("builder.Append(\"\\\")]\\n\");");
+                        writer.AppendLine("shouldWriteIndent = true;");
+                    },
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "AppendExcludeFromCodeCoverageAttribute",
+                    Signature = "public partial void AppendExcludeFromCodeCoverageAttribute()",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("WriteIndentIfNeeded();");
+                        writer.AppendLine("builder.Append(\"[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\\n\");");
+                        writer.AppendLine("shouldWriteIndent = true;");
+                    },
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "Clear",
+                    Signature = "public partial void Clear()",
+                    Implementation = (writer, in ctx) =>
+                    {
+                        writer.AppendLine("Indent = 0;");
+
+                        if (HasWrittenAnything(in ctx))
+                        {
+                            writer.AppendLine("builder.Clear();");
+                            writer.AppendLine("shouldWriteIndent = false;");
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -272,7 +448,11 @@ partial class Generator
 
     private static bool HasWrittenAnything(in ImplementationContext ctx)
     {
-        return ctx.HasCalledMethod(CODE_WRITER + ".Append") || ctx.HasCalledMethod(CODE_WRITER + ".AppendLine") || ctx.HasCalledMethod(CODE_WRITER + ".AppendNullable()") ||
-               ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)");
+        return ctx.HasCalledMethod(CODE_WRITER + ".Append") ||
+               ctx.HasCalledMethod(CODE_WRITER + ".AppendLine") ||
+               ctx.HasCalledMethod(CODE_WRITER + ".AppendNullable()") ||
+               ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)") ||
+               ctx.HasCalledMethod(CODE_WRITER + ".AppendGeneratedCodeAttribute(string, string)") ||
+               ctx.HasCalledMethod(CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute()");
     }
 }

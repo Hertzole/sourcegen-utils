@@ -6,7 +6,7 @@ namespace Hertzole.SourceGenUtils;
 
 internal sealed class CodeWriter
 {
-    private readonly StringBuilder sb = new StringBuilder(1024);
+    private readonly StringBuilder builder = new StringBuilder(1024);
 
     private bool shouldWriteIndent = false;
     private bool hasNamespace = false;
@@ -17,7 +17,7 @@ internal sealed class CodeWriter
 
     public void AppendNullable()
     {
-        sb.AppendLine("#nullable enable");
+        builder.AppendLine("#nullable enable");
         isNullable = true;
     }
 
@@ -45,9 +45,9 @@ internal sealed class CodeWriter
 
         hasNamespace = true;
         hasWrittenNamespace = false;
-        sb.Append("namespace ");
-        sb.AppendLine(namespaceName);
-        sb.AppendLine("{");
+        builder.Append("namespace ");
+        builder.AppendLine(namespaceName);
+        builder.AppendLine("{");
         Indent++;
         shouldWriteIndent = true;
     }
@@ -56,12 +56,12 @@ internal sealed class CodeWriter
     {
         WriteIndentIfNeeded();
 
-        sb.Append(value);
+        builder.Append(value);
     }
 
     public void AppendLine()
     {
-        sb.AppendLine();
+        builder.AppendLine();
         shouldWriteIndent = true;
     }
 
@@ -69,7 +69,25 @@ internal sealed class CodeWriter
     {
         WriteIndentIfNeeded();
 
-        sb.AppendLine(value);
+        builder.AppendLine(value);
+        shouldWriteIndent = true;
+    }
+
+    public void AppendGeneratedCodeAttribute(string generator, string version)
+    {
+        WriteIndentIfNeeded();
+        builder.Append("[global::System.CodeDom.Compiler.GeneratedCode(\"");
+        builder.Append(generator);
+        builder.Append("\", \"");
+        builder.Append(version);
+        builder.Append("\")]\n");
+        shouldWriteIndent = true;
+    }
+
+    public void AppendExcludeFromCodeCoverageAttribute()
+    {
+        WriteIndentIfNeeded();
+        builder.Append("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\n");
         shouldWriteIndent = true;
     }
 
@@ -81,7 +99,7 @@ internal sealed class CodeWriter
         }
 
         shouldWriteIndent = false;
-        sb.Append(' ', Indent * 4);
+        builder.Append(' ', Indent * 4);
     }
 
     /// <inheritdoc />
@@ -90,7 +108,7 @@ internal sealed class CodeWriter
         if (hasNamespace && !hasWrittenNamespace)
         {
             Indent--;
-            sb.AppendLine("}");
+            builder.AppendLine("}");
 
             hasWrittenNamespace = true;
             hasNamespace = false;
@@ -98,10 +116,10 @@ internal sealed class CodeWriter
 
         if (isNullable)
         {
-            sb.AppendLine("#nullable restore");
+            builder.AppendLine("#nullable restore");
         }
 
-        return sb.ToString();
+        return builder.ToString();
     }
 
     public BlockScope WithBlock()

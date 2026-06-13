@@ -440,6 +440,8 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, TypeSource> typeKvp in typeSource.Types)
             {
+                writer.AppendLine();
+
                 implementationContext.CancellationToken.ThrowIfCancellationRequested();
                 AppendType(typeKvp.Value, $"{typeName}.{typeKvp.Key}", writer, calledMethods, in implementationContext);
             }

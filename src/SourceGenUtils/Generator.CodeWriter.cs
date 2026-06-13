@@ -441,6 +441,14 @@ partial class Generator
                     EmptyStub = "return default;",
                     Implementation = (writer, in _) => { writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.BlockScope(this);"); },
                     Dependencies = [CODE_WRITER + ".BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)"]
+                },
+                new MethodSource
+                {
+                    Name = "WithIndent",
+                    Signature = "public partial global::" + NAMESPACE + ".CodeWriter.IndentScope WithIndent(int newIndent)",
+                    EmptyStub = "return default;",
+                    Implementation = (writer, in _) => { writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.IndentScope(this, newIndent);"); },
+                    Dependencies = [CODE_WRITER + ".IndentScope.IndentScope(Hertzole.SourceGen.CodeWriter, int)"]
                 }
             ],
             Types = new Dictionary<string, TypeSource>
@@ -453,7 +461,7 @@ partial class Generator
                         ["writer"] = new FieldSource
                         {
                             Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
-                            Dependencies = [CODE_WRITER + ".WithBlock"]
+                            Dependencies = [CODE_WRITER + ".BlockScope.BlockScope"]
                         }
                     },
                     Methods =
@@ -479,7 +487,44 @@ partial class Generator
                                 writer.AppendLine("writer.Indent--;");
                                 writer.AppendLine("writer.AppendLine(\"}\");");
                             },
-                            Dependencies = [CODE_WRITER + ".WithBlock"]
+                        }
+                    ]
+                },
+                ["IndentScope"] = new TypeSource
+                {
+                    Signature = "internal readonly partial struct IndentScope : global::System.IDisposable",
+                    Fields = new Dictionary<string, FieldSource>
+                    {
+                        ["writer"] = new FieldSource
+                        {
+                            Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
+                            Dependencies = [CODE_WRITER + ".IndentScope.IndentScope"]
+                        },
+                        ["originalIndent"] = new FieldSource
+                        {
+                            Signature = "private readonly int originalIndent;",
+                            Dependencies = [CODE_WRITER + ".IndentScope.IndentScope"]
+                        }
+                    },
+                    Methods =
+                    [
+                        new MethodSource
+                        {
+                            Name = "IndentScope",
+                            Signature = $"public partial IndentScope(global::{NAMESPACE}.CodeWriter writer, int newIndent)",
+                            Implementation = (writer, in _) =>
+                            {
+                                writer.AppendLine("this.writer = writer;");
+                                writer.AppendLine("originalIndent = writer.Indent;");
+                                writer.AppendLine("writer.Indent = newIndent;");
+                            },
+                            Dependencies = [CODE_WRITER + ".IndentScope.Dispose()"]
+                        },
+                        new MethodSource
+                        {
+                            Name = "Dispose",
+                            Signature = "public partial void Dispose()",
+                            Implementation = (writer, in _) => { writer.AppendLine("writer.Indent = originalIndent;"); }
                         }
                     ]
                 }

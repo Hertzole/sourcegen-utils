@@ -19,7 +19,7 @@ partial class Generator
                     Dependencies =
                     [
                         CODE_WRITER + ".Append", CODE_WRITER + ".AppendLine", CODE_WRITER + ".AppendNamespace", CODE_WRITER + ".AppendNullable", CODE_WRITER + ".AppendGeneratedCodeAttribute",
-                        CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute"
+                        CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute", CODE_WRITER + ".AppendConditionalSymbol", CODE_WRITER + ".AppendPreprocessorSymbol"
                     ]
                 },
                 ["shouldWriteIndent"] = new FieldSource
@@ -311,6 +311,53 @@ partial class Generator
                         writer.AppendLine("shouldWriteIndent = true;");
                     },
                     Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                },
+                new MethodSource
+                {
+                    Name = "AppendConditionalSymbol",
+                    Signature = "public partial void AppendConditionalSymbol(string? condition)",
+                    Implementation = (writer, in context) =>
+                    {
+                        writer.AppendLine("if (string.IsNullOrWhiteSpace(condition))");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("return;");
+                        }
+
+                        writer.AppendLine();
+                        writer.AppendLine("int indent = Indent;");
+                        writer.AppendLine("Indent = 0;");
+                        writer.AppendLine("builder.Append('#');");
+                        writer.AppendLine("builder.AppendLine(condition);");
+                        writer.AppendLine("Indent = indent;");
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "AppendPreprocessorSymbol",
+                    Signature = "public partial void AppendPreprocessorSymbol(string? value)",
+                    Implementation = (writer, in context) =>
+                    {
+                        writer.AppendLine("if (string.IsNullOrWhiteSpace(value))");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("return;");
+                        }
+
+                        writer.AppendLine();
+                        writer.AppendLine("int indent = Indent;");
+                        writer.AppendLine("Indent = 0;");
+
+                        writer.AppendLine("if (value![0] != '#')");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("builder.Append('#');");
+                        }
+
+                        writer.AppendLine();
+                        writer.AppendLine("builder.AppendLine(value);");
+                        writer.AppendLine("Indent = indent;");
+                    }
                 },
                 new MethodSource
                 {

@@ -18,7 +18,8 @@ public sealed partial class Generator : IIncrementalGenerator
         ["CodeWriter"] = CreateCodeWriter(),
         ["Log"] = CreateLog(),
         ["VariableNames"] = CreateVariableNames(),
-        ["EquatableArray"] = CreateEquatableArray()
+        ["EquatableArray"] = CreateEquatableArray(),
+        ["SyntaxExtensions"] = CreateSyntaxExtensions()
     };
 
     private static readonly HashSet<string> AllMethodNames;

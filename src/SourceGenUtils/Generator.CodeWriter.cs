@@ -47,7 +47,7 @@ partial class Generator
             {
                 ["Indent"] = new PropertySource
                 {
-                    Signature = "public int Indent { get; set; }"
+                    Signature = "public int Indent"
                 }
             },
             Methods =

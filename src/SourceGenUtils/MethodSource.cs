@@ -10,6 +10,7 @@ internal sealed class MethodSource : BaseSource
     public required ImplementationHandler Implementation { get; init; }
     public Guid Identifier { get; } = Guid.NewGuid();
     public bool SkipPartial { get; init; } = false;
+    public bool AlwaysWrite { get; init; }
 
     private int? parameterCount;
     private string? parameterTypesKey;

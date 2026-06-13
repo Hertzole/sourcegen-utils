@@ -17,11 +17,14 @@ public sealed partial class Generator : IIncrementalGenerator
     {
         ["CodeWriter"] = CreateCodeWriter(),
         ["Log"] = CreateLog(),
-        ["VariableNames"] = CreateVariableNames()
+        ["VariableNames"] = CreateVariableNames(),
+        ["EquatableArray"] = CreateEquatableArray()
     };
 
     private static readonly HashSet<string> AllMethodNames;
     private static readonly Dictionary<string, TypeSource> AllTypes;
+
+    private static SymbolDisplayFormat ContainingTypeDisplayFormat { get; } = SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted);
 
     static Generator()
     {
@@ -95,6 +98,11 @@ public sealed partial class Generator : IIncrementalGenerator
                 return ins.Identifier.Text;
             }
 
+            if (type is GenericNameSyntax gns)
+            {
+                return gns.Identifier.Text;
+            }
+
             if (type is QualifiedNameSyntax qns)
             {
                 type = qns.Right;
@@ -129,12 +137,6 @@ public sealed partial class Generator : IIncrementalGenerator
                                && AllMethodNames.Contains(name.Identifier.Text))
                            {
                                return true;
-                           }
-
-                           if (s is ObjectCreationExpressionSyntax o)
-                           {
-                               string? n = GetSimpleTypeName(o.Type);
-                               Log.Info($"Creation: {n} | Contains: {AllMethodNames.Contains(n)}");
                            }
 
                            if (s is ObjectCreationExpressionSyntax oces
@@ -179,12 +181,23 @@ public sealed partial class Generator : IIncrementalGenerator
                            {
                                // Check if the containing type is one of the generator's types.
                                // Then check if the containing type contains a method with this method name.
-                               string containingType = methodSymbol.ContainingType.ToDisplayString();
-                               if (AllTypes.TryGetValue(containingType, out TypeSource? typeSource) &&
+                               string containingType = methodSymbol.ContainingType.ToDisplayString(NullableFlowState.NotNull, ContainingTypeDisplayFormat);
+
+                               // Strip generic type arguments (e.g. EquatableArray<char> → EquatableArray)
+                               int genericArgIndex = containingType.IndexOf('<');
+                               string cleanContainingType = genericArgIndex >= 0 ? containingType.Substring(0, genericArgIndex) : containingType;
+
+                               Log.Info(
+                                   $"Containing type: {containingType} | Clean: {cleanContainingType} | TryGetTypeSource: {AllTypes.TryGetValue(cleanContainingType, out TypeSource? temp)} | Contains method: {temp?.ContainsMethod(methodName, cancelToken)}");
+
+                               if (AllTypes.TryGetValue(cleanContainingType, out TypeSource? typeSource) &&
                                    typeSource.ContainsMethod(methodName, cancelToken))
                                {
-                                   // The method belongs to this generator's generated types. Return it.
-                                   return methodSymbol.ToDisplayString();
+                                   // Build the string manually using the original definition to avoid generic type
+                                   // arguments (e.g. EquatableArray<char>) in the containing type.
+                                   IMethodSymbol originalDef = methodSymbol.OriginalDefinition;
+                                   string paramTypes = string.Join(", ", originalDef.Parameters.Select(p => p.Type.ToDisplayString()));
+                                   return $"{cleanContainingType}.{methodName}({paramTypes})";
                                }
                            }
 
@@ -490,7 +503,7 @@ public sealed partial class Generator : IIncrementalGenerator
         writer.AppendLine(overload.Signature);
         writer.AppendLine("{");
         writer.Indent++;
-        if (isOverloadCalled && AreAllDependenciesMet(method.RequiredDependencies, in implementationContext))
+        if (overload.AlwaysWrite || isOverloadCalled && AreAllDependenciesMet(method.RequiredDependencies, in implementationContext))
         {
             overload.Implementation.Invoke(writer, in implementationContext);
         }
@@ -526,7 +539,44 @@ public sealed partial class Generator : IIncrementalGenerator
 
             WriteAttributes(source, writer, in context);
 
-            writer.AppendLine(source.Signature);
+            writer.Append(source.Signature);
+
+            if (source is PropertySource property)
+            {
+                if (property.GetImplementation == null && property.SetImplementation == null)
+                {
+                    writer.AppendLine(" { get; set; }");
+                }
+                else
+                {
+                    writer.AppendLine();
+
+                    using (writer.WithBlock())
+                    {
+                        if (property.GetImplementation != null)
+                        {
+                            WriteAttributes(property.GetAttributes, writer, in context);
+                            writer.AppendLine("get");
+
+                            using (writer.WithBlock())
+                            {
+                                property.GetImplementation.Invoke(writer, in context);
+                            }
+                        }
+
+                        if (property.SetImplementation != null)
+                        {
+                            WriteAttributes(property.SetAttributes, writer, in context);
+                            writer.AppendLine("set");
+
+                            using (writer.WithBlock())
+                            {
+                                property.SetImplementation.Invoke(writer, in context);
+                            }
+                        }
+                    }
+                }
+            }
 
             if (hasConditionalSymbol)
             {
@@ -537,17 +587,22 @@ public sealed partial class Generator : IIncrementalGenerator
 
     private static void WriteAttributes(IHasAttributes source, CodeWriter writer, in ImplementationContext context)
     {
-        if (source.Attributes == null || source.Attributes.Length == 0)
+        WriteAttributes(source.Attributes, writer, in context);
+    }
+
+    private static void WriteAttributes(string[]? attributes, CodeWriter writer, in ImplementationContext context)
+    {
+        if (attributes == null || attributes.Length == 0)
         {
             return;
         }
 
-        for (int i = 0; i < source.Attributes.Length; i++)
+        for (int i = 0; i < attributes.Length; i++)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
             writer.Append('[');
-            writer.Append(source.Attributes[i]);
+            writer.Append(attributes[i]);
             writer.AppendLine("]");
         }
     }

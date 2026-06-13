@@ -51,6 +51,11 @@ public sealed partial class Generator : IIncrementalGenerator
 
     private static void CollectMethods(string typeName, TypeSource type, HashSet<string> methodNames, Dictionary<string, HashSet<string>> typesPerName)
     {
+        if (type.Methods == null || type.Methods.Length == 0)
+        {
+            return;
+        }
+
         foreach (MethodSource method in type.Methods)
         {
             methodNames.Add(method.Name);
@@ -230,33 +235,36 @@ public sealed partial class Generator : IIncrementalGenerator
 
             using (writer.WithBlock())
             {
-                for (int i = 0; i < type.Methods.Length; i++)
+                if (type.Methods != null && type.Methods.Length > 0)
                 {
-                    context.CancellationToken.ThrowIfCancellationRequested();
-
-                    if (type.Methods[i].SkipPartial)
+                    for (int i = 0; i < type.Methods.Length; i++)
                     {
-                        continue;
-                    }
+                        context.CancellationToken.ThrowIfCancellationRequested();
 
-                    bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(type.Methods[i].ConditionalPreprocessorSymbol);
+                        if (type.Methods[i].SkipPartial)
+                        {
+                            continue;
+                        }
 
-                    if (hasConditionalSymbol)
-                    {
-                        writer.AppendConditionalSymbol(type.Methods[i].ConditionalPreprocessorSymbol!);
-                    }
+                        bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(type.Methods[i].ConditionalPreprocessorSymbol);
 
-                    writer.Append(type.Methods[i].Signature);
-                    writer.AppendLine(";");
+                        if (hasConditionalSymbol)
+                        {
+                            writer.AppendConditionalSymbol(type.Methods[i].ConditionalPreprocessorSymbol!);
+                        }
 
-                    if (hasConditionalSymbol)
-                    {
-                        writer.AppendPreprocessorSymbol("#endif");
-                    }
+                        writer.Append(type.Methods[i].Signature);
+                        writer.AppendLine(";");
 
-                    if (i < type.Methods.Length - 1)
-                    {
-                        writer.AppendLine();
+                        if (hasConditionalSymbol)
+                        {
+                            writer.AppendPreprocessorSymbol("#endif");
+                        }
+
+                        if (i < type.Methods.Length - 1)
+                        {
+                            writer.AppendLine();
+                        }
                     }
                 }
 
@@ -349,11 +357,14 @@ public sealed partial class Generator : IIncrementalGenerator
                 writer.AppendLine(s);
             }
 
-            writer.AppendLine();
-            writer.AppendLine($"// Methods: {kvp.Value.Methods.Length}");
-            foreach (MethodSource method in kvp.Value.Methods)
+            if (kvp.Value.Methods != null)
             {
-                writer.AppendLine($"// {method.Name} ({method.Identifier}): {method.ParameterTypesKey}");
+                writer.AppendLine();
+                writer.AppendLine($"// Methods: {kvp.Value.Methods.Length}");
+                foreach (MethodSource method in kvp.Value.Methods)
+                {
+                    writer.AppendLine($"// {method.Name} ({method.Identifier}): {method.ParameterTypesKey}");
+                }
             }
 #endif
 
@@ -365,7 +376,7 @@ public sealed partial class Generator : IIncrementalGenerator
 
     private static void AppendType(TypeSource typeSource, string typeName, CodeWriter writer, HashSet<string> calledMethods, in ImplementationContext implementationContext)
     {
-        MethodSource[] methods = typeSource.Methods;
+        MethodSource[]? methods = typeSource.Methods;
 
         bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(typeSource.ConditionalPreprocessorSymbol);
 
@@ -404,35 +415,38 @@ public sealed partial class Generator : IIncrementalGenerator
         }
 
         // PERF: Pool
-        HashSet<Guid> emittedIdentifiers = new HashSet<Guid>();
 
-        foreach (MethodSource method in methods)
+        if (methods != null && methods.Length > 0)
         {
-            implementationContext.CancellationToken.ThrowIfCancellationRequested();
-
-            if (!emittedIdentifiers.Add(method.Identifier))
-            {
-                continue;
-            }
-
-            string fullName = $"{typeName}.{method.Name}({method.ParameterTypesKey})";
-            bool isCalled = calledMethods.Contains(fullName);
-#if DEBUG
-            writer.AppendLine($"// {fullName}: Is called: {isCalled}");
-#endif
-            foreach (MethodSource overload in methods)
+            HashSet<Guid> emittedIdentifiers = new HashSet<Guid>();
+            foreach (MethodSource method in methods)
             {
                 implementationContext.CancellationToken.ThrowIfCancellationRequested();
 
-                if (overload.Name != method.Name)
+                if (!emittedIdentifiers.Add(method.Identifier))
                 {
-                    // Not an overload as names don't match, skip.
                     continue;
                 }
 
-                AppendMethod(typeName, writer, calledMethods, in implementationContext, overload, method);
+                string fullName = $"{typeName}.{method.Name}({method.ParameterTypesKey})";
+                bool isCalled = calledMethods.Contains(fullName);
+#if DEBUG
+                writer.AppendLine($"// {fullName}: Is called: {isCalled}");
+#endif
+                foreach (MethodSource overload in methods)
+                {
+                    implementationContext.CancellationToken.ThrowIfCancellationRequested();
 
-                emittedIdentifiers.Add(overload.Identifier);
+                    if (overload.Name != method.Name)
+                    {
+                        // Not an overload as names don't match, skip.
+                        continue;
+                    }
+
+                    AppendMethod(typeName, writer, calledMethods, in implementationContext, overload, method);
+
+                    emittedIdentifiers.Add(overload.Identifier);
+                }
             }
         }
 

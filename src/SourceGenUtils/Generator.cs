@@ -15,7 +15,8 @@ public sealed partial class Generator : IIncrementalGenerator
 {
     private static readonly Dictionary<string, TypeSource> TypesToGenerate = new Dictionary<string, TypeSource>
     {
-        ["CodeWriter"] = CreateCodeWriter()
+        ["CodeWriter"] = CreateCodeWriter(),
+        ["Log"] = CreateLog()
     };
 
     private static readonly HashSet<string> AllClassNames;
@@ -68,20 +69,9 @@ public sealed partial class Generator : IIncrementalGenerator
                            InvocationExpressionSyntax invocation = (InvocationExpressionSyntax) ctx.Node;
                            MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
                            string methodName = maes.Name.Identifier.Text;
-                           int argCount = invocation.ArgumentList.Arguments.Count;
-
-                           // Direct type.Method() call — syntactic, works even on first build
-                           if (maes.Expression is IdentifierNameSyntax id
-                               && AllClassNames.Contains(id.Identifier.Text)
-                               && TypesToGenerate.TryGetValue(id.Identifier.Text, out TypeSource? type)
-                               && type.ContainsMethod(methodName, cancelToken))
-                           {
-                               return $"{id.Identifier.Text}.{methodName}:{argCount}";
-                           }
 
                            // Instance call — use semantic model to check the containing type
-                           IMethodSymbol? methodSymbol =
-                               ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+                           IMethodSymbol? methodSymbol = ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
 
                            Log.Info($"Symbol: {ctx.SemanticModel.GetSymbolInfo(invocation).Symbol} | Method symbol: {methodSymbol} | {methodSymbol?.ContainingNamespace.ToDisplayString()}");
 
@@ -90,8 +80,7 @@ public sealed partial class Generator : IIncrementalGenerator
                                string containingType = methodSymbol.ContainingType.ToDisplayString();
                                foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
                                {
-                                   if (containingType == $"{NAMESPACE}.{kvp.Key}"
-                                       && kvp.Value.ContainsMethod(methodName, cancelToken))
+                                   if (containingType == $"{NAMESPACE}.{kvp.Key}" && kvp.Value.ContainsMethod(methodName, cancelToken))
                                    {
                                        return methodSymbol.ToDisplayString();
                                    }

@@ -19,28 +19,83 @@ public sealed partial class Generator : IIncrementalGenerator
         ["Log"] = CreateLog()
     };
 
-    private static readonly HashSet<string> AllClassNames;
     private static readonly HashSet<string> AllMethodNames;
+    private static readonly Dictionary<string, TypeSource> AllTypes;
 
     static Generator()
     {
-        AllClassNames = new HashSet<string>(TypesToGenerate.Keys);
         AllMethodNames = new HashSet<string>();
         Dictionary<string, HashSet<string>> typesPerName = new Dictionary<string, HashSet<string>>();
+        AllTypes = new Dictionary<string, TypeSource>();
 
         foreach (KeyValuePair<string, TypeSource> typeKvp in TypesToGenerate)
         {
-            foreach (MethodSource method in typeKvp.Value.Methods)
-            {
-                AllMethodNames.Add(method.Name);
-                if (!typesPerName.TryGetValue(method.Name, out HashSet<string>? types))
-                {
-                    types = new HashSet<string>();
-                    typesPerName[method.Name] = types;
-                }
+            CollectType(typeKvp.Key, typeKvp.Value, AllMethodNames, typesPerName);
+        }
+    }
 
-                types.Add(typeKvp.Key);
+    private static void CollectType(string typeName, TypeSource type, HashSet<string> methodNames, Dictionary<string, HashSet<string>> typesPerName)
+    {
+        CollectTypes($"{NAMESPACE}.{typeName}", type);
+
+        CollectMethods(typeName, type, methodNames, typesPerName);
+
+        if (type.Types != null && type.Types.Count > 0)
+        {
+            foreach (KeyValuePair<string, TypeSource> source in type.Types)
+            {
+                CollectMethods($"{typeName}.{source.Key}", source.Value, methodNames, typesPerName);
             }
+        }
+    }
+
+    private static void CollectMethods(string typeName, TypeSource type, HashSet<string> methodNames, Dictionary<string, HashSet<string>> typesPerName)
+    {
+        foreach (MethodSource method in type.Methods)
+        {
+            methodNames.Add(method.Name);
+            Log.Info($"All method names: {method.Name}");
+            if (!typesPerName.TryGetValue(method.Name, out HashSet<string>? types))
+            {
+                types = new HashSet<string>();
+                typesPerName[method.Name] = types;
+            }
+
+            types.Add(typeName);
+        }
+    }
+
+    private static void CollectTypes(string fullName, TypeSource type)
+    {
+        Log.Info($"Collecting {fullName}");
+
+        AllTypes[fullName] = type;
+
+        if (type.Types != null)
+        {
+            foreach (KeyValuePair<string, TypeSource> kvp in type.Types)
+            {
+                CollectTypes($"{fullName}.{kvp.Key}", kvp.Value);
+            }
+        }
+    }
+
+    private static string? GetSimpleTypeName(TypeSyntax type)
+    {
+        while (true)
+        {
+            if (type is IdentifierNameSyntax ins)
+            {
+                return ins.Identifier.Text;
+            }
+
+            if (type is QualifiedNameSyntax qns)
+            {
+                type = qns.Right;
+                continue;
+            }
+
+            return null;
         }
     }
 
@@ -60,30 +115,70 @@ public sealed partial class Generator : IIncrementalGenerator
         IncrementalValueProvider<ImmutableArray<string?>> calledMethods =
             context.SyntaxProvider
                    .CreateSyntaxProvider(
-                       (s, _) => s is InvocationExpressionSyntax invocation
-                                 && invocation.Expression is MemberAccessExpressionSyntax maes
-                                 && maes.Name is IdentifierNameSyntax name
-                                 && AllMethodNames.Contains(name.Identifier.Text),
+                       (s, _) =>
+                       {
+                           if (s is InvocationExpressionSyntax invocation
+                               && invocation.Expression is MemberAccessExpressionSyntax maes
+                               && maes.Name is IdentifierNameSyntax name
+                               && AllMethodNames.Contains(name.Identifier.Text))
+                           {
+                               return true;
+                           }
+
+                           if (s is ObjectCreationExpressionSyntax o)
+                           {
+                               string? n = GetSimpleTypeName(o.Type);
+                               Log.Info($"Creation: {n} | Contains: {AllMethodNames.Contains(n)}");
+                           }
+
+                           if (s is ObjectCreationExpressionSyntax oces
+                               && GetSimpleTypeName(oces.Type) is string simpleName
+                               && AllMethodNames.Contains(simpleName))
+                           {
+                               return true;
+                           }
+
+                           return false;
+                       },
                        (ctx, cancelToken) =>
                        {
-                           InvocationExpressionSyntax invocation = (InvocationExpressionSyntax) ctx.Node;
-                           MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
-                           string methodName = maes.Name.Identifier.Text;
+                           string methodName;
+                           IMethodSymbol? methodSymbol;
 
-                           // Instance call — use semantic model to check the containing type
-                           IMethodSymbol? methodSymbol = ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+                           if (ctx.Node is InvocationExpressionSyntax invocation)
+                           {
+                               MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
+                               methodName = maes.Name.Identifier.Text;
+                               methodSymbol = ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+                           }
+                           else if (ctx.Node is ObjectCreationExpressionSyntax oces)
+                           {
+                               string? simpleName = GetSimpleTypeName(oces.Type);
+                               if (simpleName == null)
+                               {
+                                   return null;
+                               }
 
-                           Log.Info($"Symbol: {ctx.SemanticModel.GetSymbolInfo(invocation).Symbol} | Method symbol: {methodSymbol} | {methodSymbol?.ContainingNamespace.ToDisplayString()}");
+                               methodName = simpleName;
+                               methodSymbol = ctx.SemanticModel.GetSymbolInfo(oces).Symbol as IMethodSymbol;
+                           }
+                           else
+                           {
+                               return null;
+                           }
+
+                           Log.Info($"Symbol: {ctx.SemanticModel.GetSymbolInfo(ctx.Node).Symbol} | Method symbol: {methodSymbol} | {methodSymbol?.ContainingNamespace.ToDisplayString()}");
 
                            if (methodSymbol?.ContainingNamespace != null && methodSymbol.ContainingNamespace.ToDisplayString() == NAMESPACE)
                            {
+                               // Check if the containing type is one of the generator's types.
+                               // Then check if the containing type contains a method with this method name.
                                string containingType = methodSymbol.ContainingType.ToDisplayString();
-                               foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
+                               if (AllTypes.TryGetValue(containingType, out TypeSource? typeSource) &&
+                                   typeSource.ContainsMethod(methodName, cancelToken))
                                {
-                                   if (containingType == $"{NAMESPACE}.{kvp.Key}" && kvp.Value.ContainsMethod(methodName, cancelToken))
-                                   {
-                                       return methodSymbol.ToDisplayString();
-                                   }
+                                   // The method belongs to this generator's generated types. Return it.
+                                   return methodSymbol.ToDisplayString();
                                }
                            }
 
@@ -117,11 +212,11 @@ public sealed partial class Generator : IIncrementalGenerator
         writer.AppendNullable();
         writer.AppendNamespace(NAMESPACE);
 
-        AppendShellType(writer, typeName, type, in context);
+        AppendShellType(writer, type, in context);
 
         context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
 
-        static void AppendShellType(CodeWriter writer, string typeName, TypeSource type, in IncrementalGeneratorPostInitializationContext context)
+        static void AppendShellType(CodeWriter writer, TypeSource type, in IncrementalGeneratorPostInitializationContext context)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             bool typeHasConditionalSymbol = !string.IsNullOrWhiteSpace(type.ConditionalPreprocessorSymbol);
@@ -171,7 +266,7 @@ public sealed partial class Generator : IIncrementalGenerator
                     {
                         writer.AppendLine();
 
-                        AppendShellType(writer, typeKvp.Key, typeKvp.Value, in context);
+                        AppendShellType(writer, typeKvp.Value, in context);
                     }
                 }
             }

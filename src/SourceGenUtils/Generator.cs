@@ -216,7 +216,7 @@ public sealed partial class Generator : IIncrementalGenerator
                     HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
                     HashSet<string> directCalled = new HashSet<string>(calledSet);
                     calledSet = ExpandDependencies(calledSet, ctx.CancellationToken);
-                    GenerateCode(ctx, directCalled, calledSet);
+                    GenerateCode(ctx, calledSet);
                 }
 
                 catch (Exception e)
@@ -341,9 +341,11 @@ public sealed partial class Generator : IIncrementalGenerator
         return true;
     }
 
-    private static void GenerateCode(SourceProductionContext context, HashSet<string> directCalled, HashSet<string> expandedCalled)
+    private static void GenerateCode(SourceProductionContext context, HashSet<string> calledMethods)
     {
-        ImplementationContext implementationContext = new ImplementationContext(expandedCalled, context.CancellationToken);
+        ImplementationContext implementationContext = new ImplementationContext(calledMethods, context.CancellationToken);
+
+        CodeWriter writer = new CodeWriter();
 
         foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
         {
@@ -351,7 +353,7 @@ public sealed partial class Generator : IIncrementalGenerator
 
             string className = kvp.Key;
 
-            CodeWriter writer = new CodeWriter();
+            writer.Clear();
 
             writer.AppendNullable();
             writer.AppendNamespace(NAMESPACE);

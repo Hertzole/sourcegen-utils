@@ -113,6 +113,13 @@ internal sealed class CodeWriter
         shouldWriteIndent = true;
     }
 
+    public void Clear()
+    {
+        builder.Clear();
+        Indent = 0;
+        shouldWriteIndent = false;
+    }
+
     public void AppendGeneratedCodeAttribute(string generator, string version)
     {
         WriteIndentIfNeeded();

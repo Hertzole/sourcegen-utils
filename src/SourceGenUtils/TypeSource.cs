@@ -3,13 +3,15 @@ using System.Threading;
 
 namespace Hertzole.SourceGenUtils;
 
-internal sealed class TypeSource()
+internal sealed class TypeSource : IHasAttributes
 {
     public required string Signature { get; init; }
     public required MethodSource[] Methods { get; init; }
     public Dictionary<string, FieldSource>? Fields { get; init; }
     public Dictionary<string, PropertySource>? Properties { get; init; }
     public Dictionary<string, TypeSource>? Types { get; init; }
+    public string[]? Attributes { get; init; }
+    public string? ConditionalPreprocessorSymbol { get; init; }
 
     public bool ContainsMethod(string methodName, CancellationToken cancellationToken)
     {

@@ -127,6 +127,12 @@ public sealed partial class Generator : IIncrementalGenerator
         CodeWriter writer = new CodeWriter();
         writer.AppendNullable();
         writer.AppendNamespace(NAMESPACE);
+
+        if (!string.IsNullOrWhiteSpace(type.ConditionalPreprocessorSymbol))
+        {
+            writer.AppendConditionalSymbol(type.ConditionalPreprocessorSymbol!);
+        }
+
         writer.AppendLine(type.Signature);
 
         using (writer.WithBlock())
@@ -140,8 +146,20 @@ public sealed partial class Generator : IIncrementalGenerator
                     continue;
                 }
 
+                bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(type.Methods[i].ConditionalPreprocessorSymbol);
+
+                if (hasConditionalSymbol)
+                {
+                    writer.AppendConditionalSymbol(type.Methods[i].ConditionalPreprocessorSymbol!);
+                }
+
                 writer.Append(type.Methods[i].Signature);
                 writer.AppendLine(";");
+
+                if (hasConditionalSymbol)
+                {
+                    writer.AppendPreprocessorSymbol("#endif");
+                }
 
                 if (i < type.Methods.Length - 1)
                 {
@@ -150,69 +168,48 @@ public sealed partial class Generator : IIncrementalGenerator
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(type.ConditionalPreprocessorSymbol))
+        {
+            writer.AppendPreprocessorSymbol("#endif");
+        }
+
         context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
     }
 
-    private static bool AreAnyDependenciesMet(string[]? dependencies, HashSet<string> calledMethods, CancellationToken cancellationToken)
+    private static bool AreAnyDependenciesMet(string[]? dependencies, in ImplementationContext context)
     {
         if (dependencies == null || dependencies.Length == 0)
         {
             return true;
         }
 
-        // PERF: Pool collection
-        HashSet<string> calledMethodsWithoutArgs = new HashSet<string>(calledMethods, OnlyMethodNameEquality.Instance);
-
         foreach (string dep in dependencies)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            context.CancellationToken.ThrowIfCancellationRequested();
 
-            if (!dep.Contains('(') && !dep.Contains(')'))
+            if (context.HasCalledMethod(dep))
             {
-                if (calledMethodsWithoutArgs.Contains(dep))
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                if (calledMethods.Contains(dep))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 
         return false;
     }
 
-    private static bool AreAllDependenciesMet(string[]? dependencies, HashSet<string> calledMethods, CancellationToken cancellationToken)
+    private static bool AreAllDependenciesMet(string[]? dependencies, in ImplementationContext context)
     {
         if (dependencies == null || dependencies.Length == 0)
         {
             return true;
         }
 
-        // PERF: Pool collection
-        HashSet<string> calledMethodsWithoutArgs = new HashSet<string>(calledMethods, OnlyMethodNameEquality.Instance);
-
         foreach (string dep in dependencies)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            context.CancellationToken.ThrowIfCancellationRequested();
 
-            if (!dep.Contains('(') && !dep.Contains(')'))
+            if (!context.HasCalledMethod(dep))
             {
-                if (!calledMethodsWithoutArgs.Contains(dep))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (!calledMethods.Contains(dep))
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
@@ -267,23 +264,28 @@ public sealed partial class Generator : IIncrementalGenerator
     private static void AppendType(TypeSource typeSource, string typeName, CodeWriter writer, HashSet<string> calledMethods, in ImplementationContext implementationContext)
     {
         MethodSource[] methods = typeSource.Methods;
+
+        bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(typeSource.ConditionalPreprocessorSymbol);
+
+        if (hasConditionalSymbol)
+        {
+            writer.AppendConditionalSymbol(typeSource.ConditionalPreprocessorSymbol!);
+        }
+
         writer.AppendGeneratedCodeAttribute("Hertzole.SourceGenUtils.Generator", "1.0.0.0");
         writer.AppendExcludeFromCodeCoverageAttribute();
+
+        WriteAttributes(typeSource, writer, in implementationContext);
+
         writer.AppendLine(typeSource.Signature);
         writer.AppendLine("{");
         writer.Indent++;
 
         if (typeSource.Fields != null)
         {
-            foreach (KeyValuePair<string, FieldSource> fieldKvp in typeSource.Fields)
+            foreach (FieldSource field in typeSource.Fields.Values)
             {
-                implementationContext.CancellationToken.ThrowIfCancellationRequested();
-
-                if (AreAnyDependenciesMet(fieldKvp.Value.Dependencies, calledMethods, implementationContext.CancellationToken) &&
-                    AreAllDependenciesMet(fieldKvp.Value.RequiredDependencies, calledMethods, implementationContext.CancellationToken))
-                {
-                    writer.AppendLine(fieldKvp.Value.Signature);
-                }
+                WriteFieldOrProperty(field, writer, in implementationContext);
             }
 
             writer.AppendLine();
@@ -291,15 +293,9 @@ public sealed partial class Generator : IIncrementalGenerator
 
         if (typeSource.Properties != null)
         {
-            foreach (KeyValuePair<string, PropertySource> propKvp in typeSource.Properties)
+            foreach (PropertySource prop in typeSource.Properties.Values)
             {
-                implementationContext.CancellationToken.ThrowIfCancellationRequested();
-
-                if (AreAnyDependenciesMet(propKvp.Value.Dependencies, calledMethods, implementationContext.CancellationToken) &&
-                    AreAllDependenciesMet(propKvp.Value.RequiredDependencies, calledMethods, implementationContext.CancellationToken))
-                {
-                    writer.AppendLine(propKvp.Value.Signature);
-                }
+                WriteFieldOrProperty(prop, writer, in implementationContext);
             }
 
             writer.AppendLine();
@@ -332,27 +328,7 @@ public sealed partial class Generator : IIncrementalGenerator
                     continue;
                 }
 
-                string overloadFullName = $"{typeName}.{overload.Name}({overload.ParameterTypesKey})";
-                bool isOverloadCalled = calledMethods.Contains(overloadFullName);
-
-#if DEBUG
-                writer.AppendLine($"// (overload) {overloadFullName}: Is called: {isOverloadCalled} | Dependencies: {string.Join(", ", overload.Dependencies ?? Array.Empty<string>())}");
-#endif
-                writer.AppendLine(overload.Signature);
-                writer.AppendLine("{");
-                writer.Indent++;
-                if (isOverloadCalled && AreAllDependenciesMet(method.RequiredDependencies, calledMethods, implementationContext.CancellationToken))
-                {
-                    overload.Implementation.Invoke(writer, in implementationContext);
-                }
-                else if (overload.EmptyStub.Length > 0)
-                {
-                    writer.AppendLine(overload.EmptyStub);
-                }
-
-                writer.Indent--;
-                writer.AppendLine("}");
-                writer.AppendLine();
+                AppendMethod(typeName, writer, calledMethods, in implementationContext, overload, method);
 
                 emittedIdentifiers.Add(overload.Identifier);
             }
@@ -369,6 +345,92 @@ public sealed partial class Generator : IIncrementalGenerator
 
         writer.Indent--;
         writer.AppendLine("}");
+
+        if (hasConditionalSymbol)
+        {
+            writer.AppendPreprocessorSymbol("#endif");
+        }
+    }
+
+    private static void AppendMethod(string typeName, CodeWriter writer, HashSet<string> calledMethods, in ImplementationContext implementationContext, MethodSource overload, MethodSource method)
+    {
+        string overloadFullName = $"{typeName}.{overload.Name}({overload.ParameterTypesKey})";
+        bool isOverloadCalled = calledMethods.Contains(overloadFullName);
+
+        bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(overload.ConditionalPreprocessorSymbol);
+
+        if (hasConditionalSymbol)
+        {
+            writer.AppendConditionalSymbol(overload.ConditionalPreprocessorSymbol);
+        }
+
+#if DEBUG
+        writer.AppendLine($"// (overload) {overloadFullName}: Is called: {isOverloadCalled} | Dependencies: {string.Join(", ", overload.Dependencies ?? Array.Empty<string>())}");
+#endif
+        WriteAttributes(overload, writer, in implementationContext);
+        writer.AppendLine(overload.Signature);
+        writer.AppendLine("{");
+        writer.Indent++;
+        if (isOverloadCalled && AreAllDependenciesMet(method.RequiredDependencies, in implementationContext))
+        {
+            overload.Implementation.Invoke(writer, in implementationContext);
+        }
+        else if (overload.EmptyStub.Length > 0)
+        {
+            writer.AppendLine(overload.EmptyStub);
+        }
+
+        writer.Indent--;
+        writer.AppendLine("}");
+
+        if (hasConditionalSymbol)
+        {
+            writer.AppendPreprocessorSymbol("#endif");
+        }
+
+        writer.AppendLine();
+    }
+
+    private static void WriteFieldOrProperty(BaseSource source, CodeWriter writer, in ImplementationContext context)
+    {
+        context.CancellationToken.ThrowIfCancellationRequested();
+
+        if (AreAnyDependenciesMet(source.Dependencies, in context) &&
+            AreAllDependenciesMet(source.RequiredDependencies, in context))
+        {
+            bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(source.ConditionalPreprocessorSymbol);
+
+            if (hasConditionalSymbol)
+            {
+                writer.AppendConditionalSymbol(source.ConditionalPreprocessorSymbol);
+            }
+
+            WriteAttributes(source, writer, in context);
+
+            writer.AppendLine(source.Signature);
+
+            if (hasConditionalSymbol)
+            {
+                writer.AppendPreprocessorSymbol("#endif");
+            }
+        }
+    }
+
+    private static void WriteAttributes(IHasAttributes source, CodeWriter writer, in ImplementationContext context)
+    {
+        if (source.Attributes == null || source.Attributes.Length == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < source.Attributes.Length; i++)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
+            writer.Append('[');
+            writer.Append(source.Attributes[i]);
+            writer.AppendLine("]");
+        }
     }
 
     private static HashSet<string> ExpandDependencies(HashSet<string> calledMethods, CancellationToken cancellationToken)

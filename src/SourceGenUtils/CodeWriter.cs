@@ -21,6 +21,40 @@ internal sealed class CodeWriter
         isNullable = true;
     }
 
+    public void AppendConditionalSymbol(string? condition)
+    {
+        if (string.IsNullOrWhiteSpace(condition))
+        {
+            return;
+        }
+
+        int indent = Indent;
+        Indent = 0;
+        builder.Append("#if ");
+        builder.AppendLine(condition);
+        Indent = indent;
+    }
+
+    public void AppendPreprocessorSymbol(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        int indent = Indent;
+        Indent = 0;
+
+        if (value![0] != '#')
+        {
+            builder.Append('#');
+        }
+
+        builder.AppendLine(value);
+
+        Indent = indent;
+    }
+
     public void AppendNamespace(INamespaceSymbol? namespaceSymbol)
     {
         if (namespaceSymbol == null || namespaceSymbol.IsGlobalNamespace)
@@ -56,6 +90,12 @@ internal sealed class CodeWriter
     {
         WriteIndentIfNeeded();
 
+        builder.Append(value);
+    }
+
+    public void Append(char value)
+    {
+        WriteIndentIfNeeded();
         builder.Append(value);
     }
 
@@ -127,6 +167,11 @@ internal sealed class CodeWriter
         return new BlockScope(this);
     }
 
+    public IndentScope WithIndent(int newIndent)
+    {
+        return new IndentScope(this, newIndent);
+    }
+
     internal readonly struct BlockScope : IDisposable
     {
         private readonly CodeWriter writer;
@@ -143,6 +188,25 @@ internal sealed class CodeWriter
         {
             writer.Indent--;
             writer.AppendLine("}");
+        }
+    }
+
+    internal readonly struct IndentScope : IDisposable
+    {
+        private readonly CodeWriter writer;
+        private readonly int originalIndent;
+
+        public IndentScope(CodeWriter writer, int newIndent)
+        {
+            this.writer = writer;
+            originalIndent = writer.Indent;
+            writer.Indent = newIndent;
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            writer.Indent = originalIndent;
         }
     }
 }

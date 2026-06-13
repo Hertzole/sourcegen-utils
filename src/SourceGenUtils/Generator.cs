@@ -16,7 +16,8 @@ public sealed partial class Generator : IIncrementalGenerator
     private static readonly Dictionary<string, TypeSource> TypesToGenerate = new Dictionary<string, TypeSource>
     {
         ["CodeWriter"] = CreateCodeWriter(),
-        ["Log"] = CreateLog()
+        ["Log"] = CreateLog(),
+        ["VariableNames"] = CreateVariableNames()
     };
 
     private static readonly HashSet<string> AllMethodNames;

@@ -117,52 +117,70 @@ public sealed partial class Generator : IIncrementalGenerator
         writer.AppendNullable();
         writer.AppendNamespace(NAMESPACE);
 
-        if (!string.IsNullOrWhiteSpace(type.ConditionalPreprocessorSymbol))
-        {
-            writer.AppendConditionalSymbol(type.ConditionalPreprocessorSymbol!);
-        }
-
-        writer.AppendLine(type.Signature);
-
-        using (writer.WithBlock())
-        {
-            for (int i = 0; i < type.Methods.Length; i++)
-            {
-                context.CancellationToken.ThrowIfCancellationRequested();
-
-                if (type.Methods[i].SkipPartial)
-                {
-                    continue;
-                }
-
-                bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(type.Methods[i].ConditionalPreprocessorSymbol);
-
-                if (hasConditionalSymbol)
-                {
-                    writer.AppendConditionalSymbol(type.Methods[i].ConditionalPreprocessorSymbol!);
-                }
-
-                writer.Append(type.Methods[i].Signature);
-                writer.AppendLine(";");
-
-                if (hasConditionalSymbol)
-                {
-                    writer.AppendPreprocessorSymbol("#endif");
-                }
-
-                if (i < type.Methods.Length - 1)
-                {
-                    writer.AppendLine();
-                }
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(type.ConditionalPreprocessorSymbol))
-        {
-            writer.AppendPreprocessorSymbol("#endif");
-        }
+        AppendShellType(writer, typeName, type, in context);
 
         context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
+
+        static void AppendShellType(CodeWriter writer, string typeName, TypeSource type, in IncrementalGeneratorPostInitializationContext context)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+            bool typeHasConditionalSymbol = !string.IsNullOrWhiteSpace(type.ConditionalPreprocessorSymbol);
+
+            if (typeHasConditionalSymbol)
+            {
+                writer.AppendConditionalSymbol(type.ConditionalPreprocessorSymbol!);
+            }
+
+            writer.AppendLine(type.Signature);
+
+            using (writer.WithBlock())
+            {
+                for (int i = 0; i < type.Methods.Length; i++)
+                {
+                    context.CancellationToken.ThrowIfCancellationRequested();
+
+                    if (type.Methods[i].SkipPartial)
+                    {
+                        continue;
+                    }
+
+                    bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(type.Methods[i].ConditionalPreprocessorSymbol);
+
+                    if (hasConditionalSymbol)
+                    {
+                        writer.AppendConditionalSymbol(type.Methods[i].ConditionalPreprocessorSymbol!);
+                    }
+
+                    writer.Append(type.Methods[i].Signature);
+                    writer.AppendLine(";");
+
+                    if (hasConditionalSymbol)
+                    {
+                        writer.AppendPreprocessorSymbol("#endif");
+                    }
+
+                    if (i < type.Methods.Length - 1)
+                    {
+                        writer.AppendLine();
+                    }
+                }
+
+                if (type.Types != null && type.Types.Count > 0)
+                {
+                    foreach (KeyValuePair<string, TypeSource> typeKvp in type.Types)
+                    {
+                        writer.AppendLine();
+
+                        AppendShellType(writer, typeKvp.Key, typeKvp.Value, in context);
+                    }
+                }
+            }
+
+            if (typeHasConditionalSymbol)
+            {
+                writer.AppendPreprocessorSymbol("#endif");
+            }
+        }
     }
 
     private static bool AreAnyDependenciesMet(string[]? dependencies, in ImplementationContext context)

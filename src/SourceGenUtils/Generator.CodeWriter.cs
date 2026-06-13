@@ -447,7 +447,7 @@ partial class Generator
             {
                 ["BlockScope"] = new TypeSource
                 {
-                    Signature = "internal readonly struct BlockScope : global::System.IDisposable",
+                    Signature = "internal readonly partial struct BlockScope : global::System.IDisposable",
                     Fields = new Dictionary<string, FieldSource>
                     {
                         ["writer"] = new FieldSource
@@ -461,7 +461,7 @@ partial class Generator
                         new MethodSource
                         {
                             Name = "BlockScope",
-                            Signature = $"public BlockScope(global::{NAMESPACE}.CodeWriter writer)",
+                            Signature = $"public partial BlockScope(global::{NAMESPACE}.CodeWriter writer)",
                             Implementation = (writer, in _) =>
                             {
                                 writer.AppendLine("this.writer = writer;");
@@ -473,7 +473,7 @@ partial class Generator
                         new MethodSource
                         {
                             Name = "Dispose",
-                            Signature = "public void Dispose()",
+                            Signature = "public partial void Dispose()",
                             Implementation = (writer, in _) =>
                             {
                                 writer.AppendLine("writer.Indent--;");

@@ -118,6 +118,9 @@ internal sealed class CodeWriter
         builder.Clear();
         Indent = 0;
         shouldWriteIndent = false;
+        isNullable = false;
+        hasNamespace = false;
+        hasWrittenNamespace = false;
     }
 
     public void AppendGeneratedCodeAttribute(string generator, string version)

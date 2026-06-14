@@ -542,10 +542,10 @@ public sealed partial class Generator : IIncrementalGenerator
 
             WriteAttributes(source, writer, in context);
 
-            writer.Append(source.Signature);
-
             if (source is PropertySource property)
             {
+                writer.Append(source.Signature);
+
                 if (property.GetImplementation == null && property.SetImplementation == null)
                 {
                     writer.AppendLine(" { get; set; }");
@@ -579,6 +579,10 @@ public sealed partial class Generator : IIncrementalGenerator
                         }
                     }
                 }
+            }
+            else
+            {
+                writer.AppendLine(source.Signature);
             }
 
             if (hasConditionalSymbol)

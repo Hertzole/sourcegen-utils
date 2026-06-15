@@ -28,8 +28,8 @@ public sealed partial class Generator : IIncrementalGenerator
     private static readonly HashSet<string> AllMethodNames;
     private static readonly Dictionary<string, TypeSource> AllTypes;
 
-    private static readonly string generatorName = "Hertzole.SourceGenUtils.Generator";
-    private static readonly string generatorVersion = typeof(Generator).Assembly.GetName().Version.ToString();
+    internal static readonly string generatorName = "Hertzole.SourceGenUtils.Generator";
+    internal static readonly string generatorVersion = typeof(Generator).Assembly.GetName().Version.ToString();
 
     private static SymbolDisplayFormat ContainingTypeDisplayFormat { get; } =
         SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted);

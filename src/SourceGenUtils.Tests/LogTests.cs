@@ -16,8 +16,6 @@ internal class LogTests : GeneratorTests
     protected override string GetTypeOutline()
     {
         return """
-               [global::System.CodeDom.Compiler.GeneratedCode("Hertzole.SourceGenUtils.Generator", "1.0.0.0")]
-               [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
                [global::System.Diagnostics.CodeAnalysis.SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1035:Do not use APIs banned for analyzers", Justification = "This is only used in debug builds.")]
                internal static partial class Log
                {

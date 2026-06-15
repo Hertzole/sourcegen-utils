@@ -51,9 +51,14 @@ internal abstract class GeneratorTests
 
         // Act
         Generator.AppendType(newType, GetTypeName(), writer, new ImplementationContext());
+        string result = writer.ToString();
+        writer.Clear();
+        writer.AppendGeneratedCodeAttribute(Generator.generatorName, Generator.generatorVersion);
+        writer.AppendExcludeFromCodeCoverageAttribute();
+        writer.Append(expected);
 
         // Assert
-        Assert.That(writer.ToString(), Is.EqualTo(expected));
+        Assert.That(result, Is.EqualTo(writer.ToString()));
     }
 
     [Test]
@@ -88,6 +93,28 @@ internal abstract class GeneratorTests
     protected string GetTypeContent(params string[]? calledMethods)
     {
         return GetTypeContent(Generator.TypesToGenerate[GetTypeName()], GetTypeName(), calledMethods);
+    }
+
+    public void CallTest(Action<CodeWriter> writeCall, params string[] expectedCalledMethods)
+    {
+        // Arrange
+        string source = GenerateCall(writeCall);
+        string expected = GetTypeContent(expectedCalledMethods);
+
+        // Act
+        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>(source);
+
+        // Assert
+        AssertGenerateTypeHasContent(expected, result);
+    }
+
+    public void EmptyContentTest(string path, string expected)
+    {
+        // Arrange
+        string content = GetMethodContentInternal(path, false);
+
+        // Assert
+        Assert.AreEqual(expected, content);
     }
 
     protected static string GetTypeContent(TypeSource type, string typeName, string[]? calledMethods = null)
@@ -203,16 +230,22 @@ internal abstract class GeneratorTests
 
     public static string GetMethodContent(string path, params string[] calledMethods)
     {
+        return GetMethodContentInternal(path, true, calledMethods);
+    }
+
+    private static string GetMethodContentInternal(string path, bool addThisToCalledMethods, params string[] calledMethods)
+    {
         MethodSource method = GetMethod(path);
 
         CodeWriter writer = new CodeWriter();
 
         string fullName = !path.StartsWith(Generator.NAMESPACE) ? $"{Generator.NAMESPACE}.{path}" : path;
 
-        List<string> calls = new List<string>(calledMethods)
+        List<string> calls = new List<string>(calledMethods);
+        if (addThisToCalledMethods)
         {
-            fullName
-        };
+            calls.Add(fullName);
+        }
 
         Generator.AppendMethod(writer, method, fullName,
             new ImplementationContext(GetCalledMethods(calls.ToArray()), CancellationToken.None));
@@ -234,13 +267,23 @@ internal abstract class GeneratorTests
     public static MethodSource GetMethod(string path)
     {
         TypeSource type = GetType(path);
-        int lastDot = path.LastIndexOf('.');
+        int parentheses = path.IndexOf('(');
+        if (parentheses < 0)
+        {
+            throw new ArgumentException("Invalid method path", nameof(path));
+        }
+
+        string withoutArgs = path.Substring(0, parentheses);
+
+        int lastDot = withoutArgs.LastIndexOf('.');
         if (lastDot < 0)
         {
             throw new ArgumentException("Invalid method path", nameof(path));
         }
 
-        string methodName = path.Substring(lastDot + 1);
+        string args = path.Substring(path.IndexOf('('));
+
+        string methodName = withoutArgs.Substring(lastDot + 1) + args;
 
         if (type.Methods == null)
         {
@@ -280,6 +323,13 @@ internal abstract class GeneratorTests
         if (path.StartsWith(Generator.NAMESPACE))
         {
             path = path.Substring(Generator.NAMESPACE.Length + 1);
+        }
+
+        int parentheses = path.IndexOf('(');
+        if (parentheses >= 0)
+        {
+            path = path.Substring(0, parentheses);
+            Console.WriteLine($"FUCK: {path}");
         }
 
         TypeSource? currentType = null;

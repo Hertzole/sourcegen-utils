@@ -28,6 +28,9 @@ public sealed partial class Generator : IIncrementalGenerator
     private static readonly HashSet<string> AllMethodNames;
     private static readonly Dictionary<string, TypeSource> AllTypes;
 
+    private static readonly string generatorName = "Hertzole.SourceGenUtils.Generator";
+    private static readonly string generatorVersion = typeof(Generator).Assembly.GetName().Version.ToString();
+
     private static SymbolDisplayFormat ContainingTypeDisplayFormat { get; } =
         SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted);
 
@@ -399,7 +402,7 @@ public sealed partial class Generator : IIncrementalGenerator
             writer.AppendConditionalSymbol(typeSource.ConditionalPreprocessorSymbol!);
         }
 
-        writer.AppendGeneratedCodeAttribute("Hertzole.SourceGenUtils.Generator", "1.0.0.0");
+        writer.AppendGeneratedCodeAttribute(generatorName, generatorVersion);
         writer.AppendExcludeFromCodeCoverageAttribute();
 
         WriteAttributes(typeSource, writer, in implementationContext);

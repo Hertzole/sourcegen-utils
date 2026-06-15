@@ -5,9 +5,12 @@ namespace Hertzole.SourceGenUtils;
 partial class Generator
 {
     private const string CODE_WRITER = NAMESPACE + ".CodeWriter";
+    private const string GLOBAL_CODE_WRITER = "global::" + CODE_WRITER;
 
     private static TypeSource CreateCodeWriter()
     {
+        const string return_this = "return this;";
+        const string new_line = "builder.Append('\\n');";
         return new TypeSource
         {
             Signature = "internal sealed partial class CodeWriter",
@@ -18,8 +21,14 @@ partial class Generator
                     Signature = "private global::System.Text.StringBuilder builder = new global::System.Text.StringBuilder(1024);",
                     Dependencies =
                     [
-                        CODE_WRITER + ".Append", CODE_WRITER + ".AppendLine", CODE_WRITER + ".AppendNamespace", CODE_WRITER + ".AppendNullable", CODE_WRITER + ".AppendGeneratedCodeAttribute",
-                        CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute", CODE_WRITER + ".AppendConditionalSymbol", CODE_WRITER + ".AppendPreprocessorSymbol"
+                        CODE_WRITER + ".Append",
+                        CODE_WRITER + ".AppendLine",
+                        CODE_WRITER + ".AppendNamespace",
+                        CODE_WRITER + ".AppendNullable",
+                        CODE_WRITER + ".AppendGeneratedCodeAttribute",
+                        CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute",
+                        CODE_WRITER + ".AppendConditionalSymbol",
+                        CODE_WRITER + ".AppendPreprocessorSymbol"
                     ]
                 },
                 ["shouldWriteIndent"] = new FieldSource
@@ -35,12 +44,12 @@ partial class Generator
                 ["hasWrittenNamespace"] = new FieldSource
                 {
                     Signature = "private bool hasWrittenNamespace = false;",
-                    RequiredDependencies = [CODE_WRITER + ".AppendNamespace(string)", NAMESPACE + ".CodeWriter.ToString()"]
+                    RequiredDependencies = [CODE_WRITER + ".AppendNamespace(string)", CODE_WRITER + ".ToString()"]
                 },
                 ["isNullable"] = new FieldSource
                 {
                     Signature = "private bool isNullable = false;",
-                    RequiredDependencies = [CODE_WRITER + ".AppendNullable()", NAMESPACE + ".CodeWriter.ToString()"]
+                    RequiredDependencies = [CODE_WRITER + ".AppendNullable()", CODE_WRITER + ".ToString()"]
                 }
             },
             Properties = new Dictionary<string, PropertySource>
@@ -55,215 +64,440 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "AppendNullable",
-                    Signature = "public partial void AppendNullable()",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendNullable()",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in ctx) =>
                     {
-                        writer.AppendLine("builder.AppendLine(\"#nullable enable\");");
+                        writer.AppendLine("builder.Append(\"#nullable enable\");");
+                        writer.AppendLine(new_line);
                         if (ctx.HasCalledMethod(NAMESPACE + ".CodeWriter.ToString()"))
                         {
                             writer.AppendLine("isNullable = true;");
                         }
-                    }
+
+                        writer.AppendLine(return_this);
+                    },
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(string value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(string value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(global::System.ReadOnlySpan<char> value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(global::System.ReadOnlySpan<char> value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
                         writer.AppendLine("builder.Append(value.ToString());");
+                        writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(char value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(char value, int repeatCount)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char value, int repeatCount)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("WriteIndentIfNeeded();\n");
+                        writer.AppendLine("WriteIndentIfNeeded();");
                         writer.AppendLine("builder.Append(value, repeatCount);");
+                        writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(char[] value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char[] value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(char[] value, int startIndex, int charCount)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char[] value, int startIndex, int charCount)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
                         writer.AppendLine("builder.Append(value, startIndex, charCount);");
+                        writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(byte value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(byte value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(sbyte value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(sbyte value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(short value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(short value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(ushort value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ushort value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(int value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(int value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(uint value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(uint value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(float value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(long value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(double value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ulong value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(decimal value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(float value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(bool value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(double value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = "public partial void Append(object value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(decimal value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(bool value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(object value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendLine",
-                    Signature = "public partial void AppendLine()",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine()",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("builder.AppendLine();");
+                        writer.AppendLine(new_line);
                         writer.AppendLine("shouldWriteIndent = true;");
-                    }
+                        writer.AppendLine(return_this);
+                    },
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendLine",
-                    Signature = "public partial void AppendLine(string value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(string value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(global::System.ReadOnlySpan<char> value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
-                        writer.AppendLine("builder.AppendLine(value);");
+                        writer.AppendLine("builder.Append(value.ToString());");
+                        writer.AppendLine(new_line);
                         writer.AppendLine("shouldWriteIndent = true;");
+                        writer.AppendLine(return_this);
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendLine",
-                    Signature = "public partial void AppendLine(global::System.ReadOnlySpan<char> value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(char value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(char value, int repeatCount)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
-                        writer.AppendLine("builder.AppendLine(value.ToString());");
+                        writer.AppendLine("builder.Append(value, repeatCount);");
+                        writer.AppendLine(new_line);
                         writer.AppendLine("shouldWriteIndent = true;");
+                        writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(char[] value, int startIndex, int charCount)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("WriteIndentIfNeeded();");
+                        writer.AppendLine("builder.Append(value, startIndex, charCount);");
+                        writer.AppendLine(new_line);
+                        writer.AppendLine("shouldWriteIndent = true;");
+                        writer.AppendLine("return this;");
+                    },
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(byte value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(sbyte value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(short value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ushort value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(int value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(uint value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(long value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ulong value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(float value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(double value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(decimal value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(bool value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(object value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = AppendLineImplementation,
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendNamespace",
-                    Signature = "public partial void AppendNamespace(global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendNamespace(global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (symbol == null || symbol.IsGlobalNamespace)");
                         using (writer.WithBlock())
                         {
-                            writer.AppendLine("return;");
+                            writer.AppendLine(return_this);
                         }
 
                         writer.AppendLine();
                         writer.AppendLine("if (hasNamespace)");
                         using (writer.WithBlock())
                         {
-                            writer.AppendLine("return;");
+                            writer.AppendLine(return_this);
                         }
 
                         writer.AppendLine();
-                        writer.AppendLine("AppendNamespace(symbol.ToDisplayString());");
+                        writer.AppendLine("return AppendNamespace(symbol.ToDisplayString());");
                     },
-                    Dependencies = [CODE_WRITER + ".AppendNamespace(string)"]
+                    Dependencies = [CODE_WRITER + ".AppendNamespace(string)"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendNamespace",
-                    Signature = "public partial void AppendNamespace(string value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendNamespace(string value)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in ctx) =>
                     {
                         writer.AppendLine("if (string.IsNullOrEmpty(value))");
                         writer.AppendLine("{");
                         writer.Indent++;
-                        writer.AppendLine("return;");
+                        writer.AppendLine(return_this);
                         writer.Indent--;
                         writer.AppendLine("}\n");
 
@@ -282,12 +516,16 @@ partial class Generator
                         {
                             writer.AppendLine("shouldWriteIndent = true;");
                         }
+
+                        writer.AppendLine(return_this);
                     },
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendGeneratedCodeAttribute",
-                    Signature = "public partial void AppendGeneratedCodeAttribute(string generator, string version)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendGeneratedCodeAttribute(string generator, string version)",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
@@ -297,51 +535,61 @@ partial class Generator
                         writer.AppendLine("builder.Append(version);");
                         writer.AppendLine("builder.Append(\"\\\")]\\n\");");
                         writer.AppendLine("shouldWriteIndent = true;");
+                        writer.AppendLine(return_this);
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendExcludeFromCodeCoverageAttribute",
-                    Signature = "public partial void AppendExcludeFromCodeCoverageAttribute()",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendExcludeFromCodeCoverageAttribute()",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("WriteIndentIfNeeded();");
                         writer.AppendLine("builder.Append(\"[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\\n\");");
                         writer.AppendLine("shouldWriteIndent = true;");
+                        writer.AppendLine(return_this);
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendConditionalSymbol",
-                    Signature = "public partial void AppendConditionalSymbol(string? condition)",
-                    Implementation = (writer, in context) =>
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendConditionalSymbol(string? condition)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (string.IsNullOrWhiteSpace(condition))");
                         using (writer.WithBlock())
                         {
-                            writer.AppendLine("return;");
+                            writer.AppendLine(return_this);
                         }
 
                         writer.AppendLine();
                         writer.AppendLine("int indent = Indent;");
                         writer.AppendLine("Indent = 0;");
                         writer.AppendLine("builder.Append('#');");
-                        writer.AppendLine("builder.AppendLine(condition);");
+                        writer.AppendLine("builder.Append(condition);");
+                        writer.AppendLine(new_line);
                         writer.AppendLine("Indent = indent;");
-                    }
+                        writer.AppendLine(return_this);
+                    },
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "AppendPreprocessorSymbol",
-                    Signature = "public partial void AppendPreprocessorSymbol(string? value)",
-                    Implementation = (writer, in context) =>
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendPreprocessorSymbol(string? value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (string.IsNullOrWhiteSpace(value))");
                         using (writer.WithBlock())
                         {
-                            writer.AppendLine("return;");
+                            writer.AppendLine(return_this);
                         }
 
                         writer.AppendLine();
@@ -355,14 +603,18 @@ partial class Generator
                         }
 
                         writer.AppendLine();
-                        writer.AppendLine("builder.AppendLine(value);");
+                        writer.AppendLine("builder.Append(value);");
+                        writer.AppendLine(new_line);
                         writer.AppendLine("Indent = indent;");
-                    }
+                        writer.AppendLine(return_this);
+                    },
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
                     Name = "Clear",
-                    Signature = "public partial void Clear()",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Clear()",
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in ctx) =>
                     {
                         writer.AppendLine("Indent = 0;");
@@ -371,8 +623,24 @@ partial class Generator
                         {
                             writer.AppendLine("builder.Clear();");
                             writer.AppendLine("shouldWriteIndent = false;");
+
+                            bool hasCalledToString = ctx.HasCalledMethod(CODE_WRITER + ".ToString()");
+
+                            if (ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)") && hasCalledToString)
+                            {
+                                writer.AppendLine("hasWrittenNamespace = false;");
+                                writer.AppendLine("hasNamespace = false;");
+                            }
+
+                            if (ctx.HasCalledMethod(CODE_WRITER + ".AppendNullable()") && hasCalledToString)
+                            {
+                                writer.AppendLine("isNullable = false;");
+                            }
                         }
-                    }
+
+                        writer.AppendLine(return_this);
+                    },
+                    EmptyStub = return_this
                 },
                 new MethodSource
                 {
@@ -405,18 +673,26 @@ partial class Generator
                             return;
                         }
 
+                        writer.AppendLine("if (builder.Length == 0)");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("return string.Empty;");
+                        }
+
+                        writer.AppendLine();
+
                         if (ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)"))
                         {
                             writer.AppendLine("if (hasNamespace && !hasWrittenNamespace)");
-                            writer.AppendLine("{");
-                            writer.Indent++;
-                            writer.AppendLine("builder.AppendLine();");
-                            writer.AppendLine("Indent--;");
-                            writer.AppendLine("builder.AppendLine(\"}\");");
-                            writer.AppendLine("hasWrittenNamespace = true;");
-                            writer.AppendLine("hasNamespace = false;");
-                            writer.Indent--;
-                            writer.AppendLine("}");
+                            using (writer.WithBlock())
+                            {
+                                writer.AppendLine(new_line);
+                                writer.AppendLine("Indent--;");
+                                writer.AppendLine("builder.Append(\"}\\n\");");
+                                writer.AppendLine("hasWrittenNamespace = true;");
+                                writer.AppendLine("hasNamespace = false;");
+                            }
+
                             writer.AppendLine();
                         }
 
@@ -425,11 +701,20 @@ partial class Generator
                             writer.AppendLine("if (isNullable)");
                             using (writer.WithBlock())
                             {
-                                writer.AppendLine("builder.AppendLine(\"#nullable restore\");");
+                                writer.AppendLine("builder.Append(\"#nullable restore\\n\");");
                             }
 
                             writer.AppendLine();
                         }
+
+                        writer.AppendLine("// Trim the last newline, if present.");
+                        writer.AppendLine("if (builder[builder.Length - 1] == '\\n')");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("builder.Remove(builder.Length - 1, 1);");
+                        }
+
+                        writer.AppendLine();
 
                         writer.AppendLine("return builder.ToString();");
                     }
@@ -486,7 +771,7 @@ partial class Generator
                             {
                                 writer.AppendLine("writer.Indent--;");
                                 writer.AppendLine("writer.AppendLine(\"}\");");
-                            },
+                            }
                         }
                     ]
                 },
@@ -530,21 +815,33 @@ partial class Generator
                 }
             }
         };
-    }
 
-    private static void AppendImplementation(CodeWriter writer, in ImplementationContext ctx)
-    {
-        writer.AppendLine("WriteIndentIfNeeded();\n");
-        writer.AppendLine("builder.Append(value);");
-    }
+        static void AppendImplementation(CodeWriter writer, in ImplementationContext ctx)
+        {
+            writer.AppendLine("WriteIndentIfNeeded();");
+            writer.AppendLine("builder.Append(value);");
+            writer.AppendLine(return_this);
+        }
 
-    private static bool HasWrittenAnything(in ImplementationContext ctx)
-    {
-        return ctx.HasCalledMethod(CODE_WRITER + ".Append") ||
-               ctx.HasCalledMethod(CODE_WRITER + ".AppendLine") ||
-               ctx.HasCalledMethod(CODE_WRITER + ".AppendNullable()") ||
-               ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)") ||
-               ctx.HasCalledMethod(CODE_WRITER + ".AppendGeneratedCodeAttribute(string, string)") ||
-               ctx.HasCalledMethod(CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute()");
+        static void AppendLineImplementation(CodeWriter writer, in ImplementationContext ctx)
+        {
+            writer.AppendLine("WriteIndentIfNeeded();");
+            writer.AppendLine("builder.Append(value);");
+            writer.AppendLine(new_line);
+            writer.AppendLine("shouldWriteIndent = true;");
+            writer.AppendLine(return_this);
+        }
+
+        static bool HasWrittenAnything(in ImplementationContext ctx)
+        {
+            return ctx.HasCalledMethod(CODE_WRITER + ".Append") ||
+                   ctx.HasCalledMethod(CODE_WRITER + ".AppendLine") ||
+                   ctx.HasCalledMethod(CODE_WRITER + ".AppendNullable()") ||
+                   ctx.HasCalledMethod(CODE_WRITER + ".AppendNamespace(string)") ||
+                   ctx.HasCalledMethod(CODE_WRITER + ".AppendGeneratedCodeAttribute(string, string)") ||
+                   ctx.HasCalledMethod(CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute()") ||
+                   ctx.HasCalledMethod(CODE_WRITER + ".AppendConditionalSymbol") ||
+                   ctx.HasCalledMethod(CODE_WRITER + ".AppendPreprocessorSymbol");
+        }
     }
 }

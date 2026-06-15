@@ -8,11 +8,10 @@ partial class Generator
     {
         const string equatable_array = NAMESPACE + ".EquatableArray";
 
-        string[] aggressiveInlining = ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
-
         return new TypeSource
         {
-            Signature = "internal readonly partial struct EquatableArray<T> : global::System.IEquatable<EquatableArray<T>>, global::System.Collections.Generic.IEnumerable<T> where T : global::System.IEquatable<T>",
+            Signature =
+                "internal readonly partial struct EquatableArray<T> : global::System.IEquatable<EquatableArray<T>>, global::System.Collections.Generic.IEnumerable<T> where T : global::System.IEquatable<T>",
             Fields = new Dictionary<string, FieldSource>
             {
                 ["array"] = new FieldSource
@@ -25,19 +24,19 @@ partial class Generator
                 ["IsEmpty"] = new PropertySource
                 {
                     Signature = "public bool IsEmpty",
-                    GetAttributes = aggressiveInlining,
+                    GetAttributes = AggressiveInlineAttribute,
                     GetImplementation = (writer, in _) => { writer.AppendLine("return array == null || array.Length == 0;"); }
                 },
                 ["Length"] = new PropertySource
                 {
                     Signature = "public int Length",
-                    GetAttributes = aggressiveInlining,
+                    GetAttributes = AggressiveInlineAttribute,
                     GetImplementation = (writer, in _) => { writer.AppendLine("return array == null ? 0 : array.Length;"); }
                 },
                 ["this"] = new PropertySource
                 {
                     Signature = "public ref readonly T this[int index]",
-                    GetAttributes = aggressiveInlining,
+                    GetAttributes = AggressiveInlineAttribute,
                     GetImplementation = (writer, in _) => { writer.AppendLine("return ref AsImmutableArray().ItemRef(index);"); }
                 }
             },
@@ -57,13 +56,17 @@ partial class Generator
                 {
                     Name = "EquatableArray",
                     Signature = "public partial EquatableArray(global::System.Collections.Immutable.ImmutableArray<T> array)",
-                    Implementation = (writer, in _) => { writer.AppendLine("this.array = global::System.Runtime.CompilerServices.Unsafe.As<global::System.Collections.Immutable.ImmutableArray<T>, T[]?>(ref array);"); }
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine(
+                            "this.array = global::System.Runtime.CompilerServices.Unsafe.As<global::System.Collections.Immutable.ImmutableArray<T>, T[]?>(ref array);");
+                    }
                 },
                 new MethodSource
                 {
                     Name = "AsImmutableArray",
                     Signature = "public partial global::System.Collections.Immutable.ImmutableArray<T> AsImmutableArray()",
-                    Attributes = aggressiveInlining,
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine(
@@ -75,8 +78,12 @@ partial class Generator
                 {
                     Name = "AsSpan",
                     Signature = "public partial global::System.ReadOnlySpan<T> AsSpan()",
-                    Attributes = aggressiveInlining,
-                    Implementation = (writer, in _) => { writer.AppendLine("return array == null ? global::System.ReadOnlySpan<T>.Empty : new global::System.ReadOnlySpan<T>(array, 0, array.Length);"); },
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine(
+                            "return array == null ? global::System.ReadOnlySpan<T>.Empty : new global::System.ReadOnlySpan<T>(array, 0, array.Length);");
+                    },
                     EmptyStub = "return global::System.ReadOnlySpan<T>.Empty;",
                     AlwaysWrite = true
                 },
@@ -84,7 +91,7 @@ partial class Generator
                 {
                     Name = "GetEnumerator",
                     Signature = "public partial global::System.Collections.Immutable.ImmutableArray<T>.Enumerator GetEnumerator()",
-                    Attributes = aggressiveInlining,
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) => { writer.AppendLine("return AsImmutableArray().GetEnumerator();"); },
                     AlwaysWrite = true
                 },
@@ -92,8 +99,11 @@ partial class Generator
                 {
                     Name = "GetEnumerator",
                     Signature = "global::System.Collections.Generic.IEnumerator<T> global::System.Collections.Generic.IEnumerable<T>.GetEnumerator()",
-                    Attributes = aggressiveInlining,
-                    Implementation = (writer, in _) => { writer.AppendLine("return ((global::System.Collections.Generic.IEnumerable<T>) AsImmutableArray()).GetEnumerator();"); },
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("return ((global::System.Collections.Generic.IEnumerable<T>) AsImmutableArray()).GetEnumerator();");
+                    },
                     AlwaysWrite = true,
                     SkipPartial = true
                 },
@@ -101,8 +111,11 @@ partial class Generator
                 {
                     Name = "GetEnumerator",
                     Signature = "global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator()",
-                    Attributes = aggressiveInlining,
-                    Implementation = (writer, in _) => { writer.AppendLine("return ((global::System.Collections.IEnumerable) AsImmutableArray()).GetEnumerator();"); },
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("return ((global::System.Collections.IEnumerable) AsImmutableArray()).GetEnumerator();");
+                    },
                     AlwaysWrite = true,
                     SkipPartial = true
                 },
@@ -110,23 +123,29 @@ partial class Generator
                 {
                     Name = "Equals",
                     Signature = "public partial bool Equals(global::" + equatable_array + "<T> other)",
-                    Attributes = aggressiveInlining,
-                    Implementation = (writer, in _) => { writer.AppendLine("return global::System.MemoryExtensions.SequenceEqual<T>(AsSpan(), other.AsSpan());"); },
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("return global::System.MemoryExtensions.SequenceEqual<T>(AsSpan(), other.AsSpan());");
+                    },
                     AlwaysWrite = true
                 },
                 new MethodSource
                 {
                     Name = "Equals",
                     Signature = "public override partial bool Equals(object? other)",
-                    Attributes = aggressiveInlining,
-                    Implementation = (writer, in _) => { writer.AppendLine("return other is global::" + equatable_array + "<T> array && Equals(this, array);"); },
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("return other is global::" + equatable_array + "<T> array && Equals(this, array);");
+                    },
                     AlwaysWrite = true
                 },
                 new MethodSource
                 {
                     Name = "GetHashCode",
                     Signature = "public override partial int GetHashCode()",
-                    Attributes = aggressiveInlining,
+                    Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (array == null)");
@@ -153,7 +172,8 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "EquatableArrayOperator",
-                    Signature = "public static implicit operator global::" + equatable_array + "<T>(global::System.Collections.Immutable.ImmutableArray<T> array)",
+                    Signature = "public static implicit operator global::" + equatable_array +
+                                "<T>(global::System.Collections.Immutable.ImmutableArray<T> array)",
                     Implementation = (writer, in _) => { writer.AppendLine("return new global::" + equatable_array + "<T>(array);"); },
                     AlwaysWrite = true,
                     SkipPartial = true
@@ -161,7 +181,8 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "ImmutableArrayOperator",
-                    Signature = "public static implicit operator global::System.Collections.Immutable.ImmutableArray<T>(global::" + equatable_array + "<T> array)",
+                    Signature = "public static implicit operator global::System.Collections.Immutable.ImmutableArray<T>(global::" + equatable_array +
+                                "<T> array)",
                     Implementation = (writer, in _) => { writer.AppendLine("return array.AsImmutableArray();"); },
                     AlwaysWrite = true,
                     SkipPartial = true

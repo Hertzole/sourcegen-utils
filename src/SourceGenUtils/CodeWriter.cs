@@ -17,7 +17,7 @@ internal sealed class CodeWriter
 
     public void AppendNullable()
     {
-        builder.AppendLine("#nullable enable");
+        builder.AppendLineUnix("#nullable enable");
         isNullable = true;
     }
 
@@ -31,7 +31,7 @@ internal sealed class CodeWriter
         int indent = Indent;
         Indent = 0;
         builder.Append("#if ");
-        builder.AppendLine(condition);
+        builder.AppendLineUnix(condition);
         Indent = indent;
     }
 
@@ -50,7 +50,7 @@ internal sealed class CodeWriter
             builder.Append('#');
         }
 
-        builder.AppendLine(value);
+        builder.AppendLineUnix(value);
 
         Indent = indent;
     }
@@ -80,8 +80,8 @@ internal sealed class CodeWriter
         hasNamespace = true;
         hasWrittenNamespace = false;
         builder.Append("namespace ");
-        builder.AppendLine(namespaceName);
-        builder.AppendLine("{");
+        builder.AppendLineUnix(namespaceName);
+        builder.AppendLineUnix("{");
         Indent++;
         shouldWriteIndent = true;
     }
@@ -101,7 +101,7 @@ internal sealed class CodeWriter
 
     public void AppendLine()
     {
-        builder.AppendLine();
+        builder.AppendLineUnix();
         shouldWriteIndent = true;
     }
 
@@ -109,7 +109,7 @@ internal sealed class CodeWriter
     {
         WriteIndentIfNeeded();
 
-        builder.AppendLine(value);
+        builder.AppendLineUnix(value);
         shouldWriteIndent = true;
     }
 
@@ -155,10 +155,15 @@ internal sealed class CodeWriter
     /// <inheritdoc />
     public override string ToString()
     {
+        if (builder.Length == 0)
+        {
+            return string.Empty;
+        }
+
         if (hasNamespace && !hasWrittenNamespace)
         {
             Indent--;
-            builder.AppendLine("}");
+            builder.AppendLineUnix("}");
 
             hasWrittenNamespace = true;
             hasNamespace = false;
@@ -166,7 +171,13 @@ internal sealed class CodeWriter
 
         if (isNullable)
         {
-            builder.AppendLine("#nullable restore");
+            builder.AppendLineUnix("#nullable restore");
+        }
+
+        // Trim the last newline, if present.
+        if (builder[builder.Length - 1] == '\n')
+        {
+            builder.Remove(builder.Length - 1, 1);
         }
 
         return builder.ToString();

@@ -230,7 +230,6 @@ public sealed partial class Generator : IIncrementalGenerator
                 {
                     // PERF: Pool collections
                     HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
-                    HashSet<string> directCalled = new HashSet<string>(calledSet);
                     calledSet = ExpandDependencies(calledSet, ctx.CancellationToken);
                     GenerateCode(ctx, calledSet);
                 }
@@ -413,31 +412,54 @@ public sealed partial class Generator : IIncrementalGenerator
 
         if (typeSource.Fields != null)
         {
+            bool writtenAnyFields = false;
+
             foreach (FieldSource field in typeSource.Fields.Values)
             {
-                WriteFieldOrProperty(field, writer, in implementationContext);
+                if (WriteFieldOrProperty(field, writer, in implementationContext))
+                {
+                    writtenAnyFields = true;
+                }
             }
 
-            writer.AppendLine();
+            if (writtenAnyFields)
+            {
+                writer.AppendLine();
+            }
         }
 
         if (typeSource.Properties != null)
         {
+            bool writtenAnyProperties = false;
+
             foreach (PropertySource prop in typeSource.Properties.Values)
             {
-                WriteFieldOrProperty(prop, writer, in implementationContext);
+                if (WriteFieldOrProperty(prop, writer, in implementationContext))
+                {
+                    writtenAnyProperties = true;
+                }
             }
 
-            writer.AppendLine();
+            if (writtenAnyProperties)
+            {
+                writer.AppendLine();
+            }
         }
 
         if (methods != null && methods.Length > 0)
         {
+            bool firstMethod = true;
+
             foreach (MethodSource method in methods)
             {
                 implementationContext.CancellationToken.ThrowIfCancellationRequested();
 
-                writer.AppendLine();
+                if (!firstMethod)
+                {
+                    writer.AppendLine();
+                }
+
+                firstMethod = false;
 
                 string fullName = $"{typeName}.{method.Name}({method.ParameterTypesKey})";
 
@@ -497,7 +519,7 @@ public sealed partial class Generator : IIncrementalGenerator
         }
     }
 
-    internal static void WriteFieldOrProperty(BaseSource source, CodeWriter writer, in ImplementationContext context)
+    internal static bool WriteFieldOrProperty(BaseSource source, CodeWriter writer, in ImplementationContext context)
     {
         context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -560,7 +582,11 @@ public sealed partial class Generator : IIncrementalGenerator
             {
                 writer.AppendPreprocessorSymbol("#endif");
             }
+
+            return true;
         }
+
+        return false;
     }
 
     private static void WriteAttributes(IHasAttributes source, CodeWriter writer, in ImplementationContext context)

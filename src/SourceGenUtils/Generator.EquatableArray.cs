@@ -84,7 +84,6 @@ partial class Generator
                         writer.AppendLine(
                             "return array == null ? global::System.ReadOnlySpan<T>.Empty : new global::System.ReadOnlySpan<T>(array, 0, array.Length);");
                     },
-                    EmptyStub = "return global::System.ReadOnlySpan<T>.Empty;",
                     AlwaysWrite = true
                 },
                 new MethodSource

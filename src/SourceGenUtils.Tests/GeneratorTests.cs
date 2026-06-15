@@ -75,17 +75,20 @@ internal abstract class GeneratorTests
         }
 
         // Assert
-        foreach (MethodSource method in type.Methods)
-        {
-            string fullMethodName = $"{Generator.NAMESPACE}.{GetTypeName()}.{method.Name}({method.ParameterTypesKey})";
+        IEnumerable<IGrouping<string, MethodSource>> methodGroups =
+            type.Methods.GroupBy(m => $"{Generator.NAMESPACE}.{GetTypeName()}.{m.Name}({m.ParameterTypesKey})");
 
-            if (method.SkipPartial)
+        foreach (IGrouping<string, MethodSource> group in methodGroups)
+        {
+            bool anyNonSkipPartial = group.Any(m => !m.SkipPartial);
+
+            if (anyNonSkipPartial)
             {
-                Assert.That(shellMethods, Does.Not.Contain(fullMethodName), $"Partial methods contained '{fullMethodName}' when it shouldn't have.");
+                Assert.That(shellMethods, Does.Contain(group.Key), $"Partial methods do not contain '{group.Key}' when they should have.");
             }
             else
             {
-                Assert.That(shellMethods, Does.Contain(fullMethodName), $"Partial method does not contain '{fullMethodName}' when it should have.");
+                Assert.That(shellMethods, Does.Not.Contain(group.Key), $"Partial methods contained '{group.Key}' when it shouldn't have.");
             }
         }
     }
@@ -329,7 +332,6 @@ internal abstract class GeneratorTests
         if (parentheses >= 0)
         {
             path = path.Substring(0, parentheses);
-            Console.WriteLine($"FUCK: {path}");
         }
 
         TypeSource? currentType = null;

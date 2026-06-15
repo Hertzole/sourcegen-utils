@@ -34,6 +34,57 @@ internal abstract class GeneratorTests
         Assert.That(shell.ToString(), Is.EqualTo(GetTypeShellContent(Generator.TypesToGenerate[GetTypeName()])));
     }
 
+    [Test]
+    public void TypeOutline_Content()
+    {
+        // Arrange
+        TypeSource type = Generator.TypesToGenerate[GetTypeName()];
+        string expected = GetTypeOutline();
+        TypeSource newType = new TypeSource
+        {
+            Signature = type.Signature,
+            Attributes = type.Attributes,
+            ConditionalPreprocessorSymbol = type.ConditionalPreprocessorSymbol
+        };
+
+        CodeWriter writer = new CodeWriter();
+
+        // Act
+        Generator.AppendType(newType, GetTypeName(), writer, new ImplementationContext());
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Shell_SkipsPartialMethods()
+    {
+        // Arrange
+        TypeSource type = Generator.TypesToGenerate[GetTypeName()];
+        HashSet<string> shellMethods = GetCalledMethods(GetShellMethods(), GetTypeName());
+
+        if (type.Methods == null || type.Methods.Length == 0)
+        {
+            Assert.Pass($"There's no methods in type {GetTypeName()}.");
+            return;
+        }
+
+        // Assert
+        foreach (MethodSource method in type.Methods)
+        {
+            string fullMethodName = $"{Generator.NAMESPACE}.{GetTypeName()}.{method.Name}({method.ParameterTypesKey})";
+
+            if (method.SkipPartial)
+            {
+                Assert.That(shellMethods, Does.Not.Contain(fullMethodName), $"Partial methods contained '{fullMethodName}' when it shouldn't have.");
+            }
+            else
+            {
+                Assert.That(shellMethods, Does.Contain(fullMethodName), $"Partial method does not contain '{fullMethodName}' when it should have.");
+            }
+        }
+    }
+
     protected string GetTypeContent(params string[]? calledMethods)
     {
         return GetTypeContent(Generator.TypesToGenerate[GetTypeName()], GetTypeName(), calledMethods);
@@ -169,7 +220,62 @@ internal abstract class GeneratorTests
         return writer.ToString();
     }
 
+    public static string GetFieldContent(string path, params string[] calledMethods)
+    {
+        FieldSource field = GetField(path);
+
+        CodeWriter writer = new CodeWriter();
+
+        Generator.WriteFieldOrProperty(field, writer, new ImplementationContext(GetCalledMethods(calledMethods), CancellationToken.None));
+
+        return writer.ToString();
+    }
+
     public static MethodSource GetMethod(string path)
+    {
+        TypeSource type = GetType(path);
+        int lastDot = path.LastIndexOf('.');
+        if (lastDot < 0)
+        {
+            throw new ArgumentException("Invalid method path", nameof(path));
+        }
+
+        string methodName = path.Substring(lastDot + 1);
+
+        if (type.Methods == null)
+        {
+            throw new ArgumentException("Type doesn't have methods.");
+        }
+
+        MethodSource? method = type.Methods.FirstOrDefault(x => $"{x.Name}({x.ParameterTypesKey})" == methodName);
+        if (method == null)
+        {
+            throw new ArgumentException($"No method called '{methodName}'.");
+        }
+
+        return method;
+    }
+
+    public static FieldSource GetField(string path)
+    {
+        TypeSource type = GetType(path);
+        int lastDot = path.LastIndexOf('.');
+        if (lastDot < 0)
+        {
+            throw new ArgumentException("Invalid field path", nameof(path));
+        }
+
+        string fieldName = path.Substring(lastDot + 1);
+
+        if (type.Fields == null)
+        {
+            throw new ArgumentException("Type doesn't have fields.");
+        }
+
+        return type.Fields[fieldName];
+    }
+
+    public static TypeSource GetType(string path)
     {
         if (path.StartsWith(Generator.NAMESPACE))
         {
@@ -202,28 +308,35 @@ internal abstract class GeneratorTests
             }
             else
             {
-                Assert.That(currentType!.Methods, Is.Not.Null, "There are no methods.");
+                currentType ??= Generator.TypesToGenerate[path];
 
-                MethodSource? method = currentType.Methods!.FirstOrDefault(x => $"{x.Name}({x.ParameterTypesKey})" == path);
-                Assert.That(method, Is.Not.Null, $"There's no method with the path {path}.");
-                return method!;
+                Assert.That(currentType, Is.Not.Null, $"There was no type called {path}.");
+
+                return currentType!;
             }
 
             path = path.Substring(index + 1);
         } while (tries++ < 100);
 
-        throw new ArgumentException($"Could not find method {path}.");
+        throw new ArgumentException($"Could not find type {path}.");
     }
 
-    private static HashSet<string> GetCalledMethods(string[]? calledMethods)
+    private static HashSet<string> GetCalledMethods(string[]? calledMethods, string? className = null)
     {
         if (calledMethods != null)
         {
+            bool hasClassName = !string.IsNullOrWhiteSpace(className);
+
             for (int i = 0; i < calledMethods.Length; i++)
             {
+                if (hasClassName && !calledMethods.StartsWith(className))
+                {
+                    calledMethods[i] = $"{className}.{calledMethods[i]}";
+                }
+
                 if (!calledMethods[i].StartsWith(Generator.NAMESPACE))
                 {
-                    calledMethods[i] = Generator.NAMESPACE + "." + calledMethods[i];
+                    calledMethods[i] = $"{Generator.NAMESPACE}.{calledMethods[i]}";
                 }
             }
         }
@@ -232,4 +345,8 @@ internal abstract class GeneratorTests
     }
 
     protected abstract string GetTypeName();
+
+    protected abstract string GetTypeOutline();
+
+    protected abstract string[]? GetShellMethods();
 }

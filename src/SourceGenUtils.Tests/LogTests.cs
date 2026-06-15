@@ -12,6 +12,25 @@ internal class LogTests : GeneratorTests
         return "Log";
     }
 
+    /// <inheritdoc />
+    protected override string GetTypeOutline()
+    {
+        return """
+               [global::System.CodeDom.Compiler.GeneratedCode("Hertzole.SourceGenUtils.Generator", "1.0.0.0")]
+               [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+               [global::System.Diagnostics.CodeAnalysis.SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1035:Do not use APIs banned for analyzers", Justification = "This is only used in debug builds.")]
+               internal static partial class Log
+               {
+               }
+               """;
+    }
+
+    /// <inheritdoc />
+    protected override string[] GetShellMethods()
+    {
+        return ["Info(object)", "Warning(object)", "Error(object)"];
+    }
+
     [Test]
     public void Call_Info()
     {
@@ -67,7 +86,6 @@ internal class LogTests : GeneratorTests
                                     Write($"[INFO] {message}");
                                 #endif
                                 }
-
                                 """;
 
         // Assert
@@ -87,7 +105,6 @@ internal class LogTests : GeneratorTests
                                     Write($"[WARNING] {message}");
                                 #endif
                                 }
-
                                 """;
 
         // Assert
@@ -107,7 +124,6 @@ internal class LogTests : GeneratorTests
                                     Write($"[ERROR] {message}");
                                 #endif
                                 }
-
                                 """;
 
         // Assert
@@ -136,7 +152,36 @@ internal class LogTests : GeneratorTests
                                     }
                                 }
                                 #endif
+                                """;
 
+        // Assert
+        Assert.That(content, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Field_IsInitialized_Content()
+    {
+        // Arrange
+        string content = GetFieldContent("Log.isInitialized", "Log.Write(string)");
+        const string expected = """
+                                #if DEBUG
+                                private static bool isInitialized = false;
+                                #endif
+                                """;
+
+        // Assert
+        Assert.That(content, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Field_Path_Content()
+    {
+        // Arrange
+        string content = GetFieldContent("Log.path", "Log.Write(string)");
+        const string expected = """
+                                #if DEBUG
+                                private static readonly string path = global::System.IO.Path.GetFullPath(global::System.IO.Path.Combine(global::System.IO.Directory.GetCurrentDirectory(), global::System.Reflection.Assembly.GetCallingAssembly().GetName().Name + ".log"));
+                                #endif
                                 """;
 
         // Assert

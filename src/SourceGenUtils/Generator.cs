@@ -44,6 +44,9 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             CollectType(typeKvp.Key, typeKvp.Value, AllMethodNames, typesPerName);
         }
+
+        AllMethodNames.TrimExcess();
+        typesPerName.Clear();
     }
 
     private static void CollectType(string typeName,

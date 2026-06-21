@@ -11,6 +11,7 @@ partial class Generator
     {
         const string return_this = "return this;";
         const string new_line = "builder.Append('\\n');";
+        const string write_indent = CODE_WRITER + ".WriteIndentIfNeeded()";
         return new TypeSource
         {
             Signature = "internal sealed partial class CodeWriter",
@@ -34,7 +35,7 @@ partial class Generator
                 ["shouldWriteIndent"] = new FieldSource
                 {
                     Signature = "private bool shouldWriteIndent = false;",
-                    RequiredDependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"]
+                    RequiredDependencies = [write_indent]
                 },
                 ["hasNamespace"] = new FieldSource
                 {
@@ -85,7 +86,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(string value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -99,7 +100,7 @@ partial class Generator
                         writer.AppendLine("builder.Append(value.ToString());");
                         writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -108,7 +109,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -122,7 +123,7 @@ partial class Generator
                         writer.AppendLine("builder.Append(value, repeatCount);");
                         writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -131,7 +132,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char[] value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -145,7 +146,7 @@ partial class Generator
                         writer.AppendLine("builder.Append(value, startIndex, charCount);");
                         writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -154,7 +155,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(byte value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -163,7 +164,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(sbyte value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -172,7 +173,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(short value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -181,7 +182,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ushort value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -190,7 +191,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(int value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -199,7 +200,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(uint value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -208,7 +209,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(long value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -217,7 +218,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ulong value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -226,7 +227,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(float value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -235,7 +236,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(double value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -244,7 +245,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(decimal value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -253,7 +254,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(bool value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -262,7 +263,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(object value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -284,7 +285,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(string value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -300,7 +301,7 @@ partial class Generator
                         writer.AppendLine("shouldWriteIndent = true;");
                         writer.AppendLine(return_this);
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -309,7 +310,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(char value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -325,7 +326,7 @@ partial class Generator
                         writer.AppendLine("shouldWriteIndent = true;");
                         writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -341,7 +342,7 @@ partial class Generator
                         writer.AppendLine("shouldWriteIndent = true;");
                         writer.AppendLine("return this;");
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -350,7 +351,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(byte value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -359,7 +360,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(sbyte value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -368,7 +369,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(short value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -377,7 +378,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ushort value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -386,7 +387,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(int value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -395,7 +396,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(uint value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -404,7 +405,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(long value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -413,7 +414,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ulong value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -422,7 +423,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(float value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -431,7 +432,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(double value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -440,7 +441,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(decimal value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -449,7 +450,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(bool value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -458,7 +459,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(object value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -512,7 +513,7 @@ partial class Generator
                             writer.AppendLine("hasWrittenNamespace = false;");
                         }
 
-                        if (ctx.HasCalledMethod(CODE_WRITER + ".WriteIndentIfNeeded()"))
+                        if (ctx.HasCalledMethod(write_indent))
                         {
                             writer.AppendLine("shouldWriteIndent = true;");
                         }
@@ -537,7 +538,7 @@ partial class Generator
                         writer.AppendLine("shouldWriteIndent = true;");
                         writer.AppendLine(return_this);
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource
@@ -552,7 +553,7 @@ partial class Generator
                         writer.AppendLine("shouldWriteIndent = true;");
                         writer.AppendLine(return_this);
                     },
-                    Dependencies = [CODE_WRITER + ".WriteIndentIfNeeded()"],
+                    Dependencies = [write_indent],
                     EmptyStub = return_this
                 },
                 new MethodSource

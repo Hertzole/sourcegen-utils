@@ -22,7 +22,13 @@ public sealed partial class Generator : IIncrementalGenerator
         ["Log"] = CreateLog(),
         ["VariableNames"] = CreateVariableNames(),
         ["EquatableArray"] = CreateEquatableArray(),
-        ["SyntaxExtensions"] = CreateSyntaxExtensions()
+        ["SyntaxExtensions"] = CreateSyntaxExtensions(),
+        ["PoolScope"] = CreatePoolScope(),
+        ["ObjectPool"] = CreateObjectPool(),
+        ["ListPool"] = CreateListPool(),
+        ["HashSetPool"] = CreateHashSetPool(),
+        ["StackPool"] = CreateStackPool(),
+        ["QueuePool"] = CreateQueuePool()
     };
 
     private static readonly HashSet<string> AllMethodNames;
@@ -390,6 +396,19 @@ public sealed partial class Generator : IIncrementalGenerator
             writer.AppendLine($"// {calledMethod}");
         }
 
+        writer.AppendLine("\n// Types:");
+        foreach (KeyValuePair<string, TypeSource> pair in TypesToGenerate)
+        {
+            writer.AppendLine($"//     {NAMESPACE}.{pair.Key}");
+            if (pair.Value.Methods != null)
+            {
+                foreach (MethodSource method in pair.Value.Methods)
+                {
+                    writer.AppendLine($"//         {NAMESPACE}.{pair.Key}.{method.Name}({method.ParameterTypesKey})");
+                }
+            }
+        }
+
         context.AddSource("Debug.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
 #endif
     }
@@ -414,6 +433,8 @@ public sealed partial class Generator : IIncrementalGenerator
         writer.AppendLine("{");
         writer.Indent++;
 
+        bool needsSpace = false;
+
         if (typeSource.Fields != null)
         {
             bool writtenAnyFields = false;
@@ -428,12 +449,18 @@ public sealed partial class Generator : IIncrementalGenerator
 
             if (writtenAnyFields)
             {
-                writer.AppendLine();
+                needsSpace = true;
             }
         }
 
         if (typeSource.Properties != null)
         {
+            if (needsSpace)
+            {
+                writer.AppendLine();
+                needsSpace = false;
+            }
+
             bool writtenAnyProperties = false;
 
             foreach (PropertySource prop in typeSource.Properties.Values)
@@ -446,12 +473,18 @@ public sealed partial class Generator : IIncrementalGenerator
 
             if (writtenAnyProperties)
             {
-                writer.AppendLine();
+                needsSpace = true;
             }
         }
 
         if (methods != null && methods.Length > 0)
         {
+            if (needsSpace)
+            {
+                writer.AppendLine();
+                needsSpace = false;
+            }
+
             bool firstMethod = true;
 
             foreach (MethodSource method in methods)
@@ -468,6 +501,8 @@ public sealed partial class Generator : IIncrementalGenerator
                 string fullName = $"{typeName}.{method.Name}({method.ParameterTypesKey})";
 
                 AppendMethod(writer, method, fullName, in implementationContext);
+
+                needsSpace = true;
             }
         }
 
@@ -475,10 +510,14 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             foreach (KeyValuePair<string, TypeSource> typeKvp in typeSource.Types)
             {
-                writer.AppendLine();
+                if (needsSpace)
+                {
+                    writer.AppendLine();
+                }
 
                 implementationContext.CancellationToken.ThrowIfCancellationRequested();
                 AppendType(typeKvp.Value, $"{typeName}.{typeKvp.Key}", writer, in implementationContext);
+                needsSpace = true;
             }
         }
 

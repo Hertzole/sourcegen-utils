@@ -111,6 +111,19 @@ internal abstract class GeneratorTests
         AssertGenerateTypeHasContent(expected, result);
     }
 
+    public void CallTest(Action<CodeWriter> writeCall, MetadataReference[] additionalReferences, params string[] expectedCalledMethods)
+    {
+        // Arrange
+        string source = GenerateCall(writeCall);
+        string expected = GetTypeContent(expectedCalledMethods);
+
+        // Act
+        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>([source], additionalReferences);
+
+        // Assert
+        AssertGenerateTypeHasContent(expected, result);
+    }
+
     public void EmptyContentTest(string path, string expected)
     {
         // Arrange
@@ -152,7 +165,8 @@ internal abstract class GeneratorTests
         return AssertGeneratedOutput<T>([source]);
     }
 
-    public static GeneratorDriverRunResult AssertGeneratedOutput<T>(string[]? sources = null) where T : IIncrementalGenerator, new()
+    public static GeneratorDriverRunResult AssertGeneratedOutput<T>(string[]? sources = null, MetadataReference[]? additionalReferences = null)
+        where T : IIncrementalGenerator, new()
     {
         T generator = new T();
         CSharpGeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
@@ -172,8 +186,18 @@ internal abstract class GeneratorTests
             sourceTrees = Array.Empty<SyntaxTree>();
         }
 
+        List<MetadataReference> references = new List<MetadataReference>
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
+        };
+
+        if (additionalReferences != null)
+        {
+            references.AddRange(additionalReferences);
+        }
+
         CSharpCompilation compilation =
-            CSharpCompilation.Create("Test", sourceTrees, [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+            CSharpCompilation.Create("Test", sourceTrees, references);
 
         GeneratorDriverRunResult runResult = driver.RunGenerators(compilation).GetRunResult();
 

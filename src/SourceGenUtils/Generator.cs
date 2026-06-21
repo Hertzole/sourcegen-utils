@@ -212,7 +212,8 @@ public sealed partial class Generator : IIncrementalGenerator
                                {
                                    // Build the string manually using the original definition to avoid generic type
                                    // arguments (e.g. EquatableArray<char>) in the containing type.
-                                   IMethodSymbol originalDef = methodSymbol.OriginalDefinition;
+                                   // Use ReducedFrom for reduced extension methods to include the 'this' parameter.
+                                   IMethodSymbol originalDef = methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition;
                                    string paramTypes = string.Join(", ", originalDef.Parameters.Select(p => p.Type.ToDisplayString()));
                                    return $"{cleanContainingType}.{methodName}({paramTypes})";
                                }

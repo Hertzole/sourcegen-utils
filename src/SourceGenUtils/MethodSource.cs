@@ -119,8 +119,14 @@ internal sealed class MethodSource : BaseSource
 
     private static string ExtractTypeName(string paramSegment)
     {
-        // "string value" → "string"
-        // "global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol" → "Microsoft.CodeAnalysis.INamespaceSymbol?"
+        // Strip default value (e.g. " = default")
+        int equalsIndex = paramSegment.IndexOf('=');
+        if (equalsIndex >= 0)
+        {
+            paramSegment = paramSegment.Substring(0, equalsIndex).TrimEnd();
+        }
+
+        // Extract type part: everything before the last space (parameter name)
         int lastSpace = paramSegment.LastIndexOf(' ');
         string typePart;
         if (lastSpace >= 0)
@@ -130,6 +136,28 @@ internal sealed class MethodSource : BaseSource
         else
         {
             typePart = paramSegment.Trim();
+        }
+
+        // Strip parameter modifiers
+        if (typePart.StartsWith("this ", StringComparison.Ordinal))
+        {
+            typePart = typePart.Substring(5);
+        }
+        else if (typePart.StartsWith("out ", StringComparison.Ordinal))
+        {
+            typePart = typePart.Substring(4);
+        }
+        else if (typePart.StartsWith("ref ", StringComparison.Ordinal))
+        {
+            typePart = typePart.Substring(4);
+        }
+        else if (typePart.StartsWith("in ", StringComparison.Ordinal))
+        {
+            typePart = typePart.Substring(3);
+        }
+        else if (typePart.StartsWith("params ", StringComparison.Ordinal))
+        {
+            typePart = typePart.Substring(7);
         }
 
         if (typePart.StartsWith("global::", StringComparison.Ordinal))

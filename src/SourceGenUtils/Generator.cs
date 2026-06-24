@@ -28,7 +28,8 @@ public sealed partial class Generator : IIncrementalGenerator
         ["ListPool"] = CreateListPool(),
         ["HashSetPool"] = CreateHashSetPool(),
         ["StackPool"] = CreateStackPool(),
-        ["QueuePool"] = CreateQueuePool()
+        ["QueuePool"] = CreateQueuePool(),
+        ["StringBuilderPool"] = CreateStringBuilderPool()
     };
 
     private static readonly HashSet<string> AllMethodNames;

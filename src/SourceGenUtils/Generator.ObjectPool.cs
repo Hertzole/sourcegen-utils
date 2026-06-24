@@ -46,7 +46,7 @@ partial class Generator
                     Name = "ObjectPool",
                     Signature =
                         "public partial ObjectPool(global::System.Func<T> create, global::System.Action<T>? onGet = null, global::System.Action<T>? onReturn = null, global::System.Action<T>? onDispose = null)",
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("this.create = create;");
                         writer.AppendLine("this.onGet = onGet;");
@@ -60,7 +60,7 @@ partial class Generator
                     Name = "Get",
                     Signature = "public partial T Get()",
                     EmptyStub = "return default;",
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("T result;");
                         writer.AppendLine("if (pool.Count > 0)");
@@ -85,7 +85,7 @@ partial class Generator
                     Name = "Get",
                     Signature = "public partial global::" + NAMESPACE + ".PoolScope<T> Get(out T item)",
                     EmptyStub = "item = default; return default;",
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("item = Get();");
                         writer.AppendLine("return new global::" + NAMESPACE + ".PoolScope<T>(item, this);");
@@ -96,7 +96,7 @@ partial class Generator
                 {
                     Name = "Return",
                     Signature = "public partial void Return(T value)",
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("onReturn?.Invoke(value);");
                         writer.AppendLine("pool.Push(value);");
@@ -106,7 +106,7 @@ partial class Generator
                 {
                     Name = "Dispose",
                     Signature = "public partial void Dispose()",
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("global::System.GC.SuppressFinalize(this);");
                         writer.AppendLine("if (onDispose != null)");
@@ -127,7 +127,7 @@ partial class Generator
                 {
                     Name = "Finalizer",
                     Signature = "~ObjectPool()",
-                    Implementation = (writer, in context) => { writer.AppendLine("Dispose();"); },
+                    Implementation = (writer, in _) => { writer.AppendLine("Dispose();"); },
                     AlwaysWrite = true,
                     SkipPartial = true
                 }

@@ -47,46 +47,30 @@ partial class Generator
                 {
                     Name = "Get",
                     Signature = $"public static partial {globalCollection} Get()",
-                    Implementation = (writer, in context) => { writer.AppendLine("return pool.Get();"); },
+                    Implementation = (writer, in _) => { writer.AppendLine("return pool.Get();"); },
                     EmptyStub = "return null!;",
-                    Dependencies =
-                    [
-                        $"{collectionPool}.OnCreate()",
-                        $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
-                        $"{OBJECT_POOL}.Get()"
-                    ]
+                    Dependencies = CreatePoolGetDependencies(collectionPool)
                 },
                 new MethodSource
                 {
                     Name = "Get",
                     Signature = $"public static partial global::{NAMESPACE}.PoolScope<{globalCollection}> Get(out {globalCollection} item)",
-                    Implementation = (writer, in context) => { writer.AppendLine("return pool.Get(out item);"); },
+                    Implementation = (writer, in _) => { writer.AppendLine("return pool.Get(out item);"); },
                     EmptyStub = "item = null!; return default;",
-                    Dependencies =
-                    [
-                        $"{collectionPool}.OnCreate()",
-                        $"{collectionPool}.OnReturn({collection})",
-                        $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
-                        $"{OBJECT_POOL}.Get(T)"
-                    ]
+                    Dependencies = CreatePoolGetOutDependencies(collectionPool, collection)
                 },
                 new MethodSource
                 {
                     Name = "Return",
                     Signature = $"public static partial void Return({globalCollection} item)",
-                    Implementation = (writer, in context) => { writer.AppendLine("pool.Return(item);"); },
-                    Dependencies =
-                    [
-                        $"{collectionPool}.OnReturn({collection})",
-                        $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
-                        $"{OBJECT_POOL}.Return(T)"
-                    ]
+                    Implementation = (writer, in _) => { writer.AppendLine("pool.Return(item);"); },
+                    Dependencies = CreatePoolReturnDependencies(collectionPool, collection)
                 },
                 new MethodSource
                 {
                     Name = "OnCreate",
                     Signature = $"private static {globalCollection} OnCreate()",
-                    Implementation = (writer, in context) => { writer.AppendLine($"return new {globalCollection}();"); },
+                    Implementation = (writer, in _) => { writer.AppendLine($"return new {globalCollection}();"); },
                     SkipPartial = true,
                     EmptyStub = "return null!;"
                 },
@@ -94,10 +78,41 @@ partial class Generator
                 {
                     Name = "OnReturn",
                     Signature = $"private static void OnReturn({globalCollection} item)",
-                    Implementation = (writer, in context) => { writer.AppendLine("item.Clear();"); },
+                    Implementation = (writer, in _) => { writer.AppendLine("item.Clear();"); },
                     SkipPartial = true
                 }
             ]
         };
+    }
+
+    private static string[] CreatePoolGetDependencies(string poolName)
+    {
+        return
+        [
+            $"{poolName}.OnCreate()",
+            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
+            $"{OBJECT_POOL}.Get()"
+        ];
+    }
+
+    private static string[] CreatePoolGetOutDependencies(string poolName, string collection)
+    {
+        return
+        [
+            $"{poolName}.OnCreate()",
+            $"{poolName}.OnReturn({collection})",
+            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
+            $"{OBJECT_POOL}.Get(T)"
+        ];
+    }
+
+    private static string[] CreatePoolReturnDependencies(string poolName, string collection)
+    {
+        return
+        [
+            $"{poolName}.OnReturn({collection})",
+            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
+            $"{OBJECT_POOL}.Return(T)"
+        ];
     }
 }

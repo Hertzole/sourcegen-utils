@@ -25,9 +25,12 @@ internal class VariableNameTests : GeneratorTests
     {
         return
         [
-            "NicifyVariableName(System.ReadOnlySpan<char>)",
-            "RemovePrefix(System.ReadOnlySpan<char>)",
-            "UppercaseStart(System.ReadOnlySpan<char>)",
+            "NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)",
+            "NicifyVariableName(string)",
+            "RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
+            "RemovePrefix(string)",
+            "UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)",
+            "UppercaseStart(string)",
             "StartsWithOn(System.ReadOnlySpan<char>)"
         ];
     }
@@ -37,12 +40,12 @@ internal class VariableNameTests : GeneratorTests
     {
         string[] expectedMethods =
         [
-            "VariableNames.NicifyVariableName(System.ReadOnlySpan<char>)",
-            "VariableNames.RemovePrefix(System.ReadOnlySpan<char>)",
-            "VariableNames.UppercaseStart(System.ReadOnlySpan<char>)"
+            "VariableNames.NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)",
+            "VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
+            "VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)"
         ];
 
-        CallTest(writer => { writer.AppendLine("VariableNames.NicifyVariableName(\"hello\");"); }, expectedMethods);
+        CallTest(writer => { writer.AppendLine("VariableNames.NicifyVariableName(\"hello\", new char[64]);"); }, expectedMethods);
     }
 
     [Test]
@@ -50,10 +53,10 @@ internal class VariableNameTests : GeneratorTests
     {
         string[] expectedMethods =
         [
-            "VariableNames.RemovePrefix(System.ReadOnlySpan<char>)"
+            "VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)"
         ];
 
-        CallTest(writer => { writer.AppendLine("VariableNames.RemovePrefix(\"hello\");"); }, expectedMethods);
+        CallTest(writer => { writer.AppendLine("VariableNames.RemovePrefix(\"hello\", new char[64]);"); }, expectedMethods);
     }
 
     [Test]
@@ -61,10 +64,10 @@ internal class VariableNameTests : GeneratorTests
     {
         string[] expectedMethods =
         [
-            "VariableNames.UppercaseStart(System.ReadOnlySpan<char>)"
+            "VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)"
         ];
 
-        CallTest(writer => { writer.AppendLine("VariableNames.UppercaseStart(\"hello\");"); }, expectedMethods);
+        CallTest(writer => { writer.AppendLine("VariableNames.UppercaseStart(\"hello\", new char[64]);"); }, expectedMethods);
     }
 
     [Test]
@@ -82,13 +85,13 @@ internal class VariableNameTests : GeneratorTests
     public void NicifyVariableName_Content()
     {
         // Arrange
-        string content = GetMethodContent("VariableNames.NicifyVariableName(System.ReadOnlySpan<char>)");
+        string content = GetMethodContent("VariableNames.NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)");
         const string expected = """
-                                public static partial global::System.ReadOnlySpan<char> NicifyVariableName(global::System.ReadOnlySpan<char> value)
+                                public static partial int NicifyVariableName(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)
                                 {
-                                    value = RemovePrefix(value);
-                                    value = UppercaseStart(value);
-                                    return value;
+                                    int written = RemovePrefix(value, destination);
+                                    UppercaseStart(destination.Slice(0, written), destination);
+                                    return written;
                                 }
                                 """;
 
@@ -100,23 +103,26 @@ internal class VariableNameTests : GeneratorTests
     public void RemovePrefix_Content()
     {
         // Arrange
-        string content = GetMethodContent("VariableNames.RemovePrefix(System.ReadOnlySpan<char>)");
+        string content = GetMethodContent("VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)");
         const string expected = """
-                                public static partial global::System.ReadOnlySpan<char> RemovePrefix(global::System.ReadOnlySpan<char> value)
+                                public static partial int RemovePrefix(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)
                                 {
                                     // Check for prefixes like 'm_'.
                                     if (value.Length > 2 && value[1] == '_')
                                     {
-                                        return value.Slice(2);
+                                        value.Slice(2).CopyTo(destination);
+                                        return value.Length - 2;
                                     }
 
                                     // Check for names that start with '_' or 'k' (konstants).
                                     if (value.Length > 1 && (value[0] == '_' || value[0] == 'k'))
                                     {
-                                        return value.Slice(1);
+                                        value.Slice(1).CopyTo(destination);
+                                        return value.Length - 1;
                                     }
 
-                                    return value;
+                                    value.CopyTo(destination);
+                                    return value.Length;
                                 }
                                 """;
 
@@ -128,32 +134,26 @@ internal class VariableNameTests : GeneratorTests
     public void UppercaseStart_Content()
     {
         // Arrange
-        string content = GetMethodContent("VariableNames.UppercaseStart(System.ReadOnlySpan<char>)");
+        string content = GetMethodContent("VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)");
         const string expected = """
-                                public static partial global::System.ReadOnlySpan<char> UppercaseStart(global::System.ReadOnlySpan<char> value)
+                                public static partial void UppercaseStart(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)
                                 {
                                     if (value.Length == 0)
                                     {
-                                        return value;
+                                        // Empty string.
+                                        value.CopyTo(destination);
+                                        return;
                                     }
 
                                     if (value[0] == char.ToUpperInvariant(value[0]))
                                     {
                                         // Already uppercase.
-                                        return value;
+                                        value.CopyTo(destination);
+                                        return;
                                     }
 
-                                    char[] newValue = global::System.Buffers.ArrayPool<char>.Shared.Rent(value.Length);
-                                    try
-                                    {
-                                        value.CopyTo(newValue);
-                                        newValue[0] = char.ToUpperInvariant(value[0]);
-                                        return new System.ReadOnlySpan<char>(newValue, 0, value.Length);
-                                    }
-                                    finally
-                                    {
-                                        global::System.Buffers.ArrayPool<char>.Shared.Return(newValue);
-                                    }
+                                    value.CopyTo(destination);
+                                    destination[0] = char.ToUpperInvariant(value[0]);
                                 }
                                 """;
 
@@ -184,14 +184,14 @@ internal class VariableNameTests : GeneratorTests
     {
         // Arrange
         const string expected = """
-                                public static partial global::System.ReadOnlySpan<char> NicifyVariableName(global::System.ReadOnlySpan<char> value)
+                                public static partial int NicifyVariableName(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)
                                 {
-                                    return value;
+                                    return 0;
                                 }
                                 """;
 
         // Assert
-        EmptyContentTest("VariableNames.NicifyVariableName(System.ReadOnlySpan<char>)", expected);
+        EmptyContentTest("VariableNames.NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)", expected);
     }
 
     [Test]
@@ -199,14 +199,14 @@ internal class VariableNameTests : GeneratorTests
     {
         // Arrange
         const string expected = """
-                                public static partial global::System.ReadOnlySpan<char> RemovePrefix(global::System.ReadOnlySpan<char> value)
+                                public static partial int RemovePrefix(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)
                                 {
-                                    return value;
+                                    return 0;
                                 }
                                 """;
 
         // Assert
-        EmptyContentTest("VariableNames.RemovePrefix(System.ReadOnlySpan<char>)", expected);
+        EmptyContentTest("VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)", expected);
     }
 
     [Test]
@@ -214,14 +214,13 @@ internal class VariableNameTests : GeneratorTests
     {
         // Arrange
         const string expected = """
-                                public static partial global::System.ReadOnlySpan<char> UppercaseStart(global::System.ReadOnlySpan<char> value)
+                                public static partial void UppercaseStart(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)
                                 {
-                                    return value;
                                 }
                                 """;
 
         // Assert
-        EmptyContentTest("VariableNames.UppercaseStart(System.ReadOnlySpan<char>)", expected);
+        EmptyContentTest("VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)", expected);
     }
 
     [Test]

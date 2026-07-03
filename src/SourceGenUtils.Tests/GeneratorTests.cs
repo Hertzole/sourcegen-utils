@@ -98,7 +98,7 @@ internal abstract class GeneratorTests
         return GetTypeContent(Generator.TypesToGenerate[GetTypeName()], GetTypeName(), calledMethods);
     }
 
-    public void CallTest(Action<CodeWriter> writeCall, params string[] expectedCalledMethods)
+    public void AssertCallingMethodCreatesMethods(Action<CodeWriter> writeCall, params string[] expectedCalledMethods)
     {
         // Arrange
         string source = GenerateCall(writeCall);
@@ -111,7 +111,7 @@ internal abstract class GeneratorTests
         AssertGenerateTypeHasContent(expected, result);
     }
 
-    public void CallTest(Action<CodeWriter> writeCall, MetadataReference[] additionalReferences, params string[] expectedCalledMethods)
+    public void AssertCallingMethodCreatesMethods(Action<CodeWriter> writeCall, MetadataReference[] additionalReferences, params string[] expectedCalledMethods)
     {
         // Arrange
         string source = GenerateCall(writeCall);

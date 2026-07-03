@@ -45,7 +45,7 @@ internal class VariableNameTests : GeneratorTests
             "VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)"
         ];
 
-        CallTest(writer => { writer.AppendLine("VariableNames.NicifyVariableName(\"hello\", new char[64]);"); }, expectedMethods);
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("VariableNames.NicifyVariableName(\"hello\", new char[64]);"); }, expectedMethods);
     }
 
     [Test]
@@ -56,7 +56,7 @@ internal class VariableNameTests : GeneratorTests
             "VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)"
         ];
 
-        CallTest(writer => { writer.AppendLine("VariableNames.RemovePrefix(\"hello\", new char[64]);"); }, expectedMethods);
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("VariableNames.RemovePrefix(\"hello\", new char[64]);"); }, expectedMethods);
     }
 
     [Test]
@@ -67,7 +67,7 @@ internal class VariableNameTests : GeneratorTests
             "VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)"
         ];
 
-        CallTest(writer => { writer.AppendLine("VariableNames.UppercaseStart(\"hello\", new char[64]);"); }, expectedMethods);
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("VariableNames.UppercaseStart(\"hello\", new char[64]);"); }, expectedMethods);
     }
 
     [Test]
@@ -78,7 +78,7 @@ internal class VariableNameTests : GeneratorTests
             "VariableNames.StartsWithOn(System.ReadOnlySpan<char>)"
         ];
 
-        CallTest(writer => { writer.AppendLine("VariableNames.StartsWithOn(\"hello\");"); }, expectedMethods);
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("VariableNames.StartsWithOn(\"hello\");"); }, expectedMethods);
     }
 
     [Test]

@@ -4,12 +4,13 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string STRING_BUILDER_POOL = $"{NAMESPACE}.StringBuilderPool";
+
     private static TypeSource CreateStringBuilderPool()
     {
         const string builder = "System.Text.StringBuilder";
         const string global_builder = $"global::{builder}";
         const string global_pool = $"global::{OBJECT_POOL}<{global_builder}>";
-        const string builder_pool = $"{NAMESPACE}.StringBuilderPool";
 
         return new TypeSource
         {
@@ -29,7 +30,7 @@ partial class Generator
                     Signature = $"public static partial {global_builder} Get()",
                     Implementation = (writer, in _) => { writer.AppendLine("return pool.Get();"); },
                     EmptyStub = "return null!;",
-                    Dependencies = CreatePoolGetDependencies(builder_pool)
+                    Dependencies = CreatePoolGetDependencies(STRING_BUILDER_POOL)
                 },
                 new MethodSource
                 {
@@ -37,14 +38,14 @@ partial class Generator
                     Signature = $"public static partial global::{NAMESPACE}.PoolScope<{global_builder}> Get(out {global_builder} item)",
                     Implementation = (writer, in _) => { writer.AppendLine("return pool.Get(out item);"); },
                     EmptyStub = "item = null!; return default;",
-                    Dependencies = CreatePoolGetOutDependencies(builder_pool, builder)
+                    Dependencies = CreatePoolGetOutDependencies(STRING_BUILDER_POOL, builder)
                 },
                 new MethodSource
                 {
                     Name = "Return",
                     Signature = $"public static partial void Return({global_builder} item)",
                     Implementation = (writer, in _) => { writer.AppendLine("pool.Return(item);"); },
-                    Dependencies = CreatePoolReturnDependencies(builder_pool, builder)
+                    Dependencies = CreatePoolReturnDependencies(STRING_BUILDER_POOL, builder)
                 },
                 new MethodSource
                 {

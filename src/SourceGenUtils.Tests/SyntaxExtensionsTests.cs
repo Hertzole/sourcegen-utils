@@ -146,7 +146,7 @@ internal class SyntaxExtensionsTests : GeneratorTests
             MetadataReference.CreateFromFile(typeof(CancellationToken).Assembly.Location)
         ];
 
-        CallTest(writer =>
+        AssertCallingMethodCreatesMethods(writer =>
         {
             writer.AppendLine("using Hertzole.SourceGen;");
             writer.AppendLine("using Microsoft.CodeAnalysis.CSharp.Syntax;");
@@ -178,7 +178,7 @@ internal class SyntaxExtensionsTests : GeneratorTests
             MetadataReference.CreateFromFile(typeof(CancellationToken).Assembly.Location)
         ];
 
-        CallTest(writer =>
+        AssertCallingMethodCreatesMethods(writer =>
         {
             writer.AppendLine("using Hertzole.SourceGen;");
             writer.AppendLine("using Microsoft.CodeAnalysis;");

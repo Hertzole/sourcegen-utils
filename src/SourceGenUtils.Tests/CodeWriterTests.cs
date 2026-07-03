@@ -15,7 +15,7 @@ internal class CodeWriterTests : GeneratorTests
     protected override string GetTypeOutline()
     {
         return """
-               internal sealed partial class CodeWriter
+               internal sealed partial class CodeWriter : global::System.IDisposable
                {
                }
                """;
@@ -26,6 +26,7 @@ internal class CodeWriterTests : GeneratorTests
     {
         return
         [
+            "CodeWriter()",
             "AppendNullable()",
             "Append(string)",
             "Append(System.ReadOnlySpan<char>)",
@@ -73,6 +74,7 @@ internal class CodeWriterTests : GeneratorTests
             "AppendPreprocessorSymbol(string?)",
             "Clear()",
             "ToString()",
+            "Dispose()",
             "WithBlock()",
             "WithIndent(int)"
         ];
@@ -84,28 +86,55 @@ internal class CodeWriterTests : GeneratorTests
         string[] expectedMethods =
         [
             "CodeWriter.Append(string)",
-            "CodeWriter.WriteIndentIfNeeded()"
+            "CodeWriter.WriteIndentIfNeeded()",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()",
+            "CodeWriter.Dispose()"
         ];
 
-        CallTest(writer => { writer.AppendLine("new CodeWriter().Append(\"hello\");"); }, expectedMethods);
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("new CodeWriter().Append(\"hello\");"); }, expectedMethods);
     }
 
     [Test]
     public void Call_AppendLine()
     {
-        CallTest(writer => { writer.AppendLine("new CodeWriter().AppendLine();"); }, "CodeWriter.AppendLine()");
+        string[] expectedMethods =
+        [
+            "CodeWriter.AppendLine()",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()",
+            "CodeWriter.Dispose()"
+        ];
+
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("new CodeWriter().AppendLine();"); }, expectedMethods);
     }
 
     [Test]
     public void Call_AppendNullable()
     {
-        CallTest(writer => { writer.AppendLine("new CodeWriter().AppendNullable();"); }, "CodeWriter.AppendNullable()");
+        string[] expectedMethods =
+        [
+            "CodeWriter.AppendNullable()",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()",
+            "CodeWriter.Dispose()"
+        ];
+
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("new CodeWriter().AppendNullable();"); }, expectedMethods);
     }
 
     [Test]
     public void Call_AppendNamespace()
     {
-        CallTest(writer => { writer.AppendLine("new CodeWriter().AppendNamespace(\"Test\");"); }, "CodeWriter.AppendNamespace(string)");
+        string[] expectedMethods =
+        [
+            "CodeWriter.AppendNamespace(string)",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()",
+            "CodeWriter.Dispose()"
+        ];
+
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("new CodeWriter().AppendNamespace(\"Test\");"); }, expectedMethods);
     }
 
     [Test]
@@ -115,10 +144,13 @@ internal class CodeWriterTests : GeneratorTests
         [
             "CodeWriter.Append(string)",
             "CodeWriter.ToString()",
-            "CodeWriter.WriteIndentIfNeeded()"
+            "CodeWriter.WriteIndentIfNeeded()",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()",
+            "CodeWriter.Dispose()"
         ];
 
-        CallTest(writer =>
+        AssertCallingMethodCreatesMethods(writer =>
         {
             writer.AppendLine("var cw = new CodeWriter();");
             writer.AppendLine("cw.Append(\"hello\");");
@@ -133,10 +165,13 @@ internal class CodeWriterTests : GeneratorTests
         [
             "CodeWriter.Append(string)",
             "CodeWriter.Clear()",
-            "CodeWriter.WriteIndentIfNeeded()"
+            "CodeWriter.WriteIndentIfNeeded()",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()",
+            "CodeWriter.Dispose()"
         ];
 
-        CallTest(writer =>
+        AssertCallingMethodCreatesMethods(writer =>
         {
             writer.AppendLine("var cw = new CodeWriter();");
             writer.AppendLine("cw.Append(\"hello\");");
@@ -152,6 +187,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendNullable()
                                 {
+                                    ThrowIfDisposed();
                                     builder.Append("#nullable enable");
                                     builder.Append('\n');
                                     return this;
@@ -169,6 +205,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendNullable()
                                 {
+                                    ThrowIfDisposed();
                                     builder.Append("#nullable enable");
                                     builder.Append('\n');
                                     isNullable = true;
@@ -187,6 +224,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Append(string value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     return this;
@@ -204,6 +242,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Append(global::System.ReadOnlySpan<char> value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value.ToString());
                                     return this;
@@ -221,6 +260,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Append(char value, int repeatCount)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value, repeatCount);
                                     return this;
@@ -238,6 +278,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Append(char[] value, int startIndex, int charCount)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value, startIndex, charCount);
                                     return this;
@@ -248,13 +289,31 @@ internal class CodeWriterTests : GeneratorTests
     }
 
     [Test]
-    public void AppendLine_Content()
+    public void AppendLine_Content_NoIndent()
     {
         string content = GetMethodContent("CodeWriter.AppendLine()");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine()
                                 {
+                                    ThrowIfDisposed();
+                                    builder.Append('\n');
+                                    return this;
+                                }
+                                """;
+
+        Assert.That(content, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void AppendLine_Content_WithIndent()
+    {
+        string content = GetMethodContent("CodeWriter.AppendLine()", "CodeWriter.WriteIndentIfNeeded()");
+        const string expected = """
+                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine()
+                                {
+                                    ThrowIfDisposed();
                                     builder.Append('\n');
                                     shouldWriteIndent = true;
                                     return this;
@@ -272,6 +331,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(string value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -291,6 +351,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(global::System.ReadOnlySpan<char> value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value.ToString());
                                     builder.Append('\n');
@@ -310,6 +371,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(char value, int repeatCount)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value, repeatCount);
                                     builder.Append('\n');
@@ -329,6 +391,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(char[] value, int startIndex, int charCount)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value, startIndex, charCount);
                                     builder.Append('\n');
@@ -348,6 +411,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(char value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -367,6 +431,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(int value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -386,6 +451,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(object value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -405,6 +471,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(byte value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -424,6 +491,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(sbyte value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -443,6 +511,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(short value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -462,6 +531,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(ushort value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -481,6 +551,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(uint value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -500,6 +571,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(long value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -519,6 +591,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(ulong value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -538,6 +611,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(float value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -557,6 +631,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(double value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -576,6 +651,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(decimal value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -595,6 +671,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(bool value)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append(value);
                                     builder.Append('\n');
@@ -614,6 +691,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendNamespace(global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol)
                                 {
+                                    ThrowIfDisposed();
                                     if (symbol == null || symbol.IsGlobalNamespace)
                                     {
                                         return this;
@@ -639,6 +717,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendNamespace(string value)
                                 {
+                                    ThrowIfDisposed();
                                     if (string.IsNullOrEmpty(value))
                                     {
                                         return this;
@@ -664,6 +743,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendNamespace(string value)
                                 {
+                                    ThrowIfDisposed();
                                     if (string.IsNullOrEmpty(value))
                                     {
                                         return this;
@@ -690,6 +770,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendNamespace(string value)
                                 {
+                                    ThrowIfDisposed();
                                     if (string.IsNullOrEmpty(value))
                                     {
                                         return this;
@@ -716,6 +797,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendNamespace(string value)
                                 {
+                                    ThrowIfDisposed();
                                     if (string.IsNullOrEmpty(value))
                                     {
                                         return this;
@@ -743,6 +825,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendGeneratedCodeAttribute(string generator, string version)
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append("[global::System.CodeDom.Compiler.GeneratedCode(\"");
                                     builder.Append(generator);
@@ -765,6 +848,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendExcludeFromCodeCoverageAttribute()
                                 {
+                                    ThrowIfDisposed();
                                     WriteIndentIfNeeded();
                                     builder.Append("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\n");
                                     shouldWriteIndent = true;
@@ -783,6 +867,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendConditionalSymbol(string? condition)
                                 {
+                                    ThrowIfDisposed();
                                     if (string.IsNullOrWhiteSpace(condition))
                                     {
                                         return this;
@@ -809,6 +894,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendPreprocessorSymbol(string? value)
                                 {
+                                    ThrowIfDisposed();
                                     if (string.IsNullOrWhiteSpace(value))
                                     {
                                         return this;
@@ -839,6 +925,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Clear()
                                 {
+                                    ThrowIfDisposed();
                                     Indent = 0;
                                     return this;
                                 }
@@ -855,6 +942,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Clear()
                                 {
+                                    ThrowIfDisposed();
                                     Indent = 0;
                                     builder.Clear();
                                     shouldWriteIndent = false;
@@ -873,6 +961,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Clear()
                                 {
+                                    ThrowIfDisposed();
                                     Indent = 0;
                                     builder.Clear();
                                     shouldWriteIndent = false;
@@ -893,6 +982,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter Clear()
                                 {
+                                    ThrowIfDisposed();
                                     Indent = 0;
                                     builder.Clear();
                                     shouldWriteIndent = false;
@@ -911,6 +1001,7 @@ internal class CodeWriterTests : GeneratorTests
         const string expected = """
                                 public override partial string ToString()
                                 {
+                                    ThrowIfDisposed();
                                     return string.Empty;
                                 }
                                 """;
@@ -925,6 +1016,7 @@ internal class CodeWriterTests : GeneratorTests
         const string expected = """
                                 public override partial string ToString()
                                 {
+                                    ThrowIfDisposed();
                                     if (builder.Length == 0)
                                     {
                                         return string.Empty;
@@ -950,6 +1042,7 @@ internal class CodeWriterTests : GeneratorTests
         const string expected = """
                                 public override partial string ToString()
                                 {
+                                    ThrowIfDisposed();
                                     if (builder.Length == 0)
                                     {
                                         return string.Empty;
@@ -984,6 +1077,7 @@ internal class CodeWriterTests : GeneratorTests
         const string expected = """
                                 public override partial string ToString()
                                 {
+                                    ThrowIfDisposed();
                                     if (builder.Length == 0)
                                     {
                                         return string.Empty;
@@ -1014,6 +1108,7 @@ internal class CodeWriterTests : GeneratorTests
         const string expected = """
                                 public override partial string ToString()
                                 {
+                                    ThrowIfDisposed();
                                     if (builder.Length == 0)
                                     {
                                         return string.Empty;
@@ -1073,6 +1168,7 @@ internal class CodeWriterTests : GeneratorTests
         const string expected = """
                                 public partial global::Hertzole.SourceGen.CodeWriter.BlockScope WithBlock()
                                 {
+                                    ThrowIfDisposed();
                                     return new global::Hertzole.SourceGen.CodeWriter.BlockScope(this);
                                 }
                                 """;
@@ -1087,6 +1183,7 @@ internal class CodeWriterTests : GeneratorTests
         const string expected = """
                                 public partial global::Hertzole.SourceGen.CodeWriter.IndentScope WithIndent(int newIndent)
                                 {
+                                    ThrowIfDisposed();
                                     return new global::Hertzole.SourceGen.CodeWriter.IndentScope(this, newIndent);
                                 }
                                 """;
@@ -1712,7 +1809,7 @@ internal class CodeWriterTests : GeneratorTests
     {
         string content = GetFieldContent("CodeWriter.builder", "CodeWriter.Append(string)");
         const string expected = """
-                                private global::System.Text.StringBuilder builder = new global::System.Text.StringBuilder(1024);
+                                private global::System.Text.StringBuilder builder;
                                 """;
 
         Assert.That(content, Is.EqualTo(expected));
@@ -1763,16 +1860,32 @@ internal class CodeWriterTests : GeneratorTests
     }
 
     [Test]
+    public void Field_IsDisposed_Content()
+    {
+        string content = GetFieldContent("CodeWriter.isDisposed", "CodeWriter.Dispose()");
+        const string expected = """
+                                private bool isDisposed = false;
+                                """;
+
+        Assert.That(content, Is.EqualTo(expected));
+    }
+
+    [Test]
     public void Call_WithBlock()
     {
         string[] expectedMethods =
         [
             "CodeWriter.WithBlock()",
             "CodeWriter.BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)",
-            "CodeWriter.BlockScope.Dispose()"
+            "CodeWriter.BlockScope.Dispose()",
+            "CodeWriter.WriteIndentIfNeeded()",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()",
+            "CodeWriter.Dispose()",
+            "CodeWriter.AppendLine(char)"
         ];
 
-        CallTest(writer => { writer.AppendLine("new CodeWriter().WithBlock();"); }, expectedMethods);
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("new CodeWriter().WithBlock();"); }, expectedMethods);
     }
 
     [Test]
@@ -1782,10 +1895,12 @@ internal class CodeWriterTests : GeneratorTests
         [
             "CodeWriter.WithIndent(int)",
             "CodeWriter.IndentScope.IndentScope(Hertzole.SourceGen.CodeWriter, int)",
-            "CodeWriter.IndentScope.Dispose()"
+            "CodeWriter.IndentScope.Dispose()",
+            "CodeWriter.ThrowIfDisposed()",
+            "CodeWriter.CodeWriter()"
         ];
 
-        CallTest(writer => { writer.AppendLine("new CodeWriter().WithIndent(0);"); }, expectedMethods);
+        AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("new CodeWriter().WithIndent(0);"); }, expectedMethods);
     }
 
     [Test]
@@ -1877,7 +1992,7 @@ internal class CodeWriterTests : GeneratorTests
                                 public partial BlockScope(global::Hertzole.SourceGen.CodeWriter writer)
                                 {
                                     this.writer = writer;
-                                    writer.AppendLine("{");
+                                    writer.AppendLine('{');
                                     writer.Indent++;
                                 }
                                 """;
@@ -1893,7 +2008,7 @@ internal class CodeWriterTests : GeneratorTests
                                 public partial void Dispose()
                                 {
                                     writer.Indent--;
-                                    writer.AppendLine("}");
+                                    writer.AppendLine('}');
                                 }
                                 """;
 

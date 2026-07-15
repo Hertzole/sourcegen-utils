@@ -811,6 +811,23 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "AsStringBuilder",
+                    Signature = "public partial global::System.Text.StringBuilder AsStringBuilder()",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in ctx) =>
+                    {
+                        if (!HasWrittenAnything(in ctx))
+                        {
+                            writer.AppendLine("return new global::System.Text.StringBuilder();");
+                            return;
+                        }
+
+                        writer.AppendLine("return builder;");
+                    },
+                    EmptyStub = "return null!;"
+                },
+                new MethodSource
+                {
                     Name = "WithBlock",
                     Signature = "public partial global::" + NAMESPACE + ".CodeWriter.BlockScope WithBlock()",
                     EmptyStub = "return default;",

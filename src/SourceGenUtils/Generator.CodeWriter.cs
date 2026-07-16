@@ -126,7 +126,8 @@ partial class Generator
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Appends <c>#nullable enable</c>. If appended, <c>#nullable restore</c> will be appended at the end of the file."
+                        Summary = "Appends <c>#nullable enable</c>. If appended, <c>#nullable restore</c> will be appended at the end of the file.",
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -186,7 +187,8 @@ partial class Generator
                         {
                             ["value"] = "The value to append.",
                             ["repeatCount"] = "How many times the value should be inserted."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -221,7 +223,8 @@ partial class Generator
                             ["value"] = "The character array to append.",
                             ["startIndex"] = "The starting position in the character array.",
                             ["charCount"] = "The number of characters to append."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -374,7 +377,8 @@ partial class Generator
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Appends a newline to the current line."
+                        Summary = "Appends a newline to the current line.",
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -438,7 +442,8 @@ partial class Generator
                         {
                             ["value"] = "The value to append.",
                             ["repeatCount"] = "How many times the value should be inserted."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -465,7 +470,8 @@ partial class Generator
                             ["value"] = "The character array to append.",
                             ["startIndex"] = "The starting position in the character array.",
                             ["charCount"] = "The number of characters to append."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -630,7 +636,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["symbol"] = "The namespace symbol to append."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -674,7 +681,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The namespace name to append."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -703,7 +711,8 @@ partial class Generator
                         {
                             ["generator"] = "The name of the code generator.",
                             ["version"] = "The version of the code generator."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -723,7 +732,8 @@ partial class Generator
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Appends an <c>[ExcludeFromCodeCoverage]</c> attribute to the current line."
+                        Summary = "Appends an <c>[ExcludeFromCodeCoverage]</c> attribute to the current line.",
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -757,7 +767,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["condition"] = "The condition for the preprocessor directive."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -799,7 +810,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The preprocessor symbol to append (e.g. <c>#endif</c> or <c>endif</c>)."
-                        }
+                        },
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -837,7 +849,8 @@ partial class Generator
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Clears all written content and resets the writer state."
+                        Summary = "Clears all written content and resets the writer state.",
+                        Returns = "The current code writer instance."
                     }
                 },
                 new MethodSource
@@ -924,7 +937,8 @@ partial class Generator
                     Dependencies = [throw_if_disposed],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns the written content as a string. Closes any open namespace block and appends <c>#nullable restore</c> if needed."
+                        Summary = "Returns the written content as a string. Closes any open namespace block and appends <c>#nullable restore</c> if needed.",
+                        Returns = "The written content as a string."
                     }
                 },
                 new MethodSource
@@ -986,7 +1000,8 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            "Returns the underlying <c>StringBuilder</c>. The caller takes ownership of the builder and this may mutate the <c>CodeWriter</c>."
+                            "Returns the underlying <c>StringBuilder</c>. The caller takes ownership of the builder and this may mutate the <c>CodeWriter</c>.",
+                        Returns = "The underlying <c>StringBuilder</c>."
                     }
                 },
                 new MethodSource
@@ -1002,7 +1017,8 @@ partial class Generator
                     Dependencies = [CODE_WRITER + ".BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)", throw_if_disposed],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Opens a new code block. Returns a disposable scope that closes the block and restores indentation when disposed."
+                        Summary = "Opens a new code block. Returns a disposable scope that closes the block and restores indentation when disposed.",
+                        Returns = "A disposable scope that closes the block when disposed."
                     }
                 },
                 new MethodSource
@@ -1022,7 +1038,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["newIndent"] = "The indentation level to use within the scope."
-                        }
+                        },
+                        Returns = "A disposable scope that restores the original indentation when disposed."
                     }
                 }
             ],
@@ -1181,7 +1198,8 @@ partial class Generator
                 Parameters = new Dictionary<string, string>
                 {
                     ["value"] = "The value to insert."
-                }
+                },
+                Returns = "The current code writer instance."
             };
         }
 
@@ -1196,7 +1214,8 @@ partial class Generator
                 Parameters = new Dictionary<string, string>
                 {
                     ["value"] = "The value to insert."
-                }
+                },
+                Returns = "The current code writer instance."
             };
         }
     }

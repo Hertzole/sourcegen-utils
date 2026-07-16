@@ -96,7 +96,8 @@ partial class Generator
                     },
                     Trivia = new TriviaSource
                     {
-                        Summary = "Retrieves an object from the pool. Creates a new instance if the pool is empty."
+                        Summary = "Retrieves an object from the pool. Creates a new instance if the pool is empty.",
+                        Returns = "An object from the pool."
                     }
                 },
                 new MethodSource
@@ -116,7 +117,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["item"] = "When this method returns, contains the object retrieved from the pool."
-                        }
+                        },
+                        Returns = "A disposable scope that returns the object to the pool when disposed."
                     }
                 },
                 new MethodSource

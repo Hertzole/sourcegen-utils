@@ -57,7 +57,8 @@ partial class Generator
                     Dependencies = CreatePoolGetDependencies(collectionPool),
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Retrieves a <c>{shortName}</c> from the pool."
+                        Summary = $"Retrieves a <c>{shortName}</c> from the pool.",
+                        Returns = $"A <c>{shortName}</c> from the pool."
                     }
                 },
                 new MethodSource
@@ -73,7 +74,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["item"] = $"When this method returns, contains the <c>{shortName}</c> retrieved from the pool."
-                        }
+                        },
+                        Returns = $"A disposable scope that returns the <c>{shortName}</c> to the pool when disposed."
                     }
                 },
                 new MethodSource
@@ -100,7 +102,8 @@ partial class Generator
                     EmptyStub = "return null!;",
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Creates a new empty <c>{shortName}</c>."
+                        Summary = $"Creates a new empty <c>{shortName}</c>.",
+                        Returns = $"A new empty <c>{shortName}</c>."
                     }
                 },
                 new MethodSource

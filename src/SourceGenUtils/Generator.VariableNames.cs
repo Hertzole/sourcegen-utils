@@ -51,7 +51,8 @@ partial class Generator
                         {
                             ["value"] = "The variable name to transform.",
                             ["destination"] = "The buffer to write the result to."
-                        }
+                        },
+                        Returns = "The number of characters written to the destination."
                     }
                 },
                 new MethodSource
@@ -82,7 +83,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to transform."
-                        }
+                        },
+                        Returns = "The nicified variable name."
                     }
                 },
                 new MethodSource
@@ -120,7 +122,8 @@ partial class Generator
                         {
                             ["value"] = "The variable name to process.",
                             ["destination"] = "The buffer to write the result to."
-                        }
+                        },
+                        Returns = "The number of characters written to the destination."
                     }
                 },
                 new MethodSource
@@ -151,7 +154,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to process."
-                        }
+                        },
+                        Returns = "The variable name with the prefix removed."
                     }
                 },
                 new MethodSource
@@ -227,7 +231,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The input string."
-                        }
+                        },
+                        Returns = "A new string with the first character uppercased."
                     }
                 },
                 new MethodSource
@@ -248,7 +253,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The value to check."
-                        }
+                        },
+                        Returns = "<c>true</c> if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise <c>false</c>."
                     }
                 },
                 new MethodSource

@@ -37,7 +37,8 @@ partial class Generator
                     Dependencies = CreatePoolGetDependencies(STRING_BUILDER_POOL),
                     Trivia = new TriviaSource
                     {
-                        Summary = "Retrieves a <c>StringBuilder</c> from the pool."
+                        Summary = "Retrieves a <c>StringBuilder</c> from the pool.",
+                        Returns = "A <c>StringBuilder</c> from the pool."
                     }
                 },
                 new MethodSource
@@ -53,7 +54,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["item"] = "When this method returns, contains the <c>StringBuilder</c> retrieved from the pool."
-                        }
+                        },
+                        Returns = "A disposable scope that returns the <c>StringBuilder</c> to the pool when disposed."
                     }
                 },
                 new MethodSource
@@ -80,7 +82,8 @@ partial class Generator
                     EmptyStub = "return null!;",
                     Trivia = new TriviaSource
                     {
-                        Summary = "Creates a new <c>StringBuilder</c> with an initial capacity of 1024 characters."
+                        Summary = "Creates a new <c>StringBuilder</c> with an initial capacity of 1024 characters.",
+                        Returns = "A new <c>StringBuilder</c>."
                     }
                 },
                 new MethodSource

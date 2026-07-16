@@ -52,7 +52,8 @@ partial class Generator
                             ["syntax"] = "The attribute syntax node.",
                             ["semanticModel"] = "The semantic model for the syntax tree.",
                             ["cancellationToken"] = "A cancellation token."
-                        }
+                        },
+                        Returns = "The <see cref=\"global::Microsoft.CodeAnalysis.INamedTypeSymbol\"/> for the attribute, or <c>null</c> if not found."
                     }
                 },
                 new MethodSource
@@ -105,7 +106,8 @@ partial class Generator
                             ["node"] = "The syntax node to search from.",
                             ["fieldDeclaration"] = "When this method returns, contains the field declaration if found; otherwise, <c>null</c>.",
                             ["cancellationToken"] = "A cancellation token."
-                        }
+                        },
+                        Returns = "<c>true</c> if a field declaration was found; otherwise <c>false</c>."
                     }
                 }
             ]

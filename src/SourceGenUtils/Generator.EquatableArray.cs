@@ -96,7 +96,8 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            "Converts this <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>."
+                            "Converts this <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>.",
+                        Returns = "An <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/> containing the elements."
                     }
                 },
                 new MethodSource
@@ -112,7 +113,8 @@ partial class Generator
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns a read-only span over the elements of this <see cref=\"EquatableArray{T}\"/>."
+                        Summary = "Returns a read-only span over the elements of this <see cref=\"EquatableArray{T}\"/>.",
+                        Returns = "A read-only span over the elements."
                     }
                 },
                 new MethodSource
@@ -124,7 +126,8 @@ partial class Generator
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns an enumerator that iterates through the elements."
+                        Summary = "Returns an enumerator that iterates through the elements.",
+                        Returns = "An enumerator that iterates through the elements."
                     }
                 },
                 new MethodSource
@@ -167,7 +170,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["other"] = "The other instance to compare."
-                        }
+                        },
+                        Returns = "<c>true</c> if this instance is equal to <paramref name=\"other\"/>; otherwise <c>false</c>."
                     }
                 },
                 new MethodSource
@@ -186,7 +190,8 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["other"] = "The object to compare."
-                        }
+                        },
+                        Returns = "<c>true</c> if this instance is equal to <paramref name=\"other\"/>; otherwise <c>false</c>."
                     }
                 },
                 new MethodSource
@@ -218,7 +223,8 @@ partial class Generator
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns the hash code for this instance."
+                        Summary = "Returns the hash code for this instance.",
+                        Returns = "The hash code for this instance."
                     }
                 },
                 new MethodSource
@@ -232,7 +238,8 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            "Implicitly converts an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/> to an <see cref=\"EquatableArray{T}\"/>."
+                            "Implicitly converts an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/> to an <see cref=\"EquatableArray{T}\"/>.",
+                        Returns = "The converted <see cref=\"EquatableArray{T}\"/>."
                     }
                 },
                 new MethodSource
@@ -246,7 +253,8 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            "Implicitly converts an <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>."
+                            "Implicitly converts an <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>.",
+                        Returns = "The converted <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>."
                     }
                 },
                 new MethodSource
@@ -258,7 +266,8 @@ partial class Generator
                     SkipPartial = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are equal."
+                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are equal.",
+                        Returns = "<c>true</c> if <paramref name=\"left\"/> is equal to <paramref name=\"right\"/>; otherwise <c>false</c>."
                     }
                 },
                 new MethodSource
@@ -270,7 +279,8 @@ partial class Generator
                     SkipPartial = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are not equal."
+                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are not equal.",
+                        Returns = "<c>true</c> if <paramref name=\"left\"/> is not equal to <paramref name=\"right\"/>; otherwise <c>false</c>."
                     }
                 }
             ]

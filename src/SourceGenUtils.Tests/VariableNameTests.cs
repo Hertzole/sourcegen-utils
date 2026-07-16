@@ -31,7 +31,9 @@ internal class VariableNameTests : GeneratorTests
             "RemovePrefix(string)",
             "UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)",
             "UppercaseStart(string)",
-            "StartsWithOn(System.ReadOnlySpan<char>)"
+            "StartsWithOn(System.ReadOnlySpan<char>)",
+            "GetNiceNameLength(string)",
+            "GetNiceNameLength(System.ReadOnlySpan<char>)"
         ];
     }
 

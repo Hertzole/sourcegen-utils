@@ -291,6 +291,13 @@ public sealed partial class Generator : IIncrementalGenerator
                 writer.AppendLine("</param>");
             }
         }
+
+        if (!string.IsNullOrWhiteSpace(trivia.Returns))
+        {
+            writer.Append("/// <returns>");
+            writer.Append(trivia.Returns!);
+            writer.AppendLine("</returns>");
+        }
     }
 
     internal static void AppendShellType(CodeWriter writer, TypeSource type, in IncrementalGeneratorPostInitializationContext context)

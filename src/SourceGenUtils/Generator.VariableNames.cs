@@ -9,6 +9,16 @@ partial class Generator
         const string variable_names = NAMESPACE + ".VariableNames";
         const string nicify_trivia = "Removes common prefixes (e.g. <c>m_</c>, <c>_</c>, <c>k</c>) and uppercases the first character.";
 
+        TriviaSource getNiceNameLengthTrivia = new TriviaSource
+        {
+            Summary = "Calculates the required length needed for a buffer to support the new nice name.",
+            Returns = "The length required for a nice name.",
+            Parameters = new Dictionary<string, string>
+            {
+                ["value"] = "The string to get the length for."
+            }
+        };
+
         return new TypeSource
         {
             Signature = "internal static partial class VariableNames",
@@ -50,7 +60,9 @@ partial class Generator
                     Signature = "public static partial string NicifyVariableName(string value)",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(value.Length);");
+                        writer.AppendLine(
+                            "char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength(global::System.MemoryExtensions.AsSpan(value)));");
+
                         writer.AppendLine(
                             "int written = NicifyVariableName(global::System.MemoryExtensions.AsSpan(value), global::System.MemoryExtensions.AsSpan(destination));");
 
@@ -59,7 +71,11 @@ partial class Generator
                         writer.AppendLine("return result;");
                     },
                     EmptyStub = "return value;",
-                    Dependencies = [variable_names + ".NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)"],
+                    Dependencies =
+                    [
+                        variable_names + ".NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)",
+                        variable_names + ".GetNiceNameLength(System.ReadOnlySpan<char>)"
+                    ],
                     Trivia = new TriviaSource
                     {
                         Summary = nicify_trivia,
@@ -113,7 +129,9 @@ partial class Generator
                     Signature = "public static partial string RemovePrefix(string value)",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(value.Length);");
+                        writer.AppendLine(
+                            "char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength(global::System.MemoryExtensions.AsSpan(value)));");
+
                         writer.AppendLine(
                             "int written = RemovePrefix(global::System.MemoryExtensions.AsSpan(value), global::System.MemoryExtensions.AsSpan(destination));");
 
@@ -122,7 +140,11 @@ partial class Generator
                         writer.AppendLine("return result;");
                     },
                     EmptyStub = "return string.Empty;",
-                    Dependencies = [variable_names + ".RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)"],
+                    Dependencies =
+                    [
+                        variable_names + ".RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
+                        variable_names + ".GetNiceNameLength(System.ReadOnlySpan<char>)"
+                    ],
                     Trivia = new TriviaSource
                     {
                         Summary = "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c>.",
@@ -228,6 +250,49 @@ partial class Generator
                             ["value"] = "The value to check."
                         }
                     }
+                },
+                new MethodSource
+                {
+                    Name = "GetNiceNameLength",
+                    Signature = "public static partial int GetNiceNameLength(string value)",
+                    Implementation = (writer, in _) => { writer.AppendLine("return GetNiceNameLength(global::System.MemoryExtensions.AsSpan(value));"); },
+                    Dependencies = [variable_names + ".GetNiceNameLength(System.ReadOnlySpan<char>)"],
+                    EmptyStub = "return 0;",
+                    Trivia = getNiceNameLengthTrivia
+                },
+                new MethodSource
+                {
+                    Name = "GetNiceNameLength",
+                    Signature = "public static partial int GetNiceNameLength(global::System.ReadOnlySpan<char> value)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("if (value.Length == 0)");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("return 0;");
+                        }
+
+                        writer.AppendLine();
+                        writer.AppendLine("// Remove '_' prefix or k/K (konstant) prefix.");
+                        writer.AppendLine("if (value.Length > 1 && value[0] == '_' || ((value[0] == 'k' || value[0] == 'K') && char.IsUpper(value[1])))");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("return value.Length - 1;");
+                        }
+
+                        writer.AppendLine();
+                        writer.AppendLine("// Remove prefixes like 'm_'.");
+                        writer.AppendLine("if (value.Length > 2 && value[1] == '_')");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine("return value.Length - 2;");
+                        }
+
+                        writer.AppendLine();
+                        writer.AppendLine("return value.Length;");
+                    },
+                    EmptyStub = "return 0;",
+                    Trivia = getNiceNameLengthTrivia
                 }
             ]
         };

@@ -17,6 +17,10 @@ partial class Generator
             [
                 "global::System.Diagnostics.CodeAnalysis.SuppressMessage(\"MicrosoftCodeAnalysisCorrectness\", \"RS1035:Do not use APIs banned for analyzers\", Justification = \"This is only used in debug builds.\")"
             ],
+            Trivia = new TriviaSource
+            {
+                Summary = "Provides debug-only logging that writes to a log file."
+            },
             Fields = new Dictionary<string, FieldSource>
             {
                 ["isInitialized"] = new FieldSource
@@ -42,7 +46,15 @@ partial class Generator
                     Signature = "public static partial void Info(object message)",
                     Implementation = (writer, in _) => { Write(writer, "INFO"); },
                     Dependencies = deps,
-                    Attributes = ["global::System.Diagnostics.Conditional(\"DEBUG\")"]
+                    Attributes = ["global::System.Diagnostics.Conditional(\"DEBUG\")"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Logs an info message with an 'INFO' prefix.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["message"] = "The message to log."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -50,7 +62,15 @@ partial class Generator
                     Signature = "public static partial void Warning(object message)",
                     Implementation = (writer, in _) => { Write(writer, "WARNING"); },
                     Dependencies = deps,
-                    Attributes = ["global::System.Diagnostics.Conditional(\"DEBUG\")"]
+                    Attributes = ["global::System.Diagnostics.Conditional(\"DEBUG\")"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Logs a warning message with a 'WARNING' prefix.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["message"] = "The message to log."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -58,7 +78,15 @@ partial class Generator
                     Signature = "public static partial void Error(object message)",
                     Implementation = (writer, in _) => { Write(writer, "ERROR"); },
                     Dependencies = deps,
-                    Attributes = ["global::System.Diagnostics.Conditional(\"DEBUG\")"]
+                    Attributes = ["global::System.Diagnostics.Conditional(\"DEBUG\")"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Logs an error message with an 'ERROR' prefix.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["message"] = "The message to log."
+                        }
+                    }
                 },
                 new MethodSource
                 {

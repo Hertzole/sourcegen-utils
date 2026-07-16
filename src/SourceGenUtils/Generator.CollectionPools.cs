@@ -29,10 +29,15 @@ partial class Generator
         string globalCollection = $"global::{collection}";
         string pool = $"global::{NAMESPACE}.ObjectPool<{globalCollection}>";
         string collectionPool = $"{NAMESPACE}.{name}";
+        string shortName = collection.Replace("System.Collections.Generic.", string.Empty).Replace("<", "&lt;").Replace(">", "&gt;");
 
         return new TypeSource
         {
             Signature = $"internal static partial class {name}<T>",
+            Trivia = new TriviaSource
+            {
+                Summary = $"Provides a shared pool of <c>{shortName}</c> instances to reduce allocations."
+            },
             Fields = new Dictionary<string, FieldSource>
             {
                 ["pool"] = new FieldSource
@@ -49,7 +54,11 @@ partial class Generator
                     Signature = $"public static partial {globalCollection} Get()",
                     Implementation = (writer, in _) => { writer.AppendLine("return pool.Get();"); },
                     EmptyStub = "return null!;",
-                    Dependencies = CreatePoolGetDependencies(collectionPool)
+                    Dependencies = CreatePoolGetDependencies(collectionPool),
+                    Trivia = new TriviaSource
+                    {
+                        Summary = $"Retrieves a <c>{shortName}</c> from the pool."
+                    }
                 },
                 new MethodSource
                 {
@@ -57,14 +66,30 @@ partial class Generator
                     Signature = $"public static partial global::{NAMESPACE}.PoolScope<{globalCollection}> Get(out {globalCollection} item)",
                     Implementation = (writer, in _) => { writer.AppendLine("return pool.Get(out item);"); },
                     EmptyStub = "item = null!; return default;",
-                    Dependencies = CreatePoolGetOutDependencies(collectionPool, collection)
+                    Dependencies = CreatePoolGetOutDependencies(collectionPool, collection),
+                    Trivia = new TriviaSource
+                    {
+                        Summary = $"Retrieves a <c>{shortName}</c> from the pool and wraps it in a disposable scope that returns it automatically.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["item"] = $"When this method returns, contains the <c>{shortName}</c> retrieved from the pool."
+                        }
+                    }
                 },
                 new MethodSource
                 {
                     Name = "Return",
                     Signature = $"public static partial void Return({globalCollection} item)",
                     Implementation = (writer, in _) => { writer.AppendLine("pool.Return(item);"); },
-                    Dependencies = CreatePoolReturnDependencies(collectionPool, collection)
+                    Dependencies = CreatePoolReturnDependencies(collectionPool, collection),
+                    Trivia = new TriviaSource
+                    {
+                        Summary = $"Returns a <c>{shortName}</c> to the pool.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["item"] = $"The <c>{shortName}</c> to return to the pool."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -72,14 +97,22 @@ partial class Generator
                     Signature = $"private static {globalCollection} OnCreate()",
                     Implementation = (writer, in _) => { writer.AppendLine($"return new {globalCollection}();"); },
                     SkipPartial = true,
-                    EmptyStub = "return null!;"
+                    EmptyStub = "return null!;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = $"Creates a new empty <c>{shortName}</c>."
+                    }
                 },
                 new MethodSource
                 {
                     Name = "OnReturn",
                     Signature = $"private static void OnReturn({globalCollection} item)",
                     Implementation = (writer, in _) => { writer.AppendLine("item.Clear();"); },
-                    SkipPartial = true
+                    SkipPartial = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Clears the collection when it is returned to the pool."
+                    }
                 }
             ]
         };

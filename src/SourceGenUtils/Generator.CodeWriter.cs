@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 namespace Hertzole.SourceGenUtils;
 
@@ -37,6 +38,10 @@ partial class Generator
         return new TypeSource
         {
             Signature = "internal sealed partial class CodeWriter : global::System.IDisposable",
+            Trivia = new TriviaSource
+            {
+                Summary = "Wrapper around <c>StringBuilder</c> that provides formatting for code writing."
+            },
             Fields = new Dictionary<string, FieldSource>
             {
                 ["builder"] = new FieldSource
@@ -74,7 +79,11 @@ partial class Generator
             {
                 ["Indent"] = new PropertySource
                 {
-                    Signature = "public int Indent"
+                    Signature = "public int Indent",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "The current indent. Each indent is 4 spaces/1 tab."
+                    }
                 }
             },
             Methods =
@@ -90,7 +99,11 @@ partial class Generator
                             writer.AppendLine($"builder = global::{STRING_BUILDER_POOL}.Get();");
                         }
                     },
-                    Dependencies = [$"{STRING_BUILDER_POOL}.Get()"]
+                    Dependencies = [$"{STRING_BUILDER_POOL}.Get()"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Creates a new instance of a code writer."
+                    }
                 },
                 new MethodSource
                 {
@@ -110,7 +123,11 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = [dispose, throw_if_disposed],
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends <c>#nullable enable</c>. If appended, <c>#nullable restore</c> will be appended at the end of the file."
+                    }
                 },
                 new MethodSource
                 {
@@ -119,7 +136,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("string")
                 },
                 new MethodSource
                 {
@@ -134,7 +152,8 @@ partial class Generator
                         writer.AppendLine("return this;");
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("ReadOnlySpan<char>")
                 },
                 new MethodSource
                 {
@@ -143,7 +162,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("char")
                 },
                 new MethodSource
                 {
@@ -158,7 +178,16 @@ partial class Generator
                         writer.AppendLine("return this;");
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends the specified number of copies of the specified value to the current line.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The value to append.",
+                            ["repeatCount"] = "How many times the value should be inserted."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -167,7 +196,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("char[]")
                 },
                 new MethodSource
                 {
@@ -182,7 +212,17 @@ partial class Generator
                         writer.AppendLine("return this;");
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends a subarray of characters to the current line.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The character array to append.",
+                            ["startIndex"] = "The starting position in the character array.",
+                            ["charCount"] = "The number of characters to append."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -191,7 +231,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("byte")
                 },
                 new MethodSource
                 {
@@ -200,7 +241,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("sbyte")
                 },
                 new MethodSource
                 {
@@ -209,7 +251,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("short")
                 },
                 new MethodSource
                 {
@@ -218,7 +261,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("ushort")
                 },
                 new MethodSource
                 {
@@ -227,7 +271,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("int")
                 },
                 new MethodSource
                 {
@@ -236,7 +281,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("uint")
                 },
                 new MethodSource
                 {
@@ -245,7 +291,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("long")
                 },
                 new MethodSource
                 {
@@ -254,7 +301,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("ulong")
                 },
                 new MethodSource
                 {
@@ -263,7 +311,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("float")
                 },
                 new MethodSource
                 {
@@ -272,7 +321,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("double")
                 },
                 new MethodSource
                 {
@@ -281,7 +331,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("decimal")
                 },
                 new MethodSource
                 {
@@ -290,7 +341,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("bool")
                 },
                 new MethodSource
                 {
@@ -299,7 +351,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("object")
                 },
                 new MethodSource
                 {
@@ -318,7 +371,11 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = [dispose, throw_if_disposed],
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends a newline to the current line."
+                    }
                 },
                 new MethodSource
                 {
@@ -327,7 +384,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("string")
                 },
                 new MethodSource
                 {
@@ -344,7 +402,8 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("ReadOnlySpan&lt;char&gt;")
                 },
                 new MethodSource
                 {
@@ -353,7 +412,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("char")
                 },
                 new MethodSource
                 {
@@ -370,7 +430,16 @@ partial class Generator
                         writer.AppendLine("return this;");
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends the specified number of copies of the specified value followed by a newline to the current line.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The value to append.",
+                            ["repeatCount"] = "How many times the value should be inserted."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -387,7 +456,17 @@ partial class Generator
                         writer.AppendLine("return this;");
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends a subarray of characters followed by a newline to the current line.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The character array to append.",
+                            ["startIndex"] = "The starting position in the character array.",
+                            ["charCount"] = "The number of characters to append."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -396,7 +475,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("byte")
                 },
                 new MethodSource
                 {
@@ -405,7 +485,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("sbyte")
                 },
                 new MethodSource
                 {
@@ -414,7 +495,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("short")
                 },
                 new MethodSource
                 {
@@ -423,7 +505,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("ushort")
                 },
                 new MethodSource
                 {
@@ -432,7 +515,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("int")
                 },
                 new MethodSource
                 {
@@ -441,7 +525,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("uint")
                 },
                 new MethodSource
                 {
@@ -450,7 +535,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("long")
                 },
                 new MethodSource
                 {
@@ -459,7 +545,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("ulong")
                 },
                 new MethodSource
                 {
@@ -468,7 +555,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("float")
                 },
                 new MethodSource
                 {
@@ -477,7 +565,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("double")
                 },
                 new MethodSource
                 {
@@ -486,7 +575,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("decimal")
                 },
                 new MethodSource
                 {
@@ -495,7 +585,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("bool")
                 },
                 new MethodSource
                 {
@@ -504,7 +595,8 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendLineImplementation,
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("object")
                 },
                 new MethodSource
                 {
@@ -531,7 +623,15 @@ partial class Generator
                         writer.AppendLine("return AppendNamespace(symbol.ToDisplayString());");
                     },
                     Dependencies = [CODE_WRITER + ".AppendNamespace(string)", throw_if_disposed],
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends a namespace declaration for the specified symbol. Does nothing if the symbol is null or a global namespace.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["symbol"] = "The namespace symbol to append."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -567,7 +667,15 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = [dispose, throw_if_disposed],
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends a namespace declaration. Does nothing if the value is null or empty.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The namespace name to append."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -587,7 +695,16 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends a <c>[GeneratedCode]</c> attribute to the current line.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["generator"] = "The name of the code generator.",
+                            ["version"] = "The version of the code generator."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -603,7 +720,11 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = appendDependencies,
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends an <c>[ExcludeFromCodeCoverage]</c> attribute to the current line."
+                    }
                 },
                 new MethodSource
                 {
@@ -629,7 +750,15 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = [dispose, throw_if_disposed],
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends a conditional preprocessor directive (e.g. <c>#if DEBUG</c>). Does nothing if the condition is null or whitespace.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["condition"] = "The condition for the preprocessor directive."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -662,7 +791,16 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = [dispose, throw_if_disposed],
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Appends a preprocessor symbol. Prepends <c>#</c> if the value does not already start with it. Does nothing if the value is null or whitespace.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The preprocessor symbol to append (e.g. <c>#endif</c> or <c>endif</c>)."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -696,7 +834,11 @@ partial class Generator
                         writer.AppendLine(return_this);
                     },
                     Dependencies = [dispose, throw_if_disposed],
-                    EmptyStub = return_this
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Clears all written content and resets the writer state."
+                    }
                 },
                 new MethodSource
                 {
@@ -714,7 +856,11 @@ partial class Generator
                         writer.AppendLine("shouldWriteIndent = false;");
                         writer.AppendLine("builder.Append(' ', Indent * 4);");
                     },
-                    SkipPartial = true
+                    SkipPartial = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Writes indentation to the builder if needed."
+                    }
                 },
                 new MethodSource
                 {
@@ -775,7 +921,11 @@ partial class Generator
 
                         writer.AppendLine("return builder.ToString();");
                     },
-                    Dependencies = [throw_if_disposed]
+                    Dependencies = [throw_if_disposed],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns the written content as a string. Closes any open namespace block and appends <c>#nullable restore</c> if needed."
+                    }
                 },
                 new MethodSource
                 {
@@ -790,7 +940,11 @@ partial class Generator
 
                         writer.AppendLine("isDisposed = true;");
                     },
-                    Dependencies = [$"{STRING_BUILDER_POOL}.Return(System.Text.StringBuilder)"]
+                    Dependencies = [$"{STRING_BUILDER_POOL}.Return(System.Text.StringBuilder)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Disposes the code writer and returns the underlying <c>StringBuilder</c> to the pool."
+                    }
                 },
                 new MethodSource
                 {
@@ -807,6 +961,10 @@ partial class Generator
 
                         writer.AppendLine();
                         writer.AppendLine("throw new global::System.ObjectDisposedException(\"CodeWriter\", \"The code writer has been disposed.\");");
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Throws an <see cref=\"global::System.ObjectDisposedException\"/> if the writer has been disposed."
                     }
                 },
                 new MethodSource
@@ -824,7 +982,12 @@ partial class Generator
 
                         writer.AppendLine("return builder;");
                     },
-                    EmptyStub = "return null!;"
+                    EmptyStub = "return null!;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Returns the underlying <c>StringBuilder</c>. The caller takes ownership of the builder and this may mutate the <c>CodeWriter</c>."
+                    }
                 },
                 new MethodSource
                 {
@@ -836,7 +999,11 @@ partial class Generator
                         writer.AppendLine(disposed_call);
                         writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.BlockScope(this);");
                     },
-                    Dependencies = [CODE_WRITER + ".BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)", throw_if_disposed]
+                    Dependencies = [CODE_WRITER + ".BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)", throw_if_disposed],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Opens a new code block. Returns a disposable scope that closes the block and restores indentation when disposed."
+                    }
                 },
                 new MethodSource
                 {
@@ -848,7 +1015,15 @@ partial class Generator
                         writer.AppendLine(disposed_call);
                         writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.IndentScope(this, newIndent);");
                     },
-                    Dependencies = [CODE_WRITER + ".IndentScope.IndentScope(Hertzole.SourceGen.CodeWriter, int)", throw_if_disposed]
+                    Dependencies = [CODE_WRITER + ".IndentScope.IndentScope(Hertzole.SourceGen.CodeWriter, int)", throw_if_disposed],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Temporarily changes the indentation level. Returns a disposable scope that restores the original indentation when disposed.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["newIndent"] = "The indentation level to use within the scope."
+                        }
+                    }
                 }
             ],
             Types = new Dictionary<string, TypeSource>
@@ -856,6 +1031,10 @@ partial class Generator
                 ["BlockScope"] = new TypeSource
                 {
                     Signature = "internal readonly partial struct BlockScope : global::System.IDisposable",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Disposable scope that manages code block indentation. Opens a block on creation and closes it on disposal."
+                    },
                     Fields = new Dictionary<string, FieldSource>
                     {
                         ["writer"] = new FieldSource
@@ -876,7 +1055,15 @@ partial class Generator
                                 writer.AppendLine("writer.AppendLine('{');");
                                 writer.AppendLine("writer.Indent++;");
                             },
-                            Dependencies = [CODE_WRITER + ".BlockScope.Dispose()", CODE_WRITER + ".AppendLine(char)"]
+                            Dependencies = [CODE_WRITER + ".BlockScope.Dispose()", CODE_WRITER + ".AppendLine(char)"],
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Creates a new block scope that opens a code block and increments the indentation.",
+                                Parameters = new Dictionary<string, string>
+                                {
+                                    ["writer"] = "The code writer to write to."
+                                }
+                            }
                         },
                         new MethodSource
                         {
@@ -887,13 +1074,21 @@ partial class Generator
                                 writer.AppendLine("writer.Indent--;");
                                 writer.AppendLine("writer.AppendLine('}');");
                             },
-                            Dependencies = [CODE_WRITER + ".AppendLine(char)"]
+                            Dependencies = [CODE_WRITER + ".AppendLine(char)"],
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Closes the code block and decrements the indentation."
+                            }
                         }
                     ]
                 },
                 ["IndentScope"] = new TypeSource
                 {
                     Signature = "internal readonly partial struct IndentScope : global::System.IDisposable",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Disposable scope that temporarily changes the indentation level. Restores the original indentation on disposal."
+                    },
                     Fields = new Dictionary<string, FieldSource>
                     {
                         ["writer"] = new FieldSource
@@ -919,13 +1114,26 @@ partial class Generator
                                 writer.AppendLine("originalIndent = writer.Indent;");
                                 writer.AppendLine("writer.Indent = newIndent;");
                             },
-                            Dependencies = [CODE_WRITER + ".IndentScope.Dispose()"]
+                            Dependencies = [CODE_WRITER + ".IndentScope.Dispose()"],
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Creates a new indent scope that temporarily changes the indentation level.",
+                                Parameters = new Dictionary<string, string>
+                                {
+                                    ["writer"] = "The code writer to modify.",
+                                    ["newIndent"] = "The indentation level to use within the scope."
+                                }
+                            }
                         },
                         new MethodSource
                         {
                             Name = "Dispose",
                             Signature = "public partial void Dispose()",
-                            Implementation = (writer, in _) => { writer.AppendLine("writer.Indent = originalIndent;"); }
+                            Implementation = (writer, in _) => { writer.AppendLine("writer.Indent = originalIndent;"); },
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Restores the original indentation level."
+                            }
                         }
                     ]
                 }
@@ -960,6 +1168,36 @@ partial class Generator
                    ctx.HasCalledMethod(CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute()") ||
                    ctx.HasCalledMethod(CODE_WRITER + ".AppendConditionalSymbol") ||
                    ctx.HasCalledMethod(CODE_WRITER + ".AppendPreprocessorSymbol");
+        }
+
+        static TriviaSource CreateAppendTrivia(string type)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(type).Replace("<", "&lt;").Replace(">", "&gt;");
+
+            return new TriviaSource
+            {
+                Summary = $"Appends <c>{sb}</c> to the current line.",
+                Parameters = new Dictionary<string, string>
+                {
+                    ["value"] = "The value to insert."
+                }
+            };
+        }
+
+        static TriviaSource CreateAppendLineTrivia(string type)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(type).Replace("<", "&lt;").Replace(">", "&gt;");
+
+            return new TriviaSource
+            {
+                Summary = $"Appends <c>{sb}</c> followed by a newline to the current line.",
+                Parameters = new Dictionary<string, string>
+                {
+                    ["value"] = "The value to insert."
+                }
+            };
         }
     }
 }

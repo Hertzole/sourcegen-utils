@@ -11,6 +11,10 @@ partial class Generator
         return new TypeSource
         {
             Signature = "internal readonly partial struct PoolScope<T> : global::System.IDisposable where T : class",
+            Trivia = new TriviaSource
+            {
+                Summary = "A disposable scope that automatically returns a pooled object when disposed."
+            },
             Fields = new Dictionary<string, FieldSource>
             {
                 ["item"] = new FieldSource
@@ -35,13 +39,26 @@ partial class Generator
                         writer.AppendLine("this.item = item;");
                         writer.AppendLine("this.pool = pool;");
                     },
-                    Dependencies = [pool_scope + ".Dispose()"]
+                    Dependencies = [pool_scope + ".Dispose()"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Creates a new pool scope that will return the specified item to the pool when disposed.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["item"] = "The pooled object to return on disposal.",
+                            ["pool"] = "The pool to return the object to."
+                        }
+                    }
                 },
                 new MethodSource
                 {
                     Name = "Dispose",
                     Signature = "public partial void Dispose()",
-                    Implementation = (writer, in context) => { writer.AppendLine("pool.Return(item);"); }
+                    Implementation = (writer, in context) => { writer.AppendLine("pool.Return(item);"); },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns the pooled object back to the pool."
+                    }
                 }
             ]
         };

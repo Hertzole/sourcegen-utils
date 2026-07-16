@@ -12,4 +12,5 @@ internal abstract class BaseSource : IHasAttributes
 
     public string[]? Attributes { get; init; }
     public string? ConditionalPreprocessorSymbol { get; init; }
+    public TriviaSource? Trivia { get; init; }
 }

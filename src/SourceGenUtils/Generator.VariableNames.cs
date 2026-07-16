@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Hertzole.SourceGenUtils;
 
 partial class Generator
@@ -5,10 +7,15 @@ partial class Generator
     private static TypeSource CreateVariableNames()
     {
         const string variable_names = NAMESPACE + ".VariableNames";
+        const string nicify_trivia = "Removes common prefixes (e.g. <c>m_</c>, <c>_</c>, <c>k</c>) and uppercases the first character.";
 
         return new TypeSource
         {
             Signature = "internal static partial class VariableNames",
+            Trivia = new TriviaSource
+            {
+                Summary = "Utilities for transforming variable names into a more readable form."
+            },
             Methods =
             [
                 new MethodSource
@@ -26,7 +33,16 @@ partial class Generator
                     [
                         variable_names + ".RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
                         variable_names + ".UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)"
-                    ]
+                    ],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = nicify_trivia,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The variable name to transform.",
+                            ["destination"] = "The buffer to write the result to."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -43,7 +59,15 @@ partial class Generator
                         writer.AppendLine("return result;");
                     },
                     EmptyStub = "return value;",
-                    Dependencies = [variable_names + ".NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)"]
+                    Dependencies = [variable_names + ".NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = nicify_trivia,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The variable name to transform."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -72,7 +96,16 @@ partial class Generator
                         writer.AppendLine("value.CopyTo(destination);");
                         writer.AppendLine("return value.Length;");
                     },
-                    EmptyStub = "return 0;"
+                    EmptyStub = "return 0;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c>.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The variable name to process.",
+                            ["destination"] = "The buffer to write the result to."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -89,7 +122,15 @@ partial class Generator
                         writer.AppendLine("return result;");
                     },
                     EmptyStub = "return string.Empty;",
-                    Dependencies = [variable_names + ".RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)"]
+                    Dependencies = [variable_names + ".RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c>.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The variable name to process."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -118,6 +159,15 @@ partial class Generator
                         writer.AppendLine("value.CopyTo(destination);");
                         writer.AppendLine("destination[0] = char.ToUpperInvariant(value[0]);");
                     },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Uppercases the first character of the value and writes the result to the destination.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The input value.",
+                            ["destination"] = "The buffer to write the result to."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -148,7 +198,15 @@ partial class Generator
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
                         writer.AppendLine("return result;");
                     },
-                    EmptyStub = "return string.Empty;"
+                    EmptyStub = "return string.Empty;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns a new string with the first character uppercased.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The input string."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -160,7 +218,16 @@ partial class Generator
                         writer.AppendLine("// Checking the third character ensures it doesn't match words like \"only\" or \"once\".");
                         writer.AppendLine("return value.Length >= 3 && (value[0] == 'o' || value[0] == 'O') && value[1] == 'n' && char.IsUpper(value[2]);");
                     },
-                    EmptyStub = "return false;"
+                    EmptyStub = "return false;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Determines whether the value starts with <c>on</c> or <c>On</c> followed by an uppercase character (e.g. <c>OnValueChanged</c>).",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The value to check."
+                        }
+                    }
                 }
             ]
         };

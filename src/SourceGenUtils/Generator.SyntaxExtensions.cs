@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Hertzole.SourceGenUtils;
 
 partial class Generator
@@ -7,6 +9,10 @@ partial class Generator
         return new TypeSource
         {
             Signature = "internal static partial class SyntaxExtensions",
+            Trivia = new TriviaSource
+            {
+                Summary = "Extension methods for working with <see cref=\"global::Microsoft.CodeAnalysis\"/> syntax nodes."
+            },
             Methods =
             [
                 new MethodSource
@@ -16,7 +22,9 @@ partial class Generator
                         "public static partial global::Microsoft.CodeAnalysis.INamedTypeSymbol? GetAttributeSymbol(this global::Microsoft.CodeAnalysis.CSharp.Syntax.AttributeSyntax syntax, global::Microsoft.CodeAnalysis.SemanticModel semanticModel, global::System.Threading.CancellationToken cancellationToken = default)",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("if (global::Microsoft.CodeAnalysis.CSharpExtensions.GetSymbolInfo(semanticModel, syntax).Symbol is not global::Microsoft.CodeAnalysis.IMethodSymbol methodSymbol)");
+                        writer.AppendLine(
+                            "if (global::Microsoft.CodeAnalysis.CSharpExtensions.GetSymbolInfo(semanticModel, syntax).Symbol is not global::Microsoft.CodeAnalysis.IMethodSymbol methodSymbol)");
+
                         using (writer.WithBlock())
                         {
                             writer.AppendLine("return null;");
@@ -35,7 +43,17 @@ partial class Generator
                         writer.AppendLine();
                         writer.AppendLine("return null;");
                     },
-                    EmptyStub = "return null;"
+                    EmptyStub = "return null;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Gets the <see cref=\"global::Microsoft.CodeAnalysis.INamedTypeSymbol\"/> for the specified attribute syntax.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["syntax"] = "The attribute syntax node.",
+                            ["semanticModel"] = "The semantic model for the syntax tree.",
+                            ["cancellationToken"] = "A cancellation token."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -45,7 +63,9 @@ partial class Generator
                         "global::System.Threading.CancellationToken cancellationToken = default)",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("if (global::Microsoft.CodeAnalysis.CSharpExtensions.IsKind(node, global::Microsoft.CodeAnalysis.CSharp.SyntaxKind.FieldDeclaration))");
+                        writer.AppendLine(
+                            "if (global::Microsoft.CodeAnalysis.CSharpExtensions.IsKind(node, global::Microsoft.CodeAnalysis.CSharp.SyntaxKind.FieldDeclaration))");
+
                         using (writer.WithBlock())
                         {
                             writer.AppendLine("fieldDeclaration = (global::Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax) node;");
@@ -58,7 +78,9 @@ partial class Generator
                         using (writer.WithBlock())
                         {
                             writer.AppendLine("cancellationToken.ThrowIfCancellationRequested();");
-                            writer.AppendLine("if (global::Microsoft.CodeAnalysis.CSharpExtensions.IsKind(parent, global::Microsoft.CodeAnalysis.CSharp.SyntaxKind.FieldDeclaration))");
+                            writer.AppendLine(
+                                "if (global::Microsoft.CodeAnalysis.CSharpExtensions.IsKind(parent, global::Microsoft.CodeAnalysis.CSharp.SyntaxKind.FieldDeclaration))");
+
                             using (writer.WithBlock())
                             {
                                 writer.AppendLine("fieldDeclaration = (global::Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax) parent;");
@@ -73,7 +95,18 @@ partial class Generator
                         writer.AppendLine("fieldDeclaration = null;");
                         writer.AppendLine("return false;");
                     },
-                    EmptyStub = "fieldDeclaration = null; return false;"
+                    EmptyStub = "fieldDeclaration = null; return false;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Attempts to find a <see cref=\"global::Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax\"/> from the specified node or its ancestors.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["node"] = "The syntax node to search from.",
+                            ["fieldDeclaration"] = "When this method returns, contains the field declaration if found; otherwise, <c>null</c>.",
+                            ["cancellationToken"] = "A cancellation token."
+                        }
+                    }
                 }
             ]
         };

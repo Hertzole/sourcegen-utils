@@ -263,6 +263,36 @@ public sealed partial class Generator : IIncrementalGenerator
         context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
     }
 
+    internal static void AppendTrivia(CodeWriter writer, TriviaSource? trivia, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (trivia == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(trivia.Summary))
+        {
+            writer.AppendLine("/// <summary>");
+            writer.Append("/// ");
+            writer.AppendLine(trivia.Summary!);
+            writer.AppendLine("/// </summary>");
+        }
+
+        if (trivia.Parameters != null && trivia.Parameters.Count > 0)
+        {
+            foreach (KeyValuePair<string, string> valuePair in trivia.Parameters)
+            {
+                writer.Append("/// <param name=\"");
+                writer.Append(valuePair.Key);
+                writer.Append("\">");
+                writer.Append(valuePair.Value);
+                writer.AppendLine("</param>");
+            }
+        }
+    }
+
     internal static void AppendShellType(CodeWriter writer, TypeSource type, in IncrementalGeneratorPostInitializationContext context)
     {
         context.CancellationToken.ThrowIfCancellationRequested();
@@ -273,6 +303,7 @@ public sealed partial class Generator : IIncrementalGenerator
             writer.AppendConditionalSymbol(type.ConditionalPreprocessorSymbol!);
         }
 
+        AppendTrivia(writer, type.Trivia, context.CancellationToken);
         writer.AppendLine(type.Signature);
 
         using (writer.WithBlock())
@@ -295,6 +326,7 @@ public sealed partial class Generator : IIncrementalGenerator
                         writer.AppendConditionalSymbol(type.Methods[i].ConditionalPreprocessorSymbol!);
                     }
 
+                    AppendTrivia(writer, type.Methods[i].Trivia, context.CancellationToken);
                     writer.Append(type.Methods[i].Signature);
                     writer.AppendLine(";");
 
@@ -577,6 +609,7 @@ public sealed partial class Generator : IIncrementalGenerator
                 writer.AppendConditionalSymbol(source.ConditionalPreprocessorSymbol);
             }
 
+            AppendTrivia(writer, source.Trivia, context.CancellationToken);
             WriteAttributes(source, writer, in context);
 
             if (source is PropertySource property)

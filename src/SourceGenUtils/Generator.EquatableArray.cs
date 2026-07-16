@@ -12,6 +12,10 @@ partial class Generator
         {
             Signature =
                 "internal readonly partial struct EquatableArray<T> : global::System.IEquatable<EquatableArray<T>>, global::System.Collections.Generic.IEnumerable<T> where T : global::System.IEquatable<T>",
+            Trivia = new TriviaSource
+            {
+                Summary = "A wrapper around an array that implements <see cref=\"global::System.IEquatable{T}\"/> for value-based equality comparison."
+            },
             Fields = new Dictionary<string, FieldSource>
             {
                 ["array"] = new FieldSource
@@ -50,6 +54,14 @@ partial class Generator
                     {
                         writer.AppendLine("this.array = new T[array.Length];");
                         writer.AppendLine("global::System.Array.Copy(array, this.array, array.Length);");
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Creates a new <see cref=\"EquatableArray{T}\"/> from the specified array. The array is copied.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["array"] = "The array to wrap."
+                        }
                     }
                 },
                 new MethodSource
@@ -60,6 +72,14 @@ partial class Generator
                     {
                         writer.AppendLine(
                             "this.array = global::System.Runtime.CompilerServices.Unsafe.As<global::System.Collections.Immutable.ImmutableArray<T>, T[]?>(ref array);");
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Creates a new <see cref=\"EquatableArray{T}\"/> from the specified immutable array.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["array"] = "The immutable array to wrap."
+                        }
                     }
                 },
                 new MethodSource
@@ -72,7 +92,12 @@ partial class Generator
                         writer.AppendLine(
                             "return global::System.Runtime.CompilerServices.Unsafe.As<T[]?, global::System.Collections.Immutable.ImmutableArray<T>>(ref global::System.Runtime.CompilerServices.Unsafe.AsRef(in array));");
                     },
-                    AlwaysWrite = true
+                    AlwaysWrite = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Converts this <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>."
+                    }
                 },
                 new MethodSource
                 {
@@ -84,7 +109,11 @@ partial class Generator
                         writer.AppendLine(
                             "return array == null ? global::System.ReadOnlySpan<T>.Empty : new global::System.ReadOnlySpan<T>(array, 0, array.Length);");
                     },
-                    AlwaysWrite = true
+                    AlwaysWrite = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns a read-only span over the elements of this <see cref=\"EquatableArray{T}\"/>."
+                    }
                 },
                 new MethodSource
                 {
@@ -92,7 +121,11 @@ partial class Generator
                     Signature = "public partial global::System.Collections.Immutable.ImmutableArray<T>.Enumerator GetEnumerator()",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) => { writer.AppendLine("return AsImmutableArray().GetEnumerator();"); },
-                    AlwaysWrite = true
+                    AlwaysWrite = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns an enumerator that iterates through the elements."
+                    }
                 },
                 new MethodSource
                 {
@@ -127,7 +160,15 @@ partial class Generator
                     {
                         writer.AppendLine("return global::System.MemoryExtensions.SequenceEqual<T>(AsSpan(), other.AsSpan());");
                     },
-                    AlwaysWrite = true
+                    AlwaysWrite = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Determines whether this instance is equal to another <see cref=\"EquatableArray{T}\"/>.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["other"] = "The other instance to compare."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -138,7 +179,15 @@ partial class Generator
                     {
                         writer.AppendLine("return other is global::" + equatable_array + "<T> array && Equals(this, array);");
                     },
-                    AlwaysWrite = true
+                    AlwaysWrite = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Determines whether this instance is equal to the specified object.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["other"] = "The object to compare."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -166,7 +215,11 @@ partial class Generator
 
                         writer.AppendLine("return hash;");
                     },
-                    AlwaysWrite = true
+                    AlwaysWrite = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns the hash code for this instance."
+                    }
                 },
                 new MethodSource
                 {
@@ -175,7 +228,12 @@ partial class Generator
                                 "<T>(global::System.Collections.Immutable.ImmutableArray<T> array)",
                     Implementation = (writer, in _) => { writer.AppendLine("return new global::" + equatable_array + "<T>(array);"); },
                     AlwaysWrite = true,
-                    SkipPartial = true
+                    SkipPartial = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Implicitly converts an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/> to an <see cref=\"EquatableArray{T}\"/>."
+                    }
                 },
                 new MethodSource
                 {
@@ -184,7 +242,12 @@ partial class Generator
                                 "<T> array)",
                     Implementation = (writer, in _) => { writer.AppendLine("return array.AsImmutableArray();"); },
                     AlwaysWrite = true,
-                    SkipPartial = true
+                    SkipPartial = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Implicitly converts an <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>."
+                    }
                 },
                 new MethodSource
                 {
@@ -192,7 +255,11 @@ partial class Generator
                     Signature = "public static bool operator ==(global::" + equatable_array + "<T> left, global::" + equatable_array + "<T> right)",
                     Implementation = (writer, in _) => { writer.AppendLine("return left.Equals(right);"); },
                     AlwaysWrite = true,
-                    SkipPartial = true
+                    SkipPartial = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are equal."
+                    }
                 },
                 new MethodSource
                 {
@@ -200,7 +267,11 @@ partial class Generator
                     Signature = "public static bool operator !=(global::" + equatable_array + "<T> left, global::" + equatable_array + "<T> right)",
                     Implementation = (writer, in _) => { writer.AppendLine("return !left.Equals(right);"); },
                     AlwaysWrite = true,
-                    SkipPartial = true
+                    SkipPartial = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are not equal."
+                    }
                 }
             ]
         };

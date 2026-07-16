@@ -11,6 +11,10 @@ partial class Generator
         return new TypeSource
         {
             Signature = "internal sealed partial class ObjectPool<T> : global::System.IDisposable where T : class",
+            Trivia = new TriviaSource
+            {
+                Summary = "A simple object pool that reuses instances of a reference type to reduce allocations."
+            },
             Fields = new Dictionary<string, FieldSource>
             {
                 ["pool"] = new FieldSource
@@ -53,7 +57,18 @@ partial class Generator
                         writer.AppendLine("this.onReturn = onReturn;");
                         writer.AppendLine("this.onDispose = onDispose;");
                     },
-                    Dependencies = [OBJECT_POOL + ".Dispose()"]
+                    Dependencies = [OBJECT_POOL + ".Dispose()"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Creates a new object pool.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["create"] = "A factory function to create new instances when the pool is empty.",
+                            ["onGet"] = "An optional callback invoked when an object is retrieved from the pool.",
+                            ["onReturn"] = "An optional callback invoked when an object is returned to the pool.",
+                            ["onDispose"] = "An optional callback invoked for each remaining object when the pool is disposed."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -78,6 +93,10 @@ partial class Generator
                         writer.AppendLine();
                         writer.AppendLine("onGet?.Invoke(result);");
                         writer.AppendLine("return result;");
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Retrieves an object from the pool. Creates a new instance if the pool is empty."
                     }
                 },
                 new MethodSource
@@ -90,7 +109,15 @@ partial class Generator
                         writer.AppendLine("item = Get();");
                         writer.AppendLine("return new global::" + NAMESPACE + ".PoolScope<T>(item, this);");
                     },
-                    Dependencies = [NAMESPACE + ".PoolScope.PoolScope(T, ObjectPool<T>)", OBJECT_POOL + ".Get()", OBJECT_POOL + ".Return(T)"]
+                    Dependencies = [NAMESPACE + ".PoolScope.PoolScope(T, ObjectPool<T>)", OBJECT_POOL + ".Get()", OBJECT_POOL + ".Return(T)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Retrieves an object from the pool and wraps it in a disposable scope that returns it automatically.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["item"] = "When this method returns, contains the object retrieved from the pool."
+                        }
+                    }
                 },
                 new MethodSource
                 {
@@ -100,6 +127,14 @@ partial class Generator
                     {
                         writer.AppendLine("onReturn?.Invoke(value);");
                         writer.AppendLine("pool.Push(value);");
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns an object to the pool.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The object to return to the pool."
+                        }
                     }
                 },
                 new MethodSource
@@ -121,6 +156,10 @@ partial class Generator
 
                         writer.AppendLine();
                         writer.AppendLine("pool.Clear();");
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Disposes the pool, invoking the <c>onDispose</c> callback for each remaining object."
                     }
                 },
                 new MethodSource
@@ -129,7 +168,11 @@ partial class Generator
                     Signature = "~ObjectPool()",
                     Implementation = (writer, in _) => { writer.AppendLine("Dispose();"); },
                     AlwaysWrite = true,
-                    SkipPartial = true
+                    SkipPartial = true,
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Finalizer that ensures the pool is disposed."
+                    }
                 }
             ]
         };

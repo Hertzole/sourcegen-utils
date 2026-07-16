@@ -99,8 +99,23 @@ internal sealed class CodeWriter
         builder.Append(value);
     }
 
+    public void Append(char value, int repeatCount)
+    {
+        WriteIndentIfNeeded();
+        builder.Append(value, repeatCount);
+    }
+
     public void AppendLine()
     {
+        builder.AppendLineUnix();
+        shouldWriteIndent = true;
+    }
+
+    public void AppendLine(char value, int repeatCount)
+    {
+        WriteIndentIfNeeded();
+
+        builder.Append(value, repeatCount);
         builder.AppendLineUnix();
         shouldWriteIndent = true;
     }
@@ -183,9 +198,9 @@ internal sealed class CodeWriter
         return builder.ToString();
     }
 
-    public BlockScope WithBlock()
+    public BlockScope WithBlock(bool newLineOnDispose = false)
     {
-        return new BlockScope(this);
+        return new BlockScope(this, newLineOnDispose);
     }
 
     public IndentScope WithIndent(int newIndent)
@@ -196,10 +211,12 @@ internal sealed class CodeWriter
     internal readonly struct BlockScope : IDisposable
     {
         private readonly CodeWriter writer;
+        private readonly bool newLineOnDispose;
 
-        public BlockScope(CodeWriter writer)
+        public BlockScope(CodeWriter writer, bool newLineOnDispose)
         {
             this.writer = writer;
+            this.newLineOnDispose = newLineOnDispose;
             writer.AppendLine("{");
             writer.Indent++;
         }
@@ -209,6 +226,11 @@ internal sealed class CodeWriter
         {
             writer.Indent--;
             writer.AppendLine("}");
+
+            if (newLineOnDispose)
+            {
+                writer.AppendLine();
+            }
         }
     }
 

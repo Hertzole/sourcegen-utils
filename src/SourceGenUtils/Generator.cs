@@ -29,7 +29,9 @@ public sealed partial class Generator : IIncrementalGenerator
         ["HashSetPool"] = CreateHashSetPool(),
         ["StackPool"] = CreateStackPool(),
         ["QueuePool"] = CreateQueuePool(),
-        ["StringBuilderPool"] = CreateStringBuilderPool()
+        ["StringBuilderPool"] = CreateStringBuilderPool(),
+        ["ArrayBuilder"] = CreateArrayBuilder(),
+        ["ArrayBuilderExtensions"] = CreateArrayBuilderExtensions()
     };
 
     private static readonly HashSet<string> AllMethodNames;
@@ -439,17 +441,47 @@ public sealed partial class Generator : IIncrementalGenerator
         writer.AppendLine("\n// Types:");
         foreach (KeyValuePair<string, TypeSource> pair in TypesToGenerate)
         {
-            writer.AppendLine($"//     {NAMESPACE}.{pair.Key}");
-            if (pair.Value.Methods != null)
-            {
-                foreach (MethodSource method in pair.Value.Methods)
-                {
-                    writer.AppendLine($"//         {NAMESPACE}.{pair.Key}.{method.Name}({method.ParameterTypesKey})");
-                }
-            }
+            AppendDebugType(pair.Value, writer, pair.Key, NAMESPACE, 1);
+            // writer.AppendLine($"//     {NAMESPACE}.{pair.Key}");
+            // if (pair.Value.Methods != null)
+            // {
+            //     foreach (MethodSource method in pair.Value.Methods)
+            //     {
+            //         writer.AppendLine($"//         {NAMESPACE}.{pair.Key}.{method.Name}({method.ParameterTypesKey})");
+            //     }
+            // }
         }
 
         context.AddSource("Debug.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
+
+        static void AppendDebugType(TypeSource type, CodeWriter writer, string name, string path, int indent)
+        {
+            writer.Append("// ");
+            writer.Append(' ', indent * 4);
+            writer.Append(path);
+            writer.Append('.');
+            writer.AppendLine(name);
+            if (type.Methods != null)
+            {
+                foreach (MethodSource method in type.Methods)
+                {
+                    writer.Append("// ");
+                    writer.Append(' ', indent * 4 + 4);
+                    writer.AppendLine($"{path}.{name}.{method.Name}({method.ParameterTypesKey})");
+                }
+            }
+
+            if (type.Types != null)
+            {
+                writer.Append("// ");
+                writer.Append(' ', indent * 4);
+                writer.AppendLine("Nested types:");
+                foreach (KeyValuePair<string, TypeSource> pair in type.Types)
+                {
+                    AppendDebugType(pair.Value, writer, pair.Key, path + "." + name, indent + 1);
+                }
+            }
+        }
 #endif
     }
 

@@ -26,7 +26,7 @@ internal class LogTests : GeneratorTests
     /// <inheritdoc />
     protected override string[] GetShellMethods()
     {
-        return ["Info(object)", "Warning(object)", "Error(object)"];
+        return ["Info(object)", "Warning(object)", "Error(object)", "ClearLogs()"];
     }
 
     [Test]

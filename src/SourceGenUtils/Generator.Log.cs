@@ -90,6 +90,22 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "ClearLogs",
+                    Signature = "public static partial void ClearLogs()",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendPreprocessorSymbol("#if DEBUG");
+                        writer.AppendLine("global::System.IO.File.WriteAllText(path, string.Empty);");
+                        writer.AppendPreprocessorSymbol("#endif");
+                    },
+                    Attributes = ["global::System.Diagnostics.Conditional(\"DEBUG\")"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Clears the log file."
+                    }
+                },
+                new MethodSource
+                {
                     Name = "Write",
                     Signature = "private static void Write(string message)",
                     ConditionalPreprocessorSymbol = "DEBUG",

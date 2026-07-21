@@ -1,5 +1,7 @@
 <Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/SourceGenUtils.Tests/SourceGenUtils.Tests.csproj"/>
+  </Folder>
   <Project Path="src/SourceGenUtils.Sample/SourceGenUtils.Sample.csproj" />
-  <Project Path="src/SourceGenUtils.Tests/SourceGenUtils.Tests.csproj" />
   <Project Path="src/SourceGenUtils/SourceGenUtils.csproj" />
 </Solution>

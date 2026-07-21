@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\SourceGenUtils\SourceGenUtils.csproj"/>
+        <ProjectReference Include="..\..\src\SourceGenUtils\SourceGenUtils.csproj"/>
     </ItemGroup>
 
 

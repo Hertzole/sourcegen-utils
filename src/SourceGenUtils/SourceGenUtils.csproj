@@ -23,7 +23,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>sourcegen, source, source generator, incremental, incremental generator, util, utility, utils, string, stringbuilder, builder, string builder, code, codewriter, code writer</PackageTags>
         <NeutralLanguage>en-US</NeutralLanguage>
-        <Version>0.9.0</Version>
+        <Version>1.0.0-rc.1</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

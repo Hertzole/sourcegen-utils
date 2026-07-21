@@ -125,7 +125,7 @@ partial class Generator
                         using (writer.WithBlock())
                         {
                             writer.AppendLine(
-                                "byte[] bytes = global::System.Text.Encoding.UTF8.GetBytes($\"[{System.DateTimeOffset.Now:HH:mm:ss.fff}]: {message}{System.Environment.NewLine}\");");
+                                "byte[] bytes = global::System.Text.Encoding.UTF8.GetBytes($\"[{System.DateTimeOffset.Now:HH:mm:ss.fff}] {message}{System.Environment.NewLine}\");");
 
                             writer.AppendLine("stream.Write(bytes, 0, bytes.Length);");
                         }

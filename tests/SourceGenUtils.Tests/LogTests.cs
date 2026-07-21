@@ -145,7 +145,7 @@ internal class LogTests : GeneratorTests
 
                                     using (global::System.IO.FileStream stream = global::System.IO.File.Open(path, global::System.IO.FileMode.Append, global::System.IO.FileAccess.Write, global::System.IO.FileShare.Read))
                                     {
-                                        byte[] bytes = global::System.Text.Encoding.UTF8.GetBytes($"[{System.DateTimeOffset.Now:HH:mm:ss.fff}]: {message}{System.Environment.NewLine}");
+                                        byte[] bytes = global::System.Text.Encoding.UTF8.GetBytes($"[{System.DateTimeOffset.Now:HH:mm:ss.fff}] {message}{System.Environment.NewLine}");
                                         stream.Write(bytes, 0, bytes.Length);
                                     }
                                 }

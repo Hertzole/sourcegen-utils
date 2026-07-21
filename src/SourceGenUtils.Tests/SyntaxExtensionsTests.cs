@@ -42,7 +42,7 @@ internal class SyntaxExtensionsTests : GeneratorTests
                 "SyntaxExtensions.GetAttributeSymbol(Microsoft.CodeAnalysis.CSharp.Syntax.AttributeSyntax, Microsoft.CodeAnalysis.SemanticModel, System.Threading.CancellationToken)");
 
         const string expected = """
-                                public static partial global::Microsoft.CodeAnalysis.INamedTypeSymbol? GetAttributeSymbol(this global::Microsoft.CodeAnalysis.CSharp.Syntax.AttributeSyntax syntax, global::Microsoft.CodeAnalysis.SemanticModel semanticModel, global::System.Threading.CancellationToken cancellationToken = default)
+                                public static partial global::Microsoft.CodeAnalysis.INamedTypeSymbol? GetAttributeSymbol(this global::Microsoft.CodeAnalysis.CSharp.Syntax.AttributeSyntax syntax, global::Microsoft.CodeAnalysis.SemanticModel semanticModel, global::System.Threading.CancellationToken cancellationToken)
                                 {
                                     if (global::Microsoft.CodeAnalysis.CSharpExtensions.GetSymbolInfo(semanticModel, syntax).Symbol is not global::Microsoft.CodeAnalysis.IMethodSymbol methodSymbol)
                                     {
@@ -71,7 +71,7 @@ internal class SyntaxExtensionsTests : GeneratorTests
                 "SyntaxExtensions.TryGetFieldDeclaration(Microsoft.CodeAnalysis.SyntaxNode, Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax?, System.Threading.CancellationToken)");
 
         string expected = """
-                          public static partial bool TryGetFieldDeclaration(this global::Microsoft.CodeAnalysis.SyntaxNode node, out global::Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax? fieldDeclaration, global::System.Threading.CancellationToken cancellationToken = default)
+                          public static partial bool TryGetFieldDeclaration(this global::Microsoft.CodeAnalysis.SyntaxNode node, out global::Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax? fieldDeclaration, global::System.Threading.CancellationToken cancellationToken)
                           {
                               if (global::Microsoft.CodeAnalysis.CSharpExtensions.IsKind(node, global::Microsoft.CodeAnalysis.CSharp.SyntaxKind.FieldDeclaration))
                               {
@@ -104,7 +104,7 @@ internal class SyntaxExtensionsTests : GeneratorTests
     public void GetAttributeSymbol_Content_NotCalled()
     {
         const string expected = """
-                                public static partial global::Microsoft.CodeAnalysis.INamedTypeSymbol? GetAttributeSymbol(this global::Microsoft.CodeAnalysis.CSharp.Syntax.AttributeSyntax syntax, global::Microsoft.CodeAnalysis.SemanticModel semanticModel, global::System.Threading.CancellationToken cancellationToken = default)
+                                public static partial global::Microsoft.CodeAnalysis.INamedTypeSymbol? GetAttributeSymbol(this global::Microsoft.CodeAnalysis.CSharp.Syntax.AttributeSyntax syntax, global::Microsoft.CodeAnalysis.SemanticModel semanticModel, global::System.Threading.CancellationToken cancellationToken)
                                 {
                                     return null;
                                 }
@@ -119,7 +119,7 @@ internal class SyntaxExtensionsTests : GeneratorTests
     public void TryGetFieldDeclaration_Content_NotCalled()
     {
         const string expected = """
-                                public static partial bool TryGetFieldDeclaration(this global::Microsoft.CodeAnalysis.SyntaxNode node, out global::Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax? fieldDeclaration, global::System.Threading.CancellationToken cancellationToken = default)
+                                public static partial bool TryGetFieldDeclaration(this global::Microsoft.CodeAnalysis.SyntaxNode node, out global::Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax? fieldDeclaration, global::System.Threading.CancellationToken cancellationToken)
                                 {
                                     fieldDeclaration = null; return false;
                                 }

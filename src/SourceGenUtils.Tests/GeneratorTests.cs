@@ -397,7 +397,7 @@ internal abstract class GeneratorTests
         throw new ArgumentException($"Could not find type {path}.");
     }
 
-    private static HashSet<string> GetCalledMethods(string[]? calledMethods, string? className = null)
+    protected static HashSet<string> GetCalledMethods(string[]? calledMethods, string? className = null)
     {
         if (calledMethods != null)
         {

@@ -69,6 +69,7 @@ internal class CodeWriterTests : GeneratorTests
             "AppendNamespace(Microsoft.CodeAnalysis.INamespaceSymbol?)",
             "AppendNamespace(string)",
             "AppendGeneratedCodeAttribute(string, string)",
+            "AppendEmbeddedAttribute()",
             "AppendExcludeFromCodeCoverageAttribute()",
             "AppendConditionalSymbol(string?)",
             "AppendPreprocessorSymbol(string?)",

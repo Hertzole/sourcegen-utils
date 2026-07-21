@@ -16,23 +16,7 @@ public sealed partial class Generator : IIncrementalGenerator
     private static readonly string[] AggressiveInlineAttribute =
         ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
 
-    internal static readonly Dictionary<string, TypeSource> TypesToGenerate = new Dictionary<string, TypeSource>
-    {
-        ["CodeWriter"] = CreateCodeWriter(),
-        ["Log"] = CreateLog(),
-        ["VariableNames"] = CreateVariableNames(),
-        ["EquatableArray"] = CreateEquatableArray(),
-        ["SyntaxExtensions"] = CreateSyntaxExtensions(),
-        ["PoolScope"] = CreatePoolScope(),
-        ["ObjectPool"] = CreateObjectPool(),
-        ["ListPool"] = CreateListPool(),
-        ["HashSetPool"] = CreateHashSetPool(),
-        ["StackPool"] = CreateStackPool(),
-        ["QueuePool"] = CreateQueuePool(),
-        ["StringBuilderPool"] = CreateStringBuilderPool(),
-        ["ArrayBuilder"] = CreateArrayBuilder(),
-        ["ArrayBuilderExtensions"] = CreateArrayBuilderExtensions()
-    };
+    internal static readonly Dictionary<string, TypeSource> TypesToGenerate;
 
     private static readonly HashSet<string> AllMethodNames;
     private static readonly Dictionary<string, TypeSource> AllTypes;
@@ -48,6 +32,25 @@ public sealed partial class Generator : IIncrementalGenerator
         AllMethodNames = new HashSet<string>();
         Dictionary<string, HashSet<string>> typesPerName = new Dictionary<string, HashSet<string>>();
         AllTypes = new Dictionary<string, TypeSource>();
+
+        // Must create it here so any static fields will be initialized first.
+        TypesToGenerate = new Dictionary<string, TypeSource>
+        {
+            ["CodeWriter"] = CreateCodeWriter(),
+            ["Log"] = CreateLog(),
+            ["VariableNames"] = CreateVariableNames(),
+            ["EquatableArray"] = CreateEquatableArray(),
+            ["SyntaxExtensions"] = CreateSyntaxExtensions(),
+            ["PoolScope"] = CreatePoolScope(),
+            ["ObjectPool"] = CreateObjectPool(),
+            ["ListPool"] = CreateListPool(),
+            ["HashSetPool"] = CreateHashSetPool(),
+            ["StackPool"] = CreateStackPool(),
+            ["QueuePool"] = CreateQueuePool(),
+            ["StringBuilderPool"] = CreateStringBuilderPool(),
+            ["ArrayBuilder"] = CreateArrayBuilder(),
+            ["ArrayBuilderExtensions"] = CreateArrayBuilderExtensions()
+        };
 
         foreach (KeyValuePair<string, TypeSource> typeKvp in TypesToGenerate)
         {

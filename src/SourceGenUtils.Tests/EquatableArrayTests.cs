@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading;
 using Hertzole.SourceGenUtils;
 using NUnit.Framework;
@@ -94,7 +93,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void AsImmutableArray_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.AsImmutableArray()");
+        string content = GetMethodContent("EquatableArray.AsImmutableArray()", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::System.Collections.Immutable.ImmutableArray<T> AsImmutableArray()
@@ -111,7 +110,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void AsSpan_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.AsSpan()");
+        string content = GetMethodContent("EquatableArray.AsSpan()", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::System.ReadOnlySpan<T> AsSpan()
@@ -128,7 +127,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void GetEnumerator_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.GetEnumerator()");
+        string content = GetMethodContent("EquatableArray.GetEnumerator()", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::System.Collections.Immutable.ImmutableArray<T>.Enumerator GetEnumerator()
@@ -145,7 +144,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void GetEnumerator_IEnumeratorT_Content()
     {
         // Arrange
-        string content = GetMethodContentByIndex(5);
+        string content = GetMethodContentByIndex(5, "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 global::System.Collections.Generic.IEnumerator<T> global::System.Collections.Generic.IEnumerable<T>.GetEnumerator()
@@ -162,7 +161,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void GetEnumerator_IEnumerator_Content()
     {
         // Arrange
-        string content = GetMethodContentByIndex(6);
+        string content = GetMethodContentByIndex(6, "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator()
@@ -179,7 +178,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void Equals_EquatableArray_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.Equals(Hertzole.SourceGen.EquatableArray<T>)");
+        string content = GetMethodContent("EquatableArray.Equals(Hertzole.SourceGen.EquatableArray<T>)", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial bool Equals(global::Hertzole.SourceGen.EquatableArray<T> other)
@@ -196,7 +195,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void Equals_Object_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.Equals(object?)");
+        string content = GetMethodContent("EquatableArray.Equals(object?)", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public override partial bool Equals(object? other)
@@ -213,7 +212,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void GetHashCode_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.GetHashCode()");
+        string content = GetMethodContent("EquatableArray.GetHashCode()", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public override partial int GetHashCode()
@@ -242,7 +241,9 @@ internal class EquatableArrayTests : GeneratorTests
     public void EquatableArrayOperator_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.EquatableArrayOperator(System.Collections.Immutable.ImmutableArray<T>)");
+        string content = GetMethodContent("EquatableArray.EquatableArrayOperator(System.Collections.Immutable.ImmutableArray<T>)",
+            "EquatableArray.EquatableArray(T[])");
+
         const string expected = """
                                 public static implicit operator global::Hertzole.SourceGen.EquatableArray<T>(global::System.Collections.Immutable.ImmutableArray<T> array)
                                 {
@@ -258,7 +259,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void ImmutableArrayOperator_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.ImmutableArrayOperator(Hertzole.SourceGen.EquatableArray<T>)");
+        string content = GetMethodContent("EquatableArray.ImmutableArrayOperator(Hertzole.SourceGen.EquatableArray<T>)", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 public static implicit operator global::System.Collections.Immutable.ImmutableArray<T>(global::Hertzole.SourceGen.EquatableArray<T> array)
                                 {
@@ -274,7 +275,9 @@ internal class EquatableArrayTests : GeneratorTests
     public void Operator_Equality_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.==(Hertzole.SourceGen.EquatableArray<T>, Hertzole.SourceGen.EquatableArray<T>)");
+        string content = GetMethodContent("EquatableArray.==(Hertzole.SourceGen.EquatableArray<T>, Hertzole.SourceGen.EquatableArray<T>)",
+            "EquatableArray.EquatableArray(T[])");
+
         const string expected = """
                                 public static bool operator ==(global::Hertzole.SourceGen.EquatableArray<T> left, global::Hertzole.SourceGen.EquatableArray<T> right)
                                 {
@@ -290,7 +293,9 @@ internal class EquatableArrayTests : GeneratorTests
     public void Operator_Inequality_Content()
     {
         // Arrange
-        string content = GetMethodContent("EquatableArray.!=(Hertzole.SourceGen.EquatableArray<T>, Hertzole.SourceGen.EquatableArray<T>)");
+        string content = GetMethodContent("EquatableArray.!=(Hertzole.SourceGen.EquatableArray<T>, Hertzole.SourceGen.EquatableArray<T>)",
+            "EquatableArray.EquatableArray(T[])");
+
         const string expected = """
                                 public static bool operator !=(global::Hertzole.SourceGen.EquatableArray<T> left, global::Hertzole.SourceGen.EquatableArray<T> right)
                                 {
@@ -338,7 +343,7 @@ internal class EquatableArrayTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::System.Collections.Immutable.ImmutableArray<T> AsImmutableArray()
                                 {
-                                    return global::System.Runtime.CompilerServices.Unsafe.As<T[]?, global::System.Collections.Immutable.ImmutableArray<T>>(ref global::System.Runtime.CompilerServices.Unsafe.AsRef(in array));
+                                    return default;
                                 }
                                 """;
 
@@ -354,7 +359,7 @@ internal class EquatableArrayTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::System.ReadOnlySpan<T> AsSpan()
                                 {
-                                    return array == null ? global::System.ReadOnlySpan<T>.Empty : new global::System.ReadOnlySpan<T>(array, 0, array.Length);
+                                    return default;
                                 }
                                 """;
 
@@ -370,7 +375,7 @@ internal class EquatableArrayTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::System.Collections.Immutable.ImmutableArray<T>.Enumerator GetEnumerator()
                                 {
-                                    return AsImmutableArray().GetEnumerator();
+                                    return default;
                                 }
                                 """;
 
@@ -386,7 +391,7 @@ internal class EquatableArrayTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial bool Equals(global::Hertzole.SourceGen.EquatableArray<T> other)
                                 {
-                                    return global::System.MemoryExtensions.SequenceEqual<T>(AsSpan(), other.AsSpan());
+                                    return default;
                                 }
                                 """;
 
@@ -402,7 +407,7 @@ internal class EquatableArrayTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public override partial bool Equals(object? other)
                                 {
-                                    return other is global::Hertzole.SourceGen.EquatableArray<T> array && Equals(this, array);
+                                    return default;
                                 }
                                 """;
 
@@ -418,19 +423,7 @@ internal class EquatableArrayTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public override partial int GetHashCode()
                                 {
-                                    if (array == null)
-                                    {
-                                        return 0;
-                                    }
-                                    int hash = 17;
-                                    unchecked
-                                    {
-                                        for (int i = 0; i < Length; i++)
-                                        {
-                                            hash = hash * 31 + (this[i]?.GetHashCode() ?? 0);
-                                        }
-                                    }
-                                    return hash;
+                                    return default;
                                 }
                                 """;
 
@@ -442,7 +435,7 @@ internal class EquatableArrayTests : GeneratorTests
     public void Field_Array_Content()
     {
         // Arrange
-        string content = GetFieldContent("EquatableArray.array");
+        string content = GetFieldContent("EquatableArray.array", "EquatableArray.EquatableArray(T[])");
         const string expected = """
                                 private readonly T[]? array;
                                 """;
@@ -451,13 +444,13 @@ internal class EquatableArrayTests : GeneratorTests
         Assert.That(content, Is.EqualTo(expected));
     }
 
-    private static string GetMethodContentByIndex(int methodIndex)
+    private static string GetMethodContentByIndex(int methodIndex, params string[] calledMethods)
     {
         CancellationToken cancellationToken = CancellationToken.None;
         MethodSource method = Generator.TypesToGenerate["EquatableArray"].Methods![methodIndex];
         string fullName = $"Hertzole.SourceGen.EquatableArray.{method.Name}({method.ParameterTypesKey})";
         CodeWriter writer = new CodeWriter();
-        Generator.AppendMethod(writer, method, fullName, new ImplementationContext(new HashSet<string>(), cancellationToken));
+        Generator.AppendMethod(writer, method, fullName, new ImplementationContext(GetCalledMethods(calledMethods), cancellationToken));
         return writer.ToString();
     }
 }

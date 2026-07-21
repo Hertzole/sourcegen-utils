@@ -445,14 +445,6 @@ public sealed partial class Generator : IIncrementalGenerator
         foreach (KeyValuePair<string, TypeSource> pair in TypesToGenerate)
         {
             AppendDebugType(pair.Value, writer, pair.Key, NAMESPACE, 1);
-            // writer.AppendLine($"//     {NAMESPACE}.{pair.Key}");
-            // if (pair.Value.Methods != null)
-            // {
-            //     foreach (MethodSource method in pair.Value.Methods)
-            //     {
-            //         writer.AppendLine($"//         {NAMESPACE}.{pair.Key}.{method.Name}({method.ParameterTypesKey})");
-            //     }
-            // }
         }
 
         context.AddSource("Debug.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
@@ -615,7 +607,8 @@ public sealed partial class Generator : IIncrementalGenerator
         }
 
         WriteAttributes(method, writer, in context);
-        writer.AppendLine(method.Signature);
+        writer.AppendLine(ClearSignatureFromDefaults(method.Signature));
+
         using (writer.WithBlock())
         {
             if (method.AlwaysWrite || context.HasCalledMethod(fullName) && AreAllDependenciesMet(method.RequiredDependencies, in context))
@@ -635,6 +628,24 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             writer.AppendPreprocessorSymbol("#endif");
         }
+    }
+
+    private static string ClearSignatureFromDefaults(string signature)
+    {
+        ReadOnlySpan<char> span = signature.AsSpan();
+
+        int equalsIndex = span.IndexOf("= ");
+
+        if (equalsIndex == -1)
+        {
+            return signature;
+        }
+
+        //TODO: Pool
+        //PERF: Use spans?
+        StringBuilder sb = new StringBuilder(signature);
+        sb.Replace(" = null", string.Empty).Replace(" = default", string.Empty);
+        return sb.ToString();
     }
 
     internal static bool WriteFieldOrProperty(BaseSource source, CodeWriter writer, in ImplementationContext context)

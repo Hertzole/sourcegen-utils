@@ -7,24 +7,42 @@
         <LangVersion>latest</LangVersion>
 
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-        <IsRoslynComponent>true</IsRoslynComponent>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
 
         <RootNamespace>Hertzole.SourceGenUtils</RootNamespace>
-        <PackageId>SourceGenUtils</PackageId>
+        <PackageId>Hertzole.SourceGenUtils</PackageId>
         <AssemblyName>SourceGenUtils</AssemblyName>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
+
         <Authors>Hertzole</Authors>
         <Company>Hertzole</Company>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <Title>SourceGenUtils</Title>
+        <PackageProjectUrl>https://github.com/Hertzole/sourcegenutils</PackageProjectUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/Hertzole/sourcegenutils</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>sourcegen, source, source generator, incremental, incremental generator, util, utility, utils, string, stringbuilder, builder, string builder, code, codewriter, code writer</PackageTags>
+        <NeutralLanguage>en-US</NeutralLanguage>
+        <Version>0.9.0</Version>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <NoWarn>NU5128</NoWarn> <!-- Ignore warning about no files in libs folder. Generator publishes to analyzer folder. -->
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.3.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../../README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+        <!-- Package the generator in the analyzer directory of the nuget package -->
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     </ItemGroup>
 
 </Project>

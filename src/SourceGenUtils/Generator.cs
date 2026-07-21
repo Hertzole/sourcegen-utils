@@ -145,6 +145,8 @@ public sealed partial class Generator : IIncrementalGenerator
     {
         context.RegisterPostInitializationOutput(ctx =>
         {
+            ctx.AddEmbeddedAttributeDefinition();
+
             foreach (KeyValuePair<string, TypeSource> source in TypesToGenerate)
             {
                 ctx.CancellationToken.ThrowIfCancellationRequested();
@@ -313,6 +315,7 @@ public sealed partial class Generator : IIncrementalGenerator
         }
 
         AppendTrivia(writer, type.Trivia, context.CancellationToken);
+        writer.AppendEmbeddedAttribute();
         writer.AppendLine(type.Signature);
 
         using (writer.WithBlock())

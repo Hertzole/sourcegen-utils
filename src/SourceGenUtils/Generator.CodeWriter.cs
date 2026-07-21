@@ -738,6 +738,28 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "AppendEmbeddedAttribute",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendEmbeddedAttribute()",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine(disposed_call);
+                        writer.AppendLine("WriteIndentIfNeeded();");
+                        writer.AppendLine("builder.Append(\"[global::Microsoft.CodeAnalysis.EmbeddedAttribute]\\n\");");
+                        writer.AppendLine("shouldWriteIndent = true;");
+                        writer.AppendLine(return_this);
+                    },
+                    Dependencies = appendDependencies,
+                    EmptyStub = return_this,
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Appends an <c>[Embedded]</c> attribute to the current line. You should only use this if you've added <c>Microsoft.CodeAnalysis.EmbeddedAttribute</c>.",
+                        Returns = "The current code writer instance."
+                    }
+                },
+                new MethodSource
+                {
                     Name = "AppendConditionalSymbol",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendConditionalSymbol(string? condition)",
                     Attributes = AggressiveInlineAttribute,

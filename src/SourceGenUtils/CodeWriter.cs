@@ -156,6 +156,13 @@ internal sealed class CodeWriter
         shouldWriteIndent = true;
     }
 
+    public void AppendEmbeddedAttribute()
+    {
+        WriteIndentIfNeeded();
+        builder.Append("[global::Microsoft.CodeAnalysis.EmbeddedAttribute]\n");
+        shouldWriteIndent = true;
+    }
+
     private void WriteIndentIfNeeded()
     {
         if (!shouldWriteIndent)

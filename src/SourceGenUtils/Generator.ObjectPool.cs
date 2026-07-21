@@ -74,7 +74,7 @@ partial class Generator
                 {
                     Name = "Get",
                     Signature = "public partial T Get()",
-                    EmptyStub = "return default;",
+                    EmptyStub = "return default!;",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("T result;");
@@ -104,7 +104,7 @@ partial class Generator
                 {
                     Name = "Get",
                     Signature = "public partial global::" + NAMESPACE + ".PoolScope<T> Get(out T item)",
-                    EmptyStub = "item = default; return default;",
+                    EmptyStub = "item = default!; return default;",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("item = Get();");

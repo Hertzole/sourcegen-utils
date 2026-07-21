@@ -3,6 +3,5 @@
     <Project Path="tests/SourceGenUtils.IntegrationTests/SourceGenUtils.IntegrationTests.csproj"/>
     <Project Path="tests/SourceGenUtils.Tests/SourceGenUtils.Tests.csproj"/>
   </Folder>
-  <Project Path="src/SourceGenUtils.Sample/SourceGenUtils.Sample.csproj" />
   <Project Path="src/SourceGenUtils/SourceGenUtils.csproj" />
 </Solution>

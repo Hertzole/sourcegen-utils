@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: fast-actions/setup-dotnet@v1
+        with:
+          sdk-version: "10.x"
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          ASSEMBLY_VERSION="$(echo "$TAG" | sed 's/-.*//').0"
+          echo "VERSION=$TAG" >> "$GITHUB_OUTPUT"
+          echo "ASSEMBLY_VERSION=$ASSEMBLY_VERSION" >> "$GITHUB_OUTPUT"
+          echo "TAG_NAME=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: dotnet build -c Release -p:AssemblyVersion="${{ steps.version.outputs.ASSEMBLY_VERSION }}" -p:Version="${{ steps.version.outputs.VERSION }}"
+
+      - name: Pack
+        run: dotnet pack -c Release -p:AssemblyVersion="${{ steps.version.outputs.ASSEMBLY_VERSION }}" -p:Version="${{ steps.version.outputs.VERSION }}"
+
+      - name: Push to GitHub Packages
+        run: dotnet nuget push "src/SourceGenUtils/bin/Release/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate
+        
+      - name: NuGet login (OIDC → temp API key)
+          uses: NuGet/login@v1
+          id: nuget_login
+          with:
+            user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to NuGet
+        run: dotnet nuget push "src/SourceGenUtils/bin/Release/*.nupkg" --api-key ${{ steps.nuget_login.outputs.api_key }} --source https://api.nuget.org/v3/index.json --skip-duplicate

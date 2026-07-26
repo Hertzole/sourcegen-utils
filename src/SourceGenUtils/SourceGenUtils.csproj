@@ -15,7 +15,6 @@
 
         <Authors>Hertzole</Authors>
         <Company>Hertzole</Company>
-        <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <Title>SourceGenUtils</Title>
         <PackageProjectUrl>https://github.com/Hertzole/sourcegenutils</PackageProjectUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -23,11 +22,9 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>sourcegen, source, source generator, incremental, incremental generator, util, utility, utils, string, stringbuilder, builder, string builder, code, codewriter, code writer</PackageTags>
         <NeutralLanguage>en-US</NeutralLanguage>
-        <Version>1.0.0-rc.1</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <NoWarn>NU5128</NoWarn> <!-- Ignore warning about no files in libs folder. Generator publishes to analyzer folder. -->
     </PropertyGroup>

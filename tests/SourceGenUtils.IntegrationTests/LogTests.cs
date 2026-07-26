@@ -1,3 +1,4 @@
+#if DEBUG
 using System.Reflection;
 using Bogus;
 using Hertzole.SourceGen;
@@ -101,3 +102,4 @@ public class LogTests
         Assert.That(withoutTimestamp, Does.Contain(message));
     }
 }
+#endif

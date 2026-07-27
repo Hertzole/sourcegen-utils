@@ -77,8 +77,7 @@ internal class CodeWriterTests : GeneratorTests
             "ToString()",
             "Dispose()",
             "WithBlock()",
-            "WithIndent(int)",
-            "AsStringBuilder()"
+            "WithIndent(int)"
         ];
     }
 

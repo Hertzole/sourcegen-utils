@@ -1005,29 +1005,6 @@ partial class Generator
                 },
                 new MethodSource
                 {
-                    Name = "AsStringBuilder",
-                    Signature = "public partial global::System.Text.StringBuilder AsStringBuilder()",
-                    Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in ctx) =>
-                    {
-                        if (!HasWrittenAnything(in ctx))
-                        {
-                            writer.AppendLine("return new global::System.Text.StringBuilder();");
-                            return;
-                        }
-
-                        writer.AppendLine("return builder;");
-                    },
-                    EmptyStub = "return null!;",
-                    Trivia = new TriviaSource
-                    {
-                        Summary =
-                            "Returns the underlying <c>StringBuilder</c>. The caller takes ownership of the builder and this may mutate the <c>CodeWriter</c>.",
-                        Returns = "The underlying <c>StringBuilder</c>."
-                    }
-                },
-                new MethodSource
-                {
                     Name = "WithBlock",
                     Signature = "public partial global::" + NAMESPACE + ".CodeWriter.BlockScope WithBlock()",
                     EmptyStub = "return default;",

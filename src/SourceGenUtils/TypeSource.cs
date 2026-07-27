@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -48,64 +47,52 @@ internal sealed class TypeSource : IHasAttributes
         return false;
     }
 
-    public string[]? GetMethodDependencies(string methodName, int? paramCount, CancellationToken cancellationToken)
+    public void GetMethodDependencies(string methodName, int? paramCount, List<string> deps, CancellationToken cancellationToken)
     {
         if (Methods == null || Methods.Length == 0)
         {
-            return Array.Empty<string>();
+            return;
         }
 
-        List<string>? deps = null;
         foreach (MethodSource m in Methods)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (m.Name == methodName
-                && (!paramCount.HasValue || m.ParameterCount == paramCount.Value)
-                && m.Dependencies != null)
+            if (m.Name == methodName && (!paramCount.HasValue || m.ParameterCount == paramCount.Value) && m.Dependencies != null)
             {
-                if (deps == null)
-                {
-                    deps = new List<string>(m.Dependencies);
-                }
-                else
-                {
-                    deps.AddRange(m.Dependencies);
-                }
+                deps.AddRange(m.Dependencies);
             }
         }
-
-        return deps?.ToArray();
     }
 
-    public string[]? GetMethodDependencies(string methodName, string parameterTypesKey, CancellationToken cancellationToken)
+    public void GetMethodDependencies(string methodName, string parameterTypesKey, List<string> deps, CancellationToken cancellationToken)
     {
         if (Methods == null || Methods.Length == 0)
         {
-            return Array.Empty<string>();
+            return;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         foreach (MethodSource m in Methods)
         {
-            if (m.Name == methodName && m.ParameterTypesKey == parameterTypesKey)
+            if (m.Name == methodName && m.ParameterTypesKey == parameterTypesKey && m.Dependencies != null)
             {
-                return m.Dependencies;
+                deps.AddRange(m.Dependencies);
+                return;
             }
         }
-
-        return null;
     }
 
-    public string[]? GetMethodDependenciesRecursive(string methodPath, string parameterTypesKey, CancellationToken cancellationToken)
+    public void GetMethodDependenciesRecursive(string methodPath, string parameterTypesKey, List<string> deps, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         int dot = methodPath.IndexOf('.');
         if (dot < 0)
         {
-            return GetMethodDependencies(methodPath, parameterTypesKey, cancellationToken);
+            GetMethodDependencies(methodPath, parameterTypesKey, deps, cancellationToken);
+            return;
         }
 
         string nestedName = methodPath.Substring(0, dot);
@@ -113,18 +100,17 @@ internal sealed class TypeSource : IHasAttributes
 
         if (Types != null && Types.TryGetValue(nestedName, out TypeSource? nested))
         {
-            return nested.GetMethodDependenciesRecursive(rest, parameterTypesKey, cancellationToken);
+            nested.GetMethodDependenciesRecursive(rest, parameterTypesKey, deps, cancellationToken);
         }
-
-        return null;
     }
 
-    public string[]? GetMethodDependenciesRecursive(string methodPath, int? paramCount, CancellationToken cancellationToken)
+    public void GetMethodDependenciesRecursive(string methodPath, int? paramCount, List<string> deps, CancellationToken cancellationToken)
     {
         int dot = methodPath.IndexOf('.');
         if (dot < 0)
         {
-            return GetMethodDependencies(methodPath, paramCount, cancellationToken);
+            GetMethodDependencies(methodPath, paramCount, deps, cancellationToken);
+            return;
         }
 
         string nestedName = methodPath.Substring(0, dot);
@@ -132,9 +118,7 @@ internal sealed class TypeSource : IHasAttributes
 
         if (Types != null && Types.TryGetValue(nestedName, out TypeSource? nested))
         {
-            return nested.GetMethodDependenciesRecursive(rest, paramCount, cancellationToken);
+            nested.GetMethodDependenciesRecursive(rest, paramCount, deps, cancellationToken);
         }
-
-        return null;
     }
 }

@@ -247,7 +247,7 @@ public sealed partial class Generator : IIncrementalGenerator
                 try
                 {
                     // PERF: Pool collections
-                    HashSet<string> calledSet = new HashSet<string>(t.Distinct()!);
+                    HashSet<string> calledSet = new HashSet<string>(t);
                     calledSet = ExpandDependencies(calledSet, ctx.CancellationToken);
                     GenerateCode(ctx, calledSet);
                 }
@@ -749,17 +749,17 @@ public sealed partial class Generator : IIncrementalGenerator
         // PERF: Pool collections
         HashSet<string> expanded = new HashSet<string>(calledMethods);
         Queue<string> queue = new Queue<string>(calledMethods);
+        List<string>? deps = null;
 
-        // PERF: Use spans 
         while (queue.Count > 0)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string current = queue.Dequeue();
+            ReadOnlySpan<char> current = queue.Dequeue().AsSpan();
             int namespaceStart = current.IndexOf(NAMESPACE, StringComparison.Ordinal);
             if (namespaceStart >= 0)
             {
-                current = current.Substring(namespaceStart + NAMESPACE.Length + 1);
+                current = current.Slice(namespaceStart + NAMESPACE.Length + 1);
             }
 
             int dot = current.IndexOf('.');
@@ -768,29 +768,31 @@ public sealed partial class Generator : IIncrementalGenerator
                 continue;
             }
 
-            string className = current.Substring(0, dot);
-            string rest = current.Substring(dot + 1);
+            ReadOnlySpan<char> className = current.Slice(0, dot);
+            ReadOnlySpan<char> rest = current.Slice(dot + 1);
 
-            string methodPath;
+            ReadOnlySpan<char> methodPath;
             int? paramCount = null;
-            string? paramTypesKey = null;
+            ReadOnlySpan<char> paramTypesKey = null;
+            bool hasParamTypeKey = false;
 
             int openParen = rest.IndexOf('(');
             if (openParen >= 0)
             {
-                methodPath = rest.Substring(0, openParen);
+                methodPath = rest.Slice(0, openParen);
                 int closeParen = rest.LastIndexOf(')');
                 if (closeParen > openParen)
                 {
-                    paramTypesKey = rest.Substring(openParen + 1, closeParen - openParen - 1);
+                    paramTypesKey = rest.Slice(openParen + 1, closeParen - openParen - 1);
+                    hasParamTypeKey = true;
                 }
             }
             else
             {
                 int colon = rest.IndexOf(':');
-                if (colon >= 0 && int.TryParse(rest.Substring(colon + 1), out int pc))
+                if (colon >= 0 && int.TryParse(rest.Slice(colon + 1).ToString(), out int pc))
                 {
-                    methodPath = rest.Substring(0, colon);
+                    methodPath = rest.Slice(0, colon);
                     paramCount = pc;
                 }
                 else
@@ -799,19 +801,21 @@ public sealed partial class Generator : IIncrementalGenerator
                 }
             }
 
-            if (TypesToGenerate.TryGetValue(className, out TypeSource? typeSource))
+            if (TypesToGenerate.TryGetValue(className.ToString(), out TypeSource? typeSource))
             {
-                string[]? deps;
-                if (paramTypesKey != null)
+                deps ??= new List<string>();
+                deps.Clear();
+
+                if (hasParamTypeKey)
                 {
-                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramTypesKey, cancellationToken);
+                    typeSource.GetMethodDependenciesRecursive(methodPath.ToString(), paramTypesKey.ToString(), deps, cancellationToken);
                 }
                 else
                 {
-                    deps = typeSource.GetMethodDependenciesRecursive(methodPath, paramCount, cancellationToken);
+                    typeSource.GetMethodDependenciesRecursive(methodPath.ToString(), paramCount, deps, cancellationToken);
                 }
 
-                if (deps != null)
+                if (deps.Count > 0)
                 {
                     foreach (string dep in deps)
                     {

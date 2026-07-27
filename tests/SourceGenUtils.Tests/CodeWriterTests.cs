@@ -106,7 +106,8 @@ internal class CodeWriterTests : GeneratorTests
             "ToString()",
             "Dispose()",
             "WithBlock()",
-            "WithIndent(int)"
+            "WithIndent(int)",
+            "WithCondition(string?)"
         ];
     }
 
@@ -860,14 +861,19 @@ internal class CodeWriterTests : GeneratorTests
                                         return this;
                                     }
 
+                                    global::System.ReadOnlySpan<char> span = global::System.MemoryExtensions.Trim(global::System.MemoryExtensions.AsSpan(condition));
                                     int indent = Indent;
                                     Indent = 0;
-                                    if (condition![0] != '#')
+                                    if (global::System.MemoryExtensions.StartsWith(span, "if "))
                                     {
                                         builder.Append('#');
                                     }
+                                    else if (!global::System.MemoryExtensions.StartsWith(span, "#if "))
+                                    {
+                                        builder.Append("#if ");
+                                    }
 
-                                    builder.Append(condition);
+                                    Append(span);
                                     builder.Append('\n');
                                     Indent = indent;
                                     return this;

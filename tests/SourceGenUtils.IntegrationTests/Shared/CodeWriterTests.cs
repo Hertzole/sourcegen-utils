@@ -863,6 +863,31 @@ public class CodeWriterTests
         Assert.That(writer.ToString(), Is.Empty);
     }
 
+    [Test]
+    [TestCase("TEST")]
+    [TestCase("#if TEST")]
+    [TestCase("if TEST")]
+    [TestCase(" TEST")]
+    public void WithCondition(string condition)
+    {
+        // Arrange
+        string message = faker.Lorem.Sentence();
+        string expected = $"""
+                           #if TEST
+                           {message}
+                           #endif
+                           """;
+
+        // Act
+        using (writer.WithCondition(condition))
+        {
+            writer.AppendLine(message);
+        }
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
     private void AppendTest(Action<CodeWriter> write, string expectedMessage)
     {
         // Arrange

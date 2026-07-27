@@ -1079,28 +1079,37 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
+                        const string memory_ext = "global::System.MemoryExtensions";
+
                         writer.AppendLine(disposed_call);
                         writer.AppendLine("if (string.IsNullOrWhiteSpace(condition))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine(return_this);
                         }
 
-                        writer.AppendLine();
+                        writer.AppendLine($"global::System.ReadOnlySpan<char> span = {memory_ext}.Trim({memory_ext}.AsSpan(condition));");
                         writer.AppendLine("int indent = Indent;");
                         writer.AppendLine("Indent = 0;");
-                        writer.AppendLine("if (condition![0] != '#')");
-                        using (writer.WithBlock(true))
+
+                        writer.AppendLine($"if ({memory_ext}.StartsWith(span, \"if \"))");
+                        using (writer.WithBlock())
                         {
                             writer.AppendLine("builder.Append('#');");
                         }
 
-                        writer.AppendLine("builder.Append(condition);");
+                        writer.AppendLine($"else if (!{memory_ext}.StartsWith(span, \"#if \"))");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("builder.Append(\"#if \");");
+                        }
+
+                        writer.AppendLine("Append(span);");
                         writer.AppendLine(new_line);
                         writer.AppendLine("Indent = indent;");
                         writer.AppendLine(return_this);
                     },
-                    Dependencies = [dispose, throw_if_disposed],
+                    Dependencies = [dispose, throw_if_disposed, CODE_WRITER + ".Append(System.ReadOnlySpan<char>)"],
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
@@ -1364,6 +1373,27 @@ partial class Generator
                         },
                         Returns = "A disposable scope that restores the original indentation when disposed."
                     }
+                },
+                new MethodSource
+                {
+                    Name = "WithCondition",
+                    Signature = "public partial global::" + NAMESPACE + ".CodeWriter.ConditionalScope WithCondition(string? conditional)",
+                    EmptyStub = "return default;",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine(disposed_call);
+                        writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.ConditionalScope(this, conditional);");
+                    },
+                    Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope(Hertzole.SourceGen.CodeWriter, string?)", throw_if_disposed],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Temporarily changes the indentation level. Returns a disposable scope that restores the original indentation when disposed.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["newIndent"] = "The indentation level to use within the scope."
+                        },
+                        Returns = "A disposable scope that restores the original indentation when disposed."
+                    }
                 }
             ],
             Types = new Dictionary<string, TypeSource>
@@ -1473,6 +1503,56 @@ partial class Generator
                             Trivia = new TriviaSource
                             {
                                 Summary = "Restores the original indentation level."
+                            }
+                        }
+                    ]
+                },
+                ["ConditionalScope"] = new TypeSource
+                {
+                    Signature = "internal readonly partial struct ConditionalScope : global::System.IDisposable",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Disposable scope that appends <c>#if CONDITION</c>. Appends <c>#endif</c> on disposal."
+                    },
+                    Fields = new Dictionary<string, FieldSource>
+                    {
+                        ["writer"] = new FieldSource
+                        {
+                            Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
+                            Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope"]
+                        }
+                    },
+                    Methods =
+                    [
+                        new MethodSource
+                        {
+                            Name = "ConditionalScope",
+                            Signature = $"public partial ConditionalScope(global::{NAMESPACE}.CodeWriter writer, string? condition)",
+                            Implementation = (writer, in _) =>
+                            {
+                                writer.AppendLine("this.writer = writer;");
+                                writer.AppendLine("writer.AppendConditionalSymbol(condition);");
+                            },
+                            Dependencies = [CODE_WRITER + ".ConditionalScope.Dispose()", CODE_WRITER + ".AppendConditionalSymbol(string?)"],
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Creates a new conditional scope.",
+                                Parameters = new Dictionary<string, string>
+                                {
+                                    ["writer"] = "The code writer to modify.",
+                                    ["condition"] = "The condition to append."
+                                }
+                            }
+                        },
+                        new MethodSource
+                        {
+                            Name = "Dispose",
+                            Signature = "public partial void Dispose()",
+                            Implementation = (writer, in _) => { writer.AppendLine("writer.AppendPreprocessorSymbol(\"#endif\");"); },
+                            Dependencies = [CODE_WRITER + ".AppendPreprocessorSymbol(string?)"],
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Closes the conditional."
                             }
                         }
                     ]

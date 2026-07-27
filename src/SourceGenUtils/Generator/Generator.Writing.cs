@@ -24,6 +24,14 @@ partial class Generator
             writer.AppendLine("/// </summary>");
         }
 
+        if (!string.IsNullOrWhiteSpace(trivia.Remarks))
+        {
+            writer.AppendLine("/// <remarks>");
+            writer.Append("/// ");
+            writer.AppendLine(trivia.Remarks!);
+            writer.AppendLine("/// </remarks>");
+        }
+
         if (trivia.Parameters != null && trivia.Parameters.Count > 0)
         {
             foreach (KeyValuePair<string, string> valuePair in trivia.Parameters)

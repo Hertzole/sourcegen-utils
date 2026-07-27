@@ -37,10 +37,12 @@ partial class Generator
                 Implementation = (writer, in _) =>
                 {
                     writer.AppendLine($"context.AddSource(hintName, {source_text}.From(writer.ToString(), {global_encoding}.UTF8));");
+                    writer.AppendLine("writer.Clear();");
                 },
                 Trivia = new TriviaSource
                 {
                     Summary = $"Adds source code from the provided <see cref=\"{CODE_WRITER}\" /> to the compilation.",
+                    Remarks = "The writer will be cleared after adding the source.",
                     Parameters = new Dictionary<string, string>
                     {
                         { "context", "The context to add the source to." },
@@ -58,11 +60,16 @@ partial class Generator
                 Name = "AddSource",
                 Signature =
                     $"public static partial void AddSource(this {ms_analysis}.{context} context, string hintName, {code_writer} writer, {global_encoding} encoding)",
-                Implementation = (writer, in _) => { writer.AppendLine($"context.AddSource(hintName, {source_text}.From(writer.ToString(), encoding));"); },
+                Implementation = (writer, in _) =>
+                {
+                    writer.AppendLine($"context.AddSource(hintName, {source_text}.From(writer.ToString(), encoding));");
+                    writer.AppendLine("writer.Clear();");
+                },
                 Trivia = new TriviaSource
                 {
                     Summary =
                         $"Adds source code from the provided <see cref=\"{CODE_WRITER}\" /> to the compilation with a specified <see cref=\"{encoding}\" />.",
+                    Remarks = "The writer will be cleared after adding the source.",
                     Parameters = new Dictionary<string, string>
                     {
                         { "context", "The context to add the source to." },

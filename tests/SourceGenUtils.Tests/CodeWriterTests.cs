@@ -502,12 +502,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(object value)
                                 {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
+                                    return value == null ? this : AppendLine(value.ToString());
                                 }
                                 """;
 
@@ -672,12 +667,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendLine(bool value)
                                 {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
+                                    return AppendLine(value ? "true" : "false");
                                 }
                                 """;
 
@@ -849,11 +839,7 @@ internal class CodeWriterTests : GeneratorTests
                                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                                 public partial global::Hertzole.SourceGen.CodeWriter AppendExcludeFromCodeCoverageAttribute()
                                 {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\n");
-                                    shouldWriteIndent = true;
-                                    return this;
+                                    return AppendLine("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");
                                 }
                                 """;
 
@@ -876,7 +862,11 @@ internal class CodeWriterTests : GeneratorTests
 
                                     int indent = Indent;
                                     Indent = 0;
-                                    builder.Append('#');
+                                    if (condition![0] != '#')
+                                    {
+                                        builder.Append('#');
+                                    }
+
                                     builder.Append(condition);
                                     builder.Append('\n');
                                     Indent = indent;
@@ -1051,7 +1041,11 @@ internal class CodeWriterTests : GeneratorTests
 
                                     if (hasNamespace && !hasWrittenNamespace)
                                     {
-                                        builder.Append('\n');
+                                        if (builder[builder.Length - 1] != '\n')
+                                        {
+                                            builder.Append('\n');
+                                        }
+
                                         Indent--;
                                         builder.Append("}\n");
                                         hasWrittenNamespace = true;
@@ -1117,7 +1111,11 @@ internal class CodeWriterTests : GeneratorTests
 
                                     if (hasNamespace && !hasWrittenNamespace)
                                     {
-                                        builder.Append('\n');
+                                        if (builder[builder.Length - 1] != '\n')
+                                        {
+                                            builder.Append('\n');
+                                        }
+
                                         Indent--;
                                         builder.Append("}\n");
                                         hasWrittenNamespace = true;

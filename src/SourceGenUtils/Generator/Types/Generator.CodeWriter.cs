@@ -549,7 +549,7 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(string? value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
                         writer.AppendLine(disposed_call);
                         writer.AppendLine("if (!string.IsNullOrEmpty(value))");
@@ -914,7 +914,7 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(bool value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
+                    Implementation = (writer, in _) => { writer.AppendLine("return AppendLine(value ? \"true\" : \"false\");"); },
                     Dependencies = appendDependencies,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("bool")
@@ -924,7 +924,7 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(object value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
+                    Implementation = (writer, in _) => { writer.AppendLine("return value == null ? this : AppendLine(value.ToString());"); },
                     Dependencies = appendDependencies,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("object")
@@ -1047,13 +1047,9 @@ partial class Generator
                     Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine(disposed_call);
-                        writer.AppendLine("WriteIndentIfNeeded();");
-                        writer.AppendLine("builder.Append(\"[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\\n\");");
-                        writer.AppendLine("shouldWriteIndent = true;");
-                        writer.AppendLine(return_this);
+                        writer.AppendLine("return AppendLine(\"[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]\");");
                     },
-                    Dependencies = appendDependencies,
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
@@ -1066,15 +1062,8 @@ partial class Generator
                     Name = "AppendEmbeddedAttribute",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendEmbeddedAttribute()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in _) =>
-                    {
-                        writer.AppendLine(disposed_call);
-                        writer.AppendLine("WriteIndentIfNeeded();");
-                        writer.AppendLine("builder.Append(\"[global::Microsoft.CodeAnalysis.EmbeddedAttribute]\\n\");");
-                        writer.AppendLine("shouldWriteIndent = true;");
-                        writer.AppendLine(return_this);
-                    },
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => { writer.AppendLine("return AppendLine(\"[global::Microsoft.CodeAnalysis.EmbeddedAttribute]\");"); },
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
@@ -1100,7 +1089,12 @@ partial class Generator
                         writer.AppendLine();
                         writer.AppendLine("int indent = Indent;");
                         writer.AppendLine("Indent = 0;");
-                        writer.AppendLine("builder.Append('#');");
+                        writer.AppendLine("if (condition![0] != '#')");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("builder.Append('#');");
+                        }
+
                         writer.AppendLine("builder.Append(condition);");
                         writer.AppendLine(new_line);
                         writer.AppendLine("Indent = indent;");
@@ -1249,7 +1243,12 @@ partial class Generator
                             writer.AppendLine("if (hasNamespace && !hasWrittenNamespace)");
                             using (writer.WithBlock())
                             {
-                                writer.AppendLine(new_line);
+                                writer.AppendLine("if (builder[builder.Length - 1] != '\\n')");
+                                using (writer.WithBlock(true))
+                                {
+                                    writer.AppendLine(new_line);
+                                }
+
                                 writer.AppendLine("Indent--;");
                                 writer.AppendLine("builder.Append(\"}\\n\");");
                                 writer.AppendLine("hasWrittenNamespace = true;");

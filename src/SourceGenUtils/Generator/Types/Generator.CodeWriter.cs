@@ -164,8 +164,13 @@ partial class Generator
                         }
                         else
                         {
-                            writer.AppendLine("// Consider allowing unsafe code in your project to avoid this allocation.");
-                            writer.AppendLine("builder.Append(value.ToString());");
+                            writer.AppendLine("// Consider allowing unsafe code in your project to use pointers here instead.");
+                            writer.AppendLine("builder.EnsureCapacity(builder.Length + value.Length);");
+                            writer.AppendLine("for (int i = 0; i < value.Length; i++)");
+                            using (writer.WithBlock())
+                            {
+                                writer.AppendLine("builder.Append(value[i]);");
+                            }
                         }
 
                         writer.AppendLine("return this;");
@@ -443,8 +448,13 @@ partial class Generator
                         }
                         else
                         {
-                            writer.AppendLine("// Consider allowing unsafe code in your project to avoid this allocation.");
-                            writer.AppendLine("builder.Append(value.ToString());");
+                            writer.AppendLine("// Consider allowing unsafe code in your project to use pointers here instead.");
+                            writer.AppendLine("builder.EnsureCapacity(builder.Length + value.Length);");
+                            writer.AppendLine("for (int i = 0; i < value.Length; i++)");
+                            using (writer.WithBlock())
+                            {
+                                writer.AppendLine("builder.Append(value[i]);");
+                            }
                         }
 
                         writer.AppendLine(new_line);

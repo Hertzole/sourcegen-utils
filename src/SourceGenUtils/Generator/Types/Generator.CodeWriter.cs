@@ -177,6 +177,16 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(global::System.ReadOnlyMemory<char> value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => { writer.AppendLine("return Append(value.Span);"); },
+                    Dependencies = [CODE_WRITER + ".Append(System.ReadOnlySpan<char>)"],
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("ReadOnlyMemory<char>")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
@@ -444,6 +454,16 @@ partial class Generator
                     Dependencies = appendDependencies,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("ReadOnlySpan&lt;char&gt;")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(global::System.ReadOnlyMemory<char> value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in context) => { writer.AppendLine("return AppendLine(value.Span);"); },
+                    Dependencies = [CODE_WRITER + ".AppendLine(System.ReadOnlySpan<char>)"],
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("ReadOnlyMemory<char>")
                 },
                 new MethodSource
                 {

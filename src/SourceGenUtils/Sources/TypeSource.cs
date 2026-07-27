@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -65,7 +66,10 @@ internal sealed class TypeSource : IHasAttributes
         }
     }
 
-    public void GetMethodDependencies(string methodName, string parameterTypesKey, List<string> deps, CancellationToken cancellationToken)
+    public void GetMethodDependencies(ReadOnlySpan<char> methodName,
+        ReadOnlySpan<char> parameterTypesKey,
+        List<string> deps,
+        CancellationToken cancellationToken)
     {
         if (Methods == null || Methods.Length == 0)
         {
@@ -76,15 +80,30 @@ internal sealed class TypeSource : IHasAttributes
 
         foreach (MethodSource m in Methods)
         {
-            if (m.Name == methodName && m.ParameterTypesKey == parameterTypesKey && m.Dependencies != null)
+            if (IsMethodMatch(m, methodName, parameterTypesKey) && m.Dependencies != null)
             {
                 deps.AddRange(m.Dependencies);
                 return;
             }
         }
+
+        return;
+
+        static bool IsMethodMatch(MethodSource m, ReadOnlySpan<char> methodName, ReadOnlySpan<char> parameterTypesKey)
+        {
+            if (!m.Name.Equals(methodName, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return m.ParameterTypesKey.Equals(parameterTypesKey, StringComparison.Ordinal);
+        }
     }
 
-    public void GetMethodDependenciesRecursive(string methodPath, string parameterTypesKey, List<string> deps, CancellationToken cancellationToken)
+    public void GetMethodDependenciesRecursive(ReadOnlySpan<char> methodPath,
+        ReadOnlySpan<char> parameterTypesKey,
+        List<string> deps,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -95,8 +114,8 @@ internal sealed class TypeSource : IHasAttributes
             return;
         }
 
-        string nestedName = methodPath.Substring(0, dot);
-        string rest = methodPath.Substring(dot + 1);
+        string nestedName = methodPath.Slice(0, dot).ToString();
+        ReadOnlySpan<char> rest = methodPath.Slice(dot + 1);
 
         if (Types != null && Types.TryGetValue(nestedName, out TypeSource? nested))
         {

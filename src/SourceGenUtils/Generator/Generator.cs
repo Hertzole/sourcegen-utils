@@ -480,7 +480,7 @@ public sealed partial class Generator : IIncrementalGenerator
 
                 if (hasParamTypeKey)
                 {
-                    typeSource.GetMethodDependenciesRecursive(methodPath.ToString(), paramTypesKey.ToString(), deps, cancellationToken);
+                    typeSource.GetMethodDependenciesRecursive(methodPath, paramTypesKey, deps, cancellationToken);
                 }
                 else
                 {

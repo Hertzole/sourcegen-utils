@@ -65,7 +65,7 @@ partial class Generator
                         codeWriter.AppendLine($"writer = {writer}.pool.Get();");
                         codeWriter.AppendLine("writer.EnsureCapacity(capacity);");
                     },
-                    Dependencies = [..constructorArgs, $"{writer_no_generic}.EnsureCapacity(int)"],
+                    Dependencies = [.. constructorArgs, $"{writer_no_generic}.EnsureCapacity(int)"],
                     Trivia = new TriviaSource
                     {
                         Summary = "Creates a new <see cref=\"ArrayBuilder{T}\"/> with the specified initial capacity.",
@@ -84,7 +84,7 @@ partial class Generator
                         codeWriter.AppendLine($"writer = {writer}.pool.Get();");
                         codeWriter.AppendLine("writer.AddRange(items);");
                     },
-                    Dependencies = [..constructorArgs, $"{writer_no_generic}.AddRange(System.ReadOnlySpan<T>)"],
+                    Dependencies = [.. constructorArgs, $"{writer_no_generic}.AddRange(System.ReadOnlySpan<T>)"],
                     Trivia = new TriviaSource
                     {
                         Summary = "Creates a new <see cref=\"ArrayBuilder{T}\"/> initialized with the specified items.",

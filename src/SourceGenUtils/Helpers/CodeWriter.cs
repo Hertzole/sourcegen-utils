@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Hertzole.SourceGenUtils;
 
-internal sealed class CodeWriter
+internal sealed class CodeWriter : IDisposable
 {
     private readonly StringBuilder builder = new StringBuilder(1024);
 
@@ -203,6 +203,12 @@ internal sealed class CodeWriter
         }
 
         return builder.ToString();
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        // Will be used later...
     }
 
     public BlockScope WithBlock(bool newLineOnDispose = false)

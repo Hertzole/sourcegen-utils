@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Hertzole.SourceGenUtils;
 
@@ -273,10 +271,14 @@ public sealed partial class Generator : IIncrementalGenerator
     {
         ctx.AddEmbeddedAttributeDefinition();
 
+        using CodeWriter writer = new CodeWriter();
+
         foreach (KeyValuePair<string, TypeSource> source in TypesToGenerate)
         {
             ctx.CancellationToken.ThrowIfCancellationRequested();
-            GenerateShell(source.Value, source.Key, ctx);
+            GenerateShell(source.Value, writer, ctx.CancellationToken);
+
+            ctx.AddSource($"{source.Key}.Shell.g.cs", writer);
         }
     }
 
@@ -296,22 +298,19 @@ public sealed partial class Generator : IIncrementalGenerator
         }
     }
 
-    internal static void GenerateShell(TypeSource type, string typeName, in IncrementalGeneratorPostInitializationContext context)
+    internal static void GenerateShell(TypeSource type, CodeWriter writer, CancellationToken cancellationToken)
     {
-        CodeWriter writer = new CodeWriter();
         writer.AppendNullable();
         writer.AppendNamespace(NAMESPACE);
 
-        AppendShellType(writer, type, context.CancellationToken);
-
-        context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
+        AppendShellType(writer, type, cancellationToken);
     }
 
     private static void GenerateCode(SourceProductionContext context, HashSet<string> calledMethods)
     {
         ImplementationContext implementationContext = new ImplementationContext(calledMethods, context.CancellationToken);
 
-        CodeWriter writer = new CodeWriter();
+        using CodeWriter writer = new CodeWriter();
 
         foreach (KeyValuePair<string, TypeSource> kvp in TypesToGenerate)
         {
@@ -319,14 +318,12 @@ public sealed partial class Generator : IIncrementalGenerator
 
             string className = kvp.Key;
 
-            writer.Clear();
-
             writer.AppendNullable();
             writer.AppendNamespace(NAMESPACE);
 
             AppendType(kvp.Value, $"{NAMESPACE}.{kvp.Key}", writer, implementationContext);
 
-            context.AddSource($"{className}.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
+            context.AddSource($"{className}.g.cs", writer);
         }
 
 #if DEBUG
@@ -343,7 +340,7 @@ public sealed partial class Generator : IIncrementalGenerator
             AppendDebugType(pair.Value, writer, pair.Key, NAMESPACE, 1);
         }
 
-        context.AddSource("Debug.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
+        context.AddSource("Debug.g.cs", writer);
 
         static void AppendDebugType(TypeSource type, CodeWriter writer, string name, string path, int indent)
         {

@@ -245,6 +245,7 @@ internal class CodeWriterTests : GeneratorTests
                                 {
                                     ThrowIfDisposed();
                                     WriteIndentIfNeeded();
+                                    // Consider allowing unsafe code in your project to avoid this allocation.
                                     builder.Append(value.ToString());
                                     return this;
                                 }
@@ -354,6 +355,7 @@ internal class CodeWriterTests : GeneratorTests
                                 {
                                     ThrowIfDisposed();
                                     WriteIndentIfNeeded();
+                                    // Consider allowing unsafe code in your project to avoid this allocation.
                                     builder.Append(value.ToString());
                                     builder.Append('\n');
                                     shouldWriteIndent = true;

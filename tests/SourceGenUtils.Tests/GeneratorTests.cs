@@ -144,7 +144,7 @@ internal abstract class GeneratorTests
             typeName = $"{Generator.NAMESPACE}.{typeName}";
         }
 
-        Generator.AppendType(type, typeName, writer, new ImplementationContext(GetCalledMethods(calledMethods), CancellationToken.None));
+        Generator.AppendType(type, typeName, writer, new ImplementationContext(GetCalledMethods(calledMethods), CancellationToken.None, false));
 
         return writer.ToString();
     }
@@ -275,7 +275,7 @@ internal abstract class GeneratorTests
         }
 
         Generator.AppendMethod(writer, method, fullName,
-            new ImplementationContext(GetCalledMethods(calls.ToArray()), CancellationToken.None));
+            new ImplementationContext(GetCalledMethods(calls.ToArray()), CancellationToken.None, false));
 
         return writer.ToString();
     }
@@ -286,7 +286,7 @@ internal abstract class GeneratorTests
 
         CodeWriter writer = new CodeWriter();
 
-        Generator.WriteFieldOrProperty(field, writer, new ImplementationContext(GetCalledMethods(calledMethods), CancellationToken.None));
+        Generator.WriteFieldOrProperty(field, writer, new ImplementationContext(GetCalledMethods(calledMethods), CancellationToken.None, false));
 
         return writer.ToString();
     }

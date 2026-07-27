@@ -10,12 +10,14 @@ internal readonly struct ImplementationContext
     private readonly HashSet<string> calledMethodsWithoutArgs;
 
     public readonly CancellationToken CancellationToken;
+    public readonly bool AllowUnsafe;
 
-    public ImplementationContext(HashSet<string> calledMethods, CancellationToken cancellationToken)
+    public ImplementationContext(HashSet<string> calledMethods, CancellationToken cancellationToken, bool allowUnsafe)
     {
         this.calledMethods = calledMethods;
         calledMethodsWithoutArgs = new HashSet<string>(calledMethods, OnlyMethodNameEquality.Instance);
         CancellationToken = cancellationToken;
+        AllowUnsafe = allowUnsafe;
     }
 
     public bool HasCalledMethod(string method)

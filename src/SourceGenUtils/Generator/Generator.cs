@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Hertzole.SourceGenUtils;
@@ -153,7 +154,13 @@ public sealed partial class Generator : IIncrementalGenerator
                    .Where(name => name != null)
                    .Collect();
 
-        context.RegisterImplementationSourceOutput(calledMethods, Execute);
+        IncrementalValueProvider<bool> allowUnsafeProvider =
+            context.CompilationProvider.Select(static (compilation, cancellationToken) =>
+                compilation.Options is CSharpCompilationOptions options && options.AllowUnsafe);
+
+        IncrementalValueProvider<(bool Left, ImmutableArray<string?> Right)> combined = allowUnsafeProvider.Combine(calledMethods);
+
+        context.RegisterImplementationSourceOutput(combined, Execute);
     }
 
     private static bool IsValidSyntaxNode(SyntaxNode s, CancellationToken cancellationToken)
@@ -219,7 +226,7 @@ public sealed partial class Generator : IIncrementalGenerator
         {
             MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
             methodName = maes.Name.Identifier.Text;
-            methodSymbol = ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+            methodSymbol = ModelExtensions.GetSymbolInfo(ctx.SemanticModel, invocation).Symbol as IMethodSymbol;
         }
         else if (ctx.Node is ObjectCreationExpressionSyntax oces)
         {
@@ -230,7 +237,7 @@ public sealed partial class Generator : IIncrementalGenerator
             }
 
             methodName = simpleName;
-            methodSymbol = ctx.SemanticModel.GetSymbolInfo(oces).Symbol as IMethodSymbol;
+            methodSymbol = ModelExtensions.GetSymbolInfo(ctx.SemanticModel, oces).Symbol as IMethodSymbol;
         }
         else
         {
@@ -282,14 +289,14 @@ public sealed partial class Generator : IIncrementalGenerator
         }
     }
 
-    private static void Execute(SourceProductionContext ctx, ImmutableArray<string?> t)
+    private static void Execute(SourceProductionContext ctx, (bool allowUnsafe, ImmutableArray<string?> calledMethods) values)
     {
         try
         {
             // PERF: Pool collections
-            HashSet<string> calledSet = new HashSet<string>(t);
+            HashSet<string> calledSet = new HashSet<string>(values.calledMethods);
             calledSet = ExpandDependencies(calledSet, ctx.CancellationToken);
-            GenerateCode(ctx, calledSet);
+            GenerateCode(ctx, calledSet, values.allowUnsafe);
         }
 
         catch (Exception e)
@@ -306,9 +313,9 @@ public sealed partial class Generator : IIncrementalGenerator
         AppendShellType(writer, type, cancellationToken);
     }
 
-    private static void GenerateCode(SourceProductionContext context, HashSet<string> calledMethods)
+    private static void GenerateCode(SourceProductionContext context, HashSet<string> calledMethods, bool allowUnsafe)
     {
-        ImplementationContext implementationContext = new ImplementationContext(calledMethods, context.CancellationToken);
+        ImplementationContext implementationContext = new ImplementationContext(calledMethods, context.CancellationToken, allowUnsafe);
 
         using CodeWriter writer = new CodeWriter();
 

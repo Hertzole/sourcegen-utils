@@ -450,7 +450,7 @@ internal class EquatableArrayTests : GeneratorTests
         MethodSource method = Generator.TypesToGenerate["EquatableArray"].Methods![methodIndex];
         string fullName = $"Hertzole.SourceGen.EquatableArray.{method.Name}({method.ParameterTypesKey})";
         CodeWriter writer = new CodeWriter();
-        Generator.AppendMethod(writer, method, fullName, new ImplementationContext(GetCalledMethods(calledMethods), cancellationToken));
+        Generator.AppendMethod(writer, method, fullName, new ImplementationContext(GetCalledMethods(calledMethods), cancellationToken, false));
         return writer.ToString();
     }
 }

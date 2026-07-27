@@ -145,11 +145,29 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(global::System.ReadOnlySpan<char> value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in _) =>
+                    Implementation = (writer, in context) =>
                     {
                         writer.AppendLine(disposed_call);
                         writer.AppendLine("WriteIndentIfNeeded();");
-                        writer.AppendLine("builder.Append(value.ToString());");
+
+                        if (context.AllowUnsafe)
+                        {
+                            writer.AppendLine("unsafe");
+                            using (writer.WithBlock())
+                            {
+                                writer.AppendLine("fixed (char* buffer = value)");
+                                using (writer.WithBlock())
+                                {
+                                    writer.AppendLine("builder.Append(buffer, value.Length);");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            writer.AppendLine("// Consider allowing unsafe code in your project to avoid this allocation.");
+                            writer.AppendLine("builder.Append(value.ToString());");
+                        }
+
                         writer.AppendLine("return this;");
                     },
                     Dependencies = appendDependencies,
@@ -396,11 +414,29 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(global::System.ReadOnlySpan<char> value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in _) =>
+                    Implementation = (writer, in context) =>
                     {
                         writer.AppendLine(disposed_call);
                         writer.AppendLine("WriteIndentIfNeeded();");
-                        writer.AppendLine("builder.Append(value.ToString());");
+
+                        if (context.AllowUnsafe)
+                        {
+                            writer.AppendLine("unsafe");
+                            using (writer.WithBlock())
+                            {
+                                writer.AppendLine("fixed (char* buffer = value)");
+                                using (writer.WithBlock())
+                                {
+                                    writer.AppendLine("builder.Append(buffer, value.Length);");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            writer.AppendLine("// Consider allowing unsafe code in your project to avoid this allocation.");
+                            writer.AppendLine("builder.Append(value.ToString());");
+                        }
+
                         writer.AppendLine(new_line);
                         writer.AppendLine("shouldWriteIndent = true;");
                         writer.AppendLine(return_this);

@@ -5,6 +5,8 @@ namespace SourceGenUtils.Tests;
 
 internal class CodeWriterTests : GeneratorTests
 {
+    private const string NEW_LINE_FORMATTABLE = "return AppendLine(value.ToString(\"G\", global::System.Globalization.CultureInfo.InvariantCulture));";
+
     /// <inheritdoc />
     protected override string GetTypeName()
     {
@@ -24,46 +26,73 @@ internal class CodeWriterTests : GeneratorTests
     /// <inheritdoc />
     protected override string[] GetShellMethods()
     {
+        const string format_provider = "System.IFormatProvider?";
+        const string format_args = $"string, {format_provider}";
+
         return
         [
             "CodeWriter()",
             "AppendNullable()",
             "Append(string)",
             "Append(System.ReadOnlySpan<char>)",
+            "Append(System.ReadOnlyMemory<char>)",
             "Append(char)",
             "Append(char, int)",
             "Append(char[])",
             "Append(char[], int, int)",
             "Append(byte)",
+            $"Append(byte, {format_args})",
             "Append(sbyte)",
+            $"Append(sbyte, {format_args})",
             "Append(short)",
+            $"Append(short, {format_args})",
             "Append(ushort)",
+            $"Append(ushort, {format_args})",
             "Append(int)",
+            $"Append(int, {format_args})",
             "Append(uint)",
+            $"Append(uint, {format_args})",
             "Append(long)",
+            $"Append(long, {format_args})",
             "Append(ulong)",
+            $"Append(ulong, {format_args})",
             "Append(float)",
+            $"Append(float, {format_args})",
             "Append(double)",
+            $"Append(double, {format_args})",
             "Append(decimal)",
+            $"Append(decimal, {format_args})",
             "Append(bool)",
             "Append(object)",
             "AppendLine()",
             "AppendLine(string)",
             "AppendLine(System.ReadOnlySpan<char>)",
+            "AppendLine(System.ReadOnlyMemory<char>)",
             "AppendLine(char)",
             "AppendLine(char, int)",
             "AppendLine(char[], int, int)",
             "AppendLine(byte)",
+            $"AppendLine(byte, {format_args})",
             "AppendLine(sbyte)",
+            $"AppendLine(sbyte, {format_args})",
             "AppendLine(short)",
+            $"AppendLine(short, {format_args})",
             "AppendLine(ushort)",
+            $"AppendLine(ushort, {format_args})",
             "AppendLine(int)",
+            $"AppendLine(int, {format_args})",
             "AppendLine(uint)",
+            $"AppendLine(uint, {format_args})",
             "AppendLine(long)",
+            $"AppendLine(long, {format_args})",
             "AppendLine(ulong)",
+            $"AppendLine(ulong, {format_args})",
             "AppendLine(float)",
+            $"AppendLine(float, {format_args})",
             "AppendLine(double)",
+            $"AppendLine(double, {format_args})",
             "AppendLine(decimal)",
+            $"AppendLine(decimal, {format_args})",
             "AppendLine(bool)",
             "AppendLine(object)",
             "AppendNamespace(Microsoft.CodeAnalysis.INamespaceSymbol?)",
@@ -245,8 +274,12 @@ internal class CodeWriterTests : GeneratorTests
                                 {
                                     ThrowIfDisposed();
                                     WriteIndentIfNeeded();
-                                    // Consider allowing unsafe code in your project to avoid this allocation.
-                                    builder.Append(value.ToString());
+                                    // Consider allowing unsafe code in your project to use pointers here instead.
+                                    builder.EnsureCapacity(builder.Length + value.Length);
+                                    for (int i = 0; i < value.Length; i++)
+                                    {
+                                        builder.Append(value[i]);
+                                    }
                                     return this;
                                 }
                                 """;
@@ -355,8 +388,12 @@ internal class CodeWriterTests : GeneratorTests
                                 {
                                     ThrowIfDisposed();
                                     WriteIndentIfNeeded();
-                                    // Consider allowing unsafe code in your project to avoid this allocation.
-                                    builder.Append(value.ToString());
+                                    // Consider allowing unsafe code in your project to use pointers here instead.
+                                    builder.EnsureCapacity(builder.Length + value.Length);
+                                    for (int i = 0; i < value.Length; i++)
+                                    {
+                                        builder.Append(value[i]);
+                                    }
                                     builder.Append('\n');
                                     shouldWriteIndent = true;
                                     return this;
@@ -430,18 +467,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Int_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(int)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(int value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(int value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -470,18 +502,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Byte_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(byte)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(byte value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        string expected = $$"""
+                            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                            public partial global::Hertzole.SourceGen.CodeWriter AppendLine(byte value)
+                            {
+                                {{NEW_LINE_FORMATTABLE}}
+                            }
+                            """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -490,18 +517,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Sbyte_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(sbyte)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(sbyte value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(sbyte value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -510,18 +532,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Short_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(short)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(short value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(short value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -530,18 +547,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Ushort_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(ushort)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(ushort value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(ushort value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -550,18 +562,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Uint_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(uint)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(uint value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(uint value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -570,18 +577,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Long_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(long)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(long value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(long value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -590,18 +592,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Ulong_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(ulong)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(ulong value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(ulong value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -610,18 +607,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Float_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(float)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(float value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(float value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -630,18 +622,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Double_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(double)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(double value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(double value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }
@@ -650,18 +637,13 @@ internal class CodeWriterTests : GeneratorTests
     public void AppendLine_Decimal_Content()
     {
         string content = GetMethodContent("CodeWriter.AppendLine(decimal)");
-        const string expected = """
-                                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-                                public partial global::Hertzole.SourceGen.CodeWriter AppendLine(decimal value)
-                                {
-                                    ThrowIfDisposed();
-                                    WriteIndentIfNeeded();
-                                    builder.Append(value);
-                                    builder.Append('\n');
-                                    shouldWriteIndent = true;
-                                    return this;
-                                }
-                                """;
+        const string expected = $$"""
+                                  [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+                                  public partial global::Hertzole.SourceGen.CodeWriter AppendLine(decimal value)
+                                  {
+                                      {{NEW_LINE_FORMATTABLE}}
+                                  }
+                                  """;
 
         Assert.That(content, Is.EqualTo(expected));
     }

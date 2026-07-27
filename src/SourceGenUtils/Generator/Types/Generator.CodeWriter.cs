@@ -16,6 +16,8 @@ partial class Generator
         const string dispose = $"{CODE_WRITER}.Dispose()";
         const string throw_if_disposed = $"{CODE_WRITER}.ThrowIfDisposed()";
         const string disposed_call = "ThrowIfDisposed();";
+        const string format_provider = "global::System.IFormatProvider";
+        const string format_provider_para = $"{format_provider}? provider = null";
         string[] builderDependencies =
         [
             CODE_WRITER + ".Append",
@@ -34,6 +36,9 @@ partial class Generator
             dispose,
             throw_if_disposed
         ];
+
+        string[] dependsOnAppend = [CODE_WRITER + ".Append(string)"];
+        string[] dependsOnAppendLine = [CODE_WRITER + ".AppendLine(string)"];
 
         return new TypeSource
         {
@@ -265,8 +270,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(byte value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("byte")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(byte value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("byte")
                 },
@@ -275,8 +290,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(sbyte value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("sbyte")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(sbyte value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("sbyte")
                 },
@@ -285,8 +310,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(short value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("short")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(short value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("short")
                 },
@@ -295,8 +330,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ushort value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("ushort")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ushort value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("ushort")
                 },
@@ -305,8 +350,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(int value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("int")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(int value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("int")
                 },
@@ -315,8 +370,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(uint value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("uint")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(uint value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("uint")
                 },
@@ -325,8 +390,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(long value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("long")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(long value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("long")
                 },
@@ -335,8 +410,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ulong value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("ulong")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(ulong value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("ulong")
                 },
@@ -345,8 +430,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(float value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("float")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(float value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("float")
                 },
@@ -355,8 +450,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(double value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("double")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(double value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("double")
                 },
@@ -365,8 +470,18 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(decimal value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendFormattable(writer, false),
+                    Dependencies = dependsOnAppend,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("decimal")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(decimal value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendFormattable(writer, true),
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("decimal")
                 },
@@ -470,7 +585,7 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(global::System.ReadOnlyMemory<char> value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) => { writer.AppendLine("return AppendLine(value.Span);"); },
+                    Implementation = (writer, in _) => { writer.AppendLine("return AppendLine(value.Span);"); },
                     Dependencies = [CODE_WRITER + ".AppendLine(System.ReadOnlySpan<char>)"],
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("ReadOnlyMemory<char>")
@@ -545,8 +660,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(byte value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("byte")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(byte value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("byte")
                 },
@@ -555,8 +680,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(sbyte value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("sbyte")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(sbyte value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("sbyte")
                 },
@@ -565,8 +700,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(short value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("short")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(short value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("short")
                 },
@@ -575,8 +720,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ushort value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("ushort")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ushort value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("ushort")
                 },
@@ -585,8 +740,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(int value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("int")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(int value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("int")
                 },
@@ -595,8 +760,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(uint value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("uint")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(uint value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("uint")
                 },
@@ -605,8 +780,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(long value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("long")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(long value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("long")
                 },
@@ -615,8 +800,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ulong value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("ulong")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(ulong value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("ulong")
                 },
@@ -625,8 +820,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(float value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("float")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(float value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("float")
                 },
@@ -635,8 +840,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(double value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("double")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(double value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("double")
                 },
@@ -645,8 +860,18 @@ partial class Generator
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(decimal value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, false),
+                    Dependencies = dependsOnAppendLine,
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("decimal")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(decimal value, string format, {format_provider_para})",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => AppendLineFormattable(writer, true),
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("decimal")
                 },
@@ -1228,6 +1453,30 @@ partial class Generator
             writer.AppendLine("WriteIndentIfNeeded();");
             writer.AppendLine("builder.Append(value);");
             writer.AppendLine(return_this);
+        }
+
+        static void AppendFormattable(CodeWriter writer, bool isImplementation)
+        {
+            if (isImplementation)
+            {
+                writer.AppendLine("return Append(value.ToString(format, provider));");
+            }
+            else
+            {
+                writer.AppendLine("return Append(value.ToString(\"G\", global::System.Globalization.CultureInfo.InvariantCulture));");
+            }
+        }
+
+        static void AppendLineFormattable(CodeWriter writer, bool isImplementation)
+        {
+            if (isImplementation)
+            {
+                writer.AppendLine("return AppendLine(value.ToString(format, provider));");
+            }
+            else
+            {
+                writer.AppendLine("return AppendLine(value.ToString(\"G\", global::System.Globalization.CultureInfo.InvariantCulture));");
+            }
         }
 
         static void AppendLineImplementation(CodeWriter writer, in ImplementationContext ctx)

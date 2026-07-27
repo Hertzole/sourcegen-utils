@@ -147,117 +147,153 @@ public sealed partial class Generator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterPostInitializationOutput(ctx =>
-        {
-            ctx.AddEmbeddedAttributeDefinition();
-
-            foreach (KeyValuePair<string, TypeSource> source in TypesToGenerate)
-            {
-                ctx.CancellationToken.ThrowIfCancellationRequested();
-                GenerateShell(source.Value, source.Key, ctx);
-            }
-        });
+        context.RegisterPostInitializationOutput(ExecuteInitialization);
 
         IncrementalValueProvider<ImmutableArray<string?>> calledMethods =
             context.SyntaxProvider
-                   .CreateSyntaxProvider(
-                       (s, _) =>
-                       {
-                           if (s is InvocationExpressionSyntax invocation
-                               && invocation.Expression is MemberAccessExpressionSyntax maes
-                               && maes.Name is IdentifierNameSyntax name
-                               && AllMethodNames.Contains(name.Identifier.Text))
-                           {
-                               return true;
-                           }
-
-                           if (s is ObjectCreationExpressionSyntax oces
-                               && GetSimpleTypeName(oces.Type) is string simpleName
-                               && AllMethodNames.Contains(simpleName))
-                           {
-                               return true;
-                           }
-
-                           return false;
-                       },
-                       (ctx, cancelToken) =>
-                       {
-                           string methodName;
-                           IMethodSymbol? methodSymbol;
-
-                           if (ctx.Node is InvocationExpressionSyntax invocation)
-                           {
-                               MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
-                               methodName = maes.Name.Identifier.Text;
-                               methodSymbol = ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
-                           }
-                           else if (ctx.Node is ObjectCreationExpressionSyntax oces)
-                           {
-                               string? simpleName = GetSimpleTypeName(oces.Type);
-                               if (simpleName == null)
-                               {
-                                   return null;
-                               }
-
-                               methodName = simpleName;
-                               methodSymbol = ctx.SemanticModel.GetSymbolInfo(oces).Symbol as IMethodSymbol;
-                           }
-                           else
-                           {
-                               return null;
-                           }
-
-                           Log.Info(
-                               $"Symbol: {ctx.SemanticModel.GetSymbolInfo(ctx.Node).Symbol} | Method symbol: {methodSymbol} | {methodSymbol?.ContainingNamespace.ToDisplayString()}");
-
-                           if (methodSymbol?.ContainingNamespace != null && methodSymbol.ContainingNamespace.ToDisplayString() == NAMESPACE)
-                           {
-                               // Check if the containing type is one of the generator's types.
-                               // Then check if the containing type contains a method with this method name.
-                               string containingType =
-                                   methodSymbol.ContainingType.ToDisplayString(NullableFlowState.NotNull, ContainingTypeDisplayFormat);
-
-                               // Strip generic type arguments (e.g. EquatableArray<char> → EquatableArray)
-                               int genericArgIndex = containingType.IndexOf('<');
-                               string cleanContainingType =
-                                   genericArgIndex >= 0 ? containingType.Substring(0, genericArgIndex) : containingType;
-
-                               Log.Info(
-                                   $"Containing type: {containingType} | Clean: {cleanContainingType} | TryGetTypeSource: {AllTypes.TryGetValue(cleanContainingType, out TypeSource? temp)} | Contains method: {temp?.ContainsMethod(methodName, cancelToken)}");
-
-                               if (AllTypes.TryGetValue(cleanContainingType, out TypeSource? typeSource) &&
-                                   typeSource.ContainsMethod(methodName, cancelToken))
-                               {
-                                   // Build the string manually using the original definition to avoid generic type
-                                   // arguments (e.g. EquatableArray<char>) in the containing type.
-                                   // Use ReducedFrom for reduced extension methods to include the 'this' parameter.
-                                   IMethodSymbol originalDef = methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition;
-                                   string paramTypes = string.Join(", ", originalDef.Parameters.Select(p => p.Type.ToDisplayString()));
-                                   return $"{cleanContainingType}.{methodName}({paramTypes})";
-                               }
-                           }
-
-                           return null;
-                       })
+                   .CreateSyntaxProvider(IsValidSyntaxNode, TransformNodeToCalledMethod)
                    .Where(name => name != null)
                    .Collect();
 
-        context.RegisterImplementationSourceOutput(calledMethods,
-            (ctx, t) =>
-            {
-                try
-                {
-                    // PERF: Pool collections
-                    HashSet<string> calledSet = new HashSet<string>(t);
-                    calledSet = ExpandDependencies(calledSet, ctx.CancellationToken);
-                    GenerateCode(ctx, calledSet);
-                }
+        context.RegisterImplementationSourceOutput(calledMethods, Execute);
+    }
 
-                catch (Exception e)
-                {
-                    Log.Error(e);
-                }
-            });
+    private static bool IsValidSyntaxNode(SyntaxNode s, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (IsInvocation(s))
+        {
+            return true;
+        }
+
+        if (IsObjectCreation(s))
+        {
+            return true;
+        }
+
+        return false;
+
+        static bool IsInvocation(SyntaxNode node)
+        {
+            if (node is not InvocationExpressionSyntax invocation)
+            {
+                return false;
+            }
+
+            if (invocation.Expression is not MemberAccessExpressionSyntax maes)
+            {
+                return false;
+            }
+
+            if (maes.Name is not IdentifierNameSyntax name)
+            {
+                return false;
+            }
+
+            return AllMethodNames.Contains(name.Identifier.Text);
+        }
+
+        static bool IsObjectCreation(SyntaxNode node)
+        {
+            if (node is not ObjectCreationExpressionSyntax oces)
+            {
+                return false;
+            }
+
+            if (GetSimpleTypeName(oces.Type) is not string simpleName)
+            {
+                return false;
+            }
+
+            return AllMethodNames.Contains(simpleName);
+        }
+    }
+
+    private static string? TransformNodeToCalledMethod(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        string methodName;
+        IMethodSymbol? methodSymbol;
+
+        if (ctx.Node is InvocationExpressionSyntax invocation)
+        {
+            MemberAccessExpressionSyntax maes = (MemberAccessExpressionSyntax) invocation.Expression;
+            methodName = maes.Name.Identifier.Text;
+            methodSymbol = ctx.SemanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+        }
+        else if (ctx.Node is ObjectCreationExpressionSyntax oces)
+        {
+            string? simpleName = GetSimpleTypeName(oces.Type);
+            if (simpleName == null)
+            {
+                return null;
+            }
+
+            methodName = simpleName;
+            methodSymbol = ctx.SemanticModel.GetSymbolInfo(oces).Symbol as IMethodSymbol;
+        }
+        else
+        {
+            return null;
+        }
+
+        Log.Info(
+            $"Symbol: {ctx.SemanticModel.GetSymbolInfo(ctx.Node).Symbol} | Method symbol: {methodSymbol} | {methodSymbol?.ContainingNamespace.ToDisplayString()}");
+
+        if (methodSymbol?.ContainingNamespace != null && methodSymbol.ContainingNamespace.ToDisplayString() == NAMESPACE)
+        {
+            // Check if the containing type is one of the generator's types.
+            // Then check if the containing type contains a method with this method name.
+            string containingType = methodSymbol.ContainingType.ToDisplayString(NullableFlowState.NotNull, ContainingTypeDisplayFormat);
+
+            // Strip generic type arguments (e.g. EquatableArray<char> → EquatableArray)
+            int genericArgIndex = containingType.IndexOf('<');
+            string cleanContainingType = genericArgIndex >= 0 ? containingType.Substring(0, genericArgIndex) : containingType;
+
+            Log.Info(
+                $"Containing type: {containingType} | Clean: {cleanContainingType} | TryGetTypeSource: {AllTypes.TryGetValue(cleanContainingType, out TypeSource? temp)} | Contains method: {temp?.ContainsMethod(methodName, cancellationToken)}");
+
+            if (AllTypes.TryGetValue(cleanContainingType, out TypeSource? typeSource) && typeSource.ContainsMethod(methodName, cancellationToken))
+            {
+                // Build the string manually using the original definition to avoid generic type
+                // arguments (e.g. EquatableArray<char>) in the containing type.
+                // Use ReducedFrom for reduced extension methods to include the 'this' parameter.
+                IMethodSymbol originalDef = methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition;
+                string paramTypes = string.Join(", ", originalDef.Parameters.Select(p => p.Type.ToDisplayString()));
+                return $"{cleanContainingType}.{methodName}({paramTypes})";
+            }
+        }
+
+        return null;
+    }
+
+    private static void ExecuteInitialization(IncrementalGeneratorPostInitializationContext ctx)
+    {
+        ctx.AddEmbeddedAttributeDefinition();
+
+        foreach (KeyValuePair<string, TypeSource> source in TypesToGenerate)
+        {
+            ctx.CancellationToken.ThrowIfCancellationRequested();
+            GenerateShell(source.Value, source.Key, ctx);
+        }
+    }
+
+    private static void Execute(SourceProductionContext ctx, ImmutableArray<string?> t)
+    {
+        try
+        {
+            // PERF: Pool collections
+            HashSet<string> calledSet = new HashSet<string>(t);
+            calledSet = ExpandDependencies(calledSet, ctx.CancellationToken);
+            GenerateCode(ctx, calledSet);
+        }
+
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
     }
 
     internal static void GenerateShell(TypeSource type, string typeName, in IncrementalGeneratorPostInitializationContext context)
@@ -266,153 +302,9 @@ public sealed partial class Generator : IIncrementalGenerator
         writer.AppendNullable();
         writer.AppendNamespace(NAMESPACE);
 
-        AppendShellType(writer, type, in context);
+        AppendShellType(writer, type, context.CancellationToken);
 
         context.AddSource($"{typeName}.Shell.g.cs", SourceText.From(writer.ToString(), Encoding.UTF8));
-    }
-
-    internal static void AppendTrivia(CodeWriter writer, TriviaSource? trivia, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (trivia == null)
-        {
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(trivia.Summary))
-        {
-            writer.AppendLine("/// <summary>");
-            writer.Append("/// ");
-            writer.AppendLine(trivia.Summary!);
-            writer.AppendLine("/// </summary>");
-        }
-
-        if (trivia.Parameters != null && trivia.Parameters.Count > 0)
-        {
-            foreach (KeyValuePair<string, string> valuePair in trivia.Parameters)
-            {
-                writer.Append("/// <param name=\"");
-                writer.Append(valuePair.Key);
-                writer.Append("\">");
-                writer.Append(valuePair.Value);
-                writer.AppendLine("</param>");
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(trivia.Returns))
-        {
-            writer.Append("/// <returns>");
-            writer.Append(trivia.Returns!);
-            writer.AppendLine("</returns>");
-        }
-    }
-
-    internal static void AppendShellType(CodeWriter writer, TypeSource type, in IncrementalGeneratorPostInitializationContext context)
-    {
-        context.CancellationToken.ThrowIfCancellationRequested();
-        bool typeHasConditionalSymbol = !string.IsNullOrWhiteSpace(type.ConditionalPreprocessorSymbol);
-
-        if (typeHasConditionalSymbol)
-        {
-            writer.AppendConditionalSymbol(type.ConditionalPreprocessorSymbol!);
-        }
-
-        AppendTrivia(writer, type.Trivia, context.CancellationToken);
-        writer.AppendEmbeddedAttribute();
-        writer.AppendLine(type.Signature);
-
-        using (writer.WithBlock())
-        {
-            if (type.Methods != null && type.Methods.Length > 0)
-            {
-                for (int i = 0; i < type.Methods.Length; i++)
-                {
-                    context.CancellationToken.ThrowIfCancellationRequested();
-
-                    if (type.Methods[i].SkipPartial)
-                    {
-                        continue;
-                    }
-
-                    bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(type.Methods[i].ConditionalPreprocessorSymbol);
-
-                    if (hasConditionalSymbol)
-                    {
-                        writer.AppendConditionalSymbol(type.Methods[i].ConditionalPreprocessorSymbol!);
-                    }
-
-                    AppendTrivia(writer, type.Methods[i].Trivia, context.CancellationToken);
-                    writer.Append(type.Methods[i].Signature);
-                    writer.AppendLine(";");
-
-                    if (hasConditionalSymbol)
-                    {
-                        writer.AppendPreprocessorSymbol("#endif");
-                    }
-
-                    if (i < type.Methods.Length - 1)
-                    {
-                        writer.AppendLine();
-                    }
-                }
-            }
-
-            if (type.Types != null && type.Types.Count > 0)
-            {
-                foreach (KeyValuePair<string, TypeSource> typeKvp in type.Types)
-                {
-                    writer.AppendLine();
-
-                    AppendShellType(writer, typeKvp.Value, in context);
-                }
-            }
-        }
-
-        if (typeHasConditionalSymbol)
-        {
-            writer.AppendPreprocessorSymbol("#endif");
-        }
-    }
-
-    private static bool AreAnyDependenciesMet(string[]? dependencies, in ImplementationContext context)
-    {
-        if (dependencies == null || dependencies.Length == 0)
-        {
-            return true;
-        }
-
-        foreach (string dep in dependencies)
-        {
-            context.CancellationToken.ThrowIfCancellationRequested();
-
-            if (context.HasCalledMethod(dep))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool AreAllDependenciesMet(string[]? dependencies, in ImplementationContext context)
-    {
-        if (dependencies == null || dependencies.Length == 0)
-        {
-            return true;
-        }
-
-        foreach (string dep in dependencies)
-        {
-            context.CancellationToken.ThrowIfCancellationRequested();
-
-            if (!context.HasCalledMethod(dep))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static void GenerateCode(SourceProductionContext context, HashSet<string> calledMethods)
@@ -484,265 +376,44 @@ public sealed partial class Generator : IIncrementalGenerator
 #endif
     }
 
-    internal static void AppendType(TypeSource typeSource, string typeName, CodeWriter writer, in ImplementationContext implementationContext)
+    private static bool AreAnyDependenciesMet(string[]? dependencies, in ImplementationContext context)
     {
-        MethodSource[]? methods = typeSource.Methods;
-
-        bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(typeSource.ConditionalPreprocessorSymbol);
-
-        if (hasConditionalSymbol)
+        if (dependencies == null || dependencies.Length == 0)
         {
-            writer.AppendConditionalSymbol(typeSource.ConditionalPreprocessorSymbol!);
-        }
-
-        writer.AppendGeneratedCodeAttribute(generatorName, generatorVersion);
-        writer.AppendExcludeFromCodeCoverageAttribute();
-
-        WriteAttributes(typeSource, writer, in implementationContext);
-
-        writer.AppendLine(typeSource.Signature);
-        writer.AppendLine("{");
-        writer.Indent++;
-
-        bool needsSpace = false;
-
-        if (typeSource.Fields != null)
-        {
-            bool writtenAnyFields = false;
-
-            foreach (FieldSource field in typeSource.Fields.Values)
-            {
-                if (WriteFieldOrProperty(field, writer, in implementationContext))
-                {
-                    writtenAnyFields = true;
-                }
-            }
-
-            if (writtenAnyFields)
-            {
-                needsSpace = true;
-            }
-        }
-
-        if (typeSource.Properties != null)
-        {
-            if (needsSpace)
-            {
-                writer.AppendLine();
-                needsSpace = false;
-            }
-
-            bool writtenAnyProperties = false;
-
-            foreach (PropertySource prop in typeSource.Properties.Values)
-            {
-                if (WriteFieldOrProperty(prop, writer, in implementationContext))
-                {
-                    writtenAnyProperties = true;
-                }
-            }
-
-            if (writtenAnyProperties)
-            {
-                needsSpace = true;
-            }
-        }
-
-        if (methods != null && methods.Length > 0)
-        {
-            if (needsSpace)
-            {
-                writer.AppendLine();
-                needsSpace = false;
-            }
-
-            bool firstMethod = true;
-
-            foreach (MethodSource method in methods)
-            {
-                implementationContext.CancellationToken.ThrowIfCancellationRequested();
-
-                if (!firstMethod)
-                {
-                    writer.AppendLine();
-                }
-
-                firstMethod = false;
-
-                string fullName = $"{typeName}.{method.Name}({method.ParameterTypesKey})";
-
-                AppendMethod(writer, method, fullName, in implementationContext);
-
-                needsSpace = true;
-            }
-        }
-
-        if (typeSource.Types != null)
-        {
-            foreach (KeyValuePair<string, TypeSource> typeKvp in typeSource.Types)
-            {
-                if (needsSpace)
-                {
-                    writer.AppendLine();
-                }
-
-                implementationContext.CancellationToken.ThrowIfCancellationRequested();
-                AppendType(typeKvp.Value, $"{typeName}.{typeKvp.Key}", writer, in implementationContext);
-                needsSpace = true;
-            }
-        }
-
-        writer.Indent--;
-        writer.AppendLine("}");
-
-        if (hasConditionalSymbol)
-        {
-            writer.AppendPreprocessorSymbol("#endif");
-        }
-    }
-
-    internal static void AppendMethod(CodeWriter writer, MethodSource method, string fullName, in ImplementationContext context)
-    {
-        bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(method.ConditionalPreprocessorSymbol);
-
-        if (hasConditionalSymbol)
-        {
-            writer.AppendConditionalSymbol(method.ConditionalPreprocessorSymbol);
-        }
-
-        WriteAttributes(method, writer, in context);
-        writer.AppendLine(ClearSignatureFromDefaults(method.Signature));
-
-        using (writer.WithBlock())
-        {
-            if (method.AlwaysWrite || context.HasCalledMethod(fullName) && AreAllDependenciesMet(method.RequiredDependencies, in context))
-            {
-                method.Implementation.Invoke(writer, in context);
-            }
-            else
-            {
-                if (!string.IsNullOrWhiteSpace(method.EmptyStub))
-                {
-                    writer.AppendLine(method.EmptyStub);
-                }
-            }
-        }
-
-        if (hasConditionalSymbol)
-        {
-            writer.AppendPreprocessorSymbol("#endif");
-        }
-    }
-
-    private static string ClearSignatureFromDefaults(string signature)
-    {
-        ReadOnlySpan<char> span = signature.AsSpan();
-
-        int equalsIndex = span.IndexOf("= ");
-
-        if (equalsIndex == -1)
-        {
-            return signature;
-        }
-
-        //TODO: Pool
-        //PERF: Use spans?
-        StringBuilder sb = new StringBuilder(signature);
-        sb.Replace(" = null", string.Empty).Replace(" = default", string.Empty);
-        return sb.ToString();
-    }
-
-    internal static bool WriteFieldOrProperty(BaseSource source, CodeWriter writer, in ImplementationContext context)
-    {
-        context.CancellationToken.ThrowIfCancellationRequested();
-
-        if (AreAnyDependenciesMet(source.Dependencies, in context) &&
-            AreAllDependenciesMet(source.RequiredDependencies, in context))
-        {
-            bool hasConditionalSymbol = !string.IsNullOrWhiteSpace(source.ConditionalPreprocessorSymbol);
-
-            if (hasConditionalSymbol)
-            {
-                writer.AppendConditionalSymbol(source.ConditionalPreprocessorSymbol);
-            }
-
-            AppendTrivia(writer, source.Trivia, context.CancellationToken);
-            WriteAttributes(source, writer, in context);
-
-            if (source is PropertySource property)
-            {
-                writer.Append(source.Signature);
-
-                if (property.GetImplementation == null && property.SetImplementation == null)
-                {
-                    writer.AppendLine(" { get; set; }");
-                }
-                else
-                {
-                    writer.AppendLine();
-
-                    using (writer.WithBlock())
-                    {
-                        if (property.GetImplementation != null)
-                        {
-                            WriteAttributes(property.GetAttributes, writer, in context);
-                            writer.AppendLine("get");
-
-                            using (writer.WithBlock())
-                            {
-                                property.GetImplementation.Invoke(writer, in context);
-                            }
-                        }
-
-                        if (property.SetImplementation != null)
-                        {
-                            WriteAttributes(property.SetAttributes, writer, in context);
-                            writer.AppendLine("set");
-
-                            using (writer.WithBlock())
-                            {
-                                property.SetImplementation.Invoke(writer, in context);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                writer.AppendLine(source.Signature);
-            }
-
-            if (hasConditionalSymbol)
-            {
-                writer.AppendPreprocessorSymbol("#endif");
-            }
-
             return true;
+        }
+
+        foreach (string dep in dependencies)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
+            if (context.HasCalledMethod(dep))
+            {
+                return true;
+            }
         }
 
         return false;
     }
 
-    private static void WriteAttributes(IHasAttributes source, CodeWriter writer, in ImplementationContext context)
+    private static bool AreAllDependenciesMet(string[]? dependencies, in ImplementationContext context)
     {
-        WriteAttributes(source.Attributes, writer, in context);
-    }
-
-    private static void WriteAttributes(string[]? attributes, CodeWriter writer, in ImplementationContext context)
-    {
-        if (attributes == null || attributes.Length == 0)
+        if (dependencies == null || dependencies.Length == 0)
         {
-            return;
+            return true;
         }
 
-        for (int i = 0; i < attributes.Length; i++)
+        foreach (string dep in dependencies)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            writer.Append('[');
-            writer.Append(attributes[i]);
-            writer.AppendLine("]");
+            if (!context.HasCalledMethod(dep))
+            {
+                return false;
+            }
         }
+
+        return true;
     }
 
     private static HashSet<string> ExpandDependencies(HashSet<string> calledMethods, CancellationToken cancellationToken)

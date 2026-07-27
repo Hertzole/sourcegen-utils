@@ -155,7 +155,7 @@ internal abstract class GeneratorTests
         writer.AppendNullable();
         writer.AppendNamespace(Generator.NAMESPACE);
 
-        Generator.AppendShellType(writer, type, new IncrementalGeneratorPostInitializationContext());
+        Generator.AppendShellType(writer, type, CancellationToken.None);
 
         return writer.ToString();
     }

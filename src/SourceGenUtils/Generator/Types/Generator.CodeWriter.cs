@@ -138,9 +138,20 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "Append",
-                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(string value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(string? value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine(disposed_call);
+                        writer.AppendLine("if (!string.IsNullOrEmpty(value))");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("WriteIndentIfNeeded();");
+                            writer.AppendLine("builder.Append(value);");
+                        }
+
+                        writer.AppendLine("return this;");
+                    },
                     Dependencies = appendDependencies,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("string")
@@ -153,28 +164,32 @@ partial class Generator
                     Implementation = (writer, in context) =>
                     {
                         writer.AppendLine(disposed_call);
-                        writer.AppendLine("WriteIndentIfNeeded();");
-
-                        if (context.AllowUnsafe)
+                        writer.AppendLine("if (value.Length > 0)");
+                        using (writer.WithBlock(true))
                         {
-                            writer.AppendLine("unsafe");
-                            using (writer.WithBlock())
+                            writer.AppendLine("WriteIndentIfNeeded();");
+
+                            if (context.AllowUnsafe)
                             {
-                                writer.AppendLine("fixed (char* buffer = value)");
+                                writer.AppendLine("unsafe");
                                 using (writer.WithBlock())
                                 {
-                                    writer.AppendLine("builder.Append(buffer, value.Length);");
+                                    writer.AppendLine("fixed (char* buffer = value)");
+                                    using (writer.WithBlock())
+                                    {
+                                        writer.AppendLine("builder.Append(buffer, value.Length);");
+                                    }
                                 }
                             }
-                        }
-                        else
-                        {
-                            writer.AppendLine("// Consider allowing unsafe code in your project to use pointers here instead.");
-                            writer.AppendLine("builder.EnsureCapacity(builder.Length + value.Length);");
-                            writer.AppendLine("for (int i = 0; i < value.Length; i++)");
-                            using (writer.WithBlock())
+                            else
                             {
-                                writer.AppendLine("builder.Append(value[i]);");
+                                writer.AppendLine("// Consider allowing unsafe code in your project to use pointers here instead.");
+                                writer.AppendLine("builder.EnsureCapacity(builder.Length + value.Length);");
+                                writer.AppendLine("for (int i = 0; i < value.Length; i++)");
+                                using (writer.WithBlock())
+                                {
+                                    writer.AppendLine("builder.Append(value[i]);");
+                                }
                             }
                         }
 
@@ -490,8 +505,8 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(bool value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => { writer.AppendLine("return Append(value ? \"true\" : \"false\");"); },
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("bool")
                 },
@@ -500,8 +515,8 @@ partial class Generator
                     Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(object value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendImplementation,
-                    Dependencies = appendDependencies,
+                    Implementation = (writer, in _) => { writer.AppendLine("return value == null ? this : Append(value.ToString());"); },
+                    Dependencies = dependsOnAppend,
                     EmptyStub = return_this,
                     Trivia = CreateAppendTrivia("object")
                 },
@@ -532,9 +547,22 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "AppendLine",
-                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(string value)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(string? value)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = AppendLineImplementation,
+                    Implementation = (writer, in context) =>
+                    {
+                        writer.AppendLine(disposed_call);
+                        writer.AppendLine("if (!string.IsNullOrEmpty(value))");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("WriteIndentIfNeeded();");
+                            writer.AppendLine("builder.Append(value);");
+                            writer.AppendLine("builder.Append('\\n');");
+                            writer.AppendLine("shouldWriteIndent = true;");
+                        }
+
+                        writer.AppendLine(return_this);
+                    },
                     Dependencies = appendDependencies,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("string")
@@ -547,33 +575,39 @@ partial class Generator
                     Implementation = (writer, in context) =>
                     {
                         writer.AppendLine(disposed_call);
-                        writer.AppendLine("WriteIndentIfNeeded();");
 
-                        if (context.AllowUnsafe)
+                        writer.AppendLine("if (value.Length > 0)");
+                        using (writer.WithBlock(true))
                         {
-                            writer.AppendLine("unsafe");
-                            using (writer.WithBlock())
+                            writer.AppendLine("WriteIndentIfNeeded();");
+
+                            if (context.AllowUnsafe)
                             {
-                                writer.AppendLine("fixed (char* buffer = value)");
+                                writer.AppendLine("unsafe");
                                 using (writer.WithBlock())
                                 {
-                                    writer.AppendLine("builder.Append(buffer, value.Length);");
+                                    writer.AppendLine("fixed (char* buffer = value)");
+                                    using (writer.WithBlock())
+                                    {
+                                        writer.AppendLine("builder.Append(buffer, value.Length);");
+                                    }
                                 }
                             }
-                        }
-                        else
-                        {
-                            writer.AppendLine("// Consider allowing unsafe code in your project to use pointers here instead.");
-                            writer.AppendLine("builder.EnsureCapacity(builder.Length + value.Length);");
-                            writer.AppendLine("for (int i = 0; i < value.Length; i++)");
-                            using (writer.WithBlock())
+                            else
                             {
-                                writer.AppendLine("builder.Append(value[i]);");
+                                writer.AppendLine("// Consider allowing unsafe code in your project to use pointers here instead.");
+                                writer.AppendLine("builder.EnsureCapacity(builder.Length + value.Length);");
+                                writer.AppendLine("for (int i = 0; i < value.Length; i++)");
+                                using (writer.WithBlock())
+                                {
+                                    writer.AppendLine("builder.Append(value[i]);");
+                                }
                             }
+
+                            writer.AppendLine(new_line);
+                            writer.AppendLine("shouldWriteIndent = true;");
                         }
 
-                        writer.AppendLine(new_line);
-                        writer.AppendLine("shouldWriteIndent = true;");
                         writer.AppendLine(return_this);
                     },
                     Dependencies = appendDependencies,

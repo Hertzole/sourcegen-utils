@@ -338,6 +338,7 @@ partial class Generator
                             Name = "OnReturn",
                             Signature = $"private static void OnReturn(global::{writer} item)",
                             Implementation = (code, in _) => { code.AppendLine("item.Clear();"); },
+                            Dependencies = [$"{writer_no_generic}.Clear()"],
                             SkipPartial = true
                         }
                     ]

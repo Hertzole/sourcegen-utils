@@ -212,6 +212,16 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append(global::{NAMESPACE}.ArrayBuilder<char> value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => { writer.AppendLine("return Append(value.AsSpan());"); },
+                    Dependencies = [CODE_WRITER + ".Append(System.ReadOnlySpan<char>)", ARRAY_BUILDER + ".AsSpan()"],
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("ArrayBuilder<char>")
+                },
+                new MethodSource
+                {
+                    Name = "Append",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} Append(char value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = AppendImplementation,
@@ -623,6 +633,16 @@ partial class Generator
                     Dependencies = [CODE_WRITER + ".AppendLine(System.ReadOnlySpan<char>)"],
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("ReadOnlyMemory<char>")
+                },
+                new MethodSource
+                {
+                    Name = "AppendLine",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(global::{NAMESPACE}.ArrayBuilder<char> value)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) => { writer.AppendLine("return AppendLine(value.AsSpan());"); },
+                    Dependencies = [CODE_WRITER + ".AppendLine(System.ReadOnlySpan<char>)", ARRAY_BUILDER + ".AsSpan()"],
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendLineTrivia("ArrayBuilder<char>")
                 },
                 new MethodSource
                 {

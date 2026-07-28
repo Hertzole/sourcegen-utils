@@ -4,12 +4,13 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    internal const string ARRAY_BUILDER = NAMESPACE + ".ArrayBuilder";
+
     private static TypeSource CreateArrayBuilder()
     {
-        const string builder_no_generic = NAMESPACE + ".ArrayBuilder";
-        const string array_builder = builder_no_generic + "<T>";
+        const string array_builder = ARRAY_BUILDER + "<T>";
         const string writer = array_builder + ".Writer";
-        const string writer_no_generic = builder_no_generic + ".Writer";
+        const string writer_no_generic = ARRAY_BUILDER + ".Writer";
         const string writer_pool = OBJECT_POOL + $"<global::{writer}>";
 
         string[] writerFieldDependencies =
@@ -22,7 +23,7 @@ partial class Generator
 
         string[] constructorArgs =
         [
-            builder_no_generic + ".Dispose()",
+            ARRAY_BUILDER + ".Dispose()",
             writer_no_generic + ".Create()",
             OBJECT_POOL + ".ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
             OBJECT_POOL + ".Get()"
@@ -40,7 +41,7 @@ partial class Generator
                 ["writer"] = new FieldSource
                 {
                     Signature = $"private readonly global::{array_builder}.Writer writer = null!;",
-                    Dependencies = [builder_no_generic + ".ArrayBuilder"]
+                    Dependencies = [ARRAY_BUILDER + ".ArrayBuilder"]
                 }
             },
             Methods =
@@ -99,7 +100,7 @@ partial class Generator
                     Name = "Add",
                     Signature = "public partial void Add(T item)",
                     Implementation = (codeWriter, in _) => { codeWriter.AppendLine("writer.Add(item);"); },
-                    Dependencies = [$"{writer_no_generic}.Add(T)", $"{builder_no_generic}.Dispose()"],
+                    Dependencies = [$"{writer_no_generic}.Add(T)", $"{ARRAY_BUILDER}.Dispose()"],
                     Trivia = new TriviaSource
                     {
                         Summary = "Adds an item to the builder.",
@@ -141,7 +142,7 @@ partial class Generator
                         code.AppendLine("return false;");
                     },
                     EmptyStub = "return false;",
-                    Dependencies = [builder_no_generic + ".RemoveAt(int)"],
+                    Dependencies = [ARRAY_BUILDER + ".RemoveAt(int)"],
                     Trivia = new TriviaSource
                     {
                         Summary = "Removes the first occurrence of the specified item from the builder.",
@@ -236,7 +237,7 @@ partial class Generator
                         ["pool"] = new FieldSource
                         {
                             Signature = $"internal static readonly global::{writer_pool} pool = new {writer_pool}(Create, onReturn: OnReturn);",
-                            Dependencies = [builder_no_generic + ".ArrayBuilder", builder_no_generic + ".Dispose()"]
+                            Dependencies = [ARRAY_BUILDER + ".ArrayBuilder", ARRAY_BUILDER + ".Dispose()"]
                         },
                         ["array"] = new FieldSource
                         {

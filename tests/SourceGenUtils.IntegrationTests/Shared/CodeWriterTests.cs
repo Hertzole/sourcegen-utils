@@ -12,6 +12,8 @@ public class CodeWriterTests
 
     private const string APPEND_PREFIX = "This is the test message: ";
 
+    private const int REPEATS = 100;
+
     [SetUp]
     public void Setup()
     {
@@ -25,6 +27,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendNullable()
     {
         // Arrange
@@ -43,6 +46,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendString()
     {
         // Arrange
@@ -53,6 +57,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendReadOnlySpan()
     {
         // Arrange
@@ -63,6 +68,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendReadOnlyMemory()
     {
         // Arrange
@@ -73,6 +79,25 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
+    public void AppendArrayBuilder()
+    {
+        // Arrange
+        string message = faker.Lorem.Sentence();
+
+        // Act
+        AppendTest(w =>
+        {
+            using (ArrayBuilder<char> builder = new ArrayBuilder<char>())
+            {
+                builder.AddRange(message);
+                w.Append(builder);
+            }
+        }, message);
+    }
+
+    [Test]
+    [Repeat(REPEATS)]
     public void AppendChar()
     {
         // Arrange
@@ -83,6 +108,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendCharRepeat()
     {
         // Arrange
@@ -95,6 +121,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendCharArray()
     {
         // Arrange
@@ -106,6 +133,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendCharArraySpan()
     {
         // Arrange
@@ -119,6 +147,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendByte()
     {
         // Arrange
@@ -129,6 +158,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendByteFormat()
     {
         // Arrange
@@ -142,6 +172,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendSByte()
     {
         // Arrange
@@ -152,6 +183,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendSByteFormat()
     {
         // Arrange
@@ -165,6 +197,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendShort()
     {
         // Arrange
@@ -175,6 +208,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendShortFormat()
     {
         // Arrange
@@ -188,6 +222,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendUShort()
     {
         // Arrange
@@ -198,6 +233,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendUShortFormat()
     {
         // Arrange
@@ -211,6 +247,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendInt()
     {
         // Arrange
@@ -221,6 +258,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendIntFormat()
     {
         // Arrange
@@ -234,6 +272,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendUInt()
     {
         // Arrange
@@ -244,6 +283,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendUIntFormat()
     {
         // Arrange
@@ -257,6 +297,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLong()
     {
         // Arrange
@@ -267,6 +308,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLongFormat()
     {
         // Arrange
@@ -280,6 +322,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendULong()
     {
         // Arrange
@@ -290,6 +333,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendULongFormat()
     {
         // Arrange
@@ -303,6 +347,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendFloat()
     {
         // Arrange
@@ -313,6 +358,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendFloatFormat()
     {
         // Arrange
@@ -326,6 +372,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendDouble()
     {
         // Arrange
@@ -336,6 +383,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendDoubleFormat()
     {
         // Arrange
@@ -349,6 +397,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendDecimal()
     {
         // Arrange
@@ -359,6 +408,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendDecimalFormat()
     {
         // Arrange
@@ -372,6 +422,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendBool([Values] bool value)
     {
         // Arrange
@@ -382,6 +433,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendObject()
     {
         // Arrange
@@ -392,6 +444,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineEmpty()
     {
         // Arrange
@@ -412,6 +465,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineString()
     {
         // Arrange
@@ -422,6 +476,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineReadOnlySpan()
     {
         // Arrange
@@ -432,6 +487,34 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
+    public void AppendLineReadOnlyMemory()
+    {
+        // Arrange
+        string message = faker.Lorem.Sentence();
+
+        // Act
+        AppendLineTest(w => w.AppendLine(message.AsMemory()), message);
+    }
+
+    [Test]
+    [Repeat(REPEATS)]
+    public void AppendLineArrayBuilder()
+    {
+        // Arrange
+        string message = faker.Lorem.Sentence();
+
+        // Act
+        AppendLineTest(w =>
+        {
+            using ArrayBuilder<char> builder = new ArrayBuilder<char>();
+            builder.AddRange(message);
+            w.AppendLine(builder);
+        }, message);
+    }
+
+    [Test]
+    [Repeat(REPEATS)]
     public void AppendLineChar()
     {
         // Arrange
@@ -442,6 +525,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineCharRepeat()
     {
         // Arrange
@@ -454,6 +538,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineCharArraySpan()
     {
         // Arrange
@@ -467,6 +552,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineByte()
     {
         // Arrange
@@ -477,6 +563,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineByteFormat()
     {
         // Arrange
@@ -490,6 +577,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineSByte()
     {
         // Arrange
@@ -500,6 +588,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineSByteFormat()
     {
         // Arrange
@@ -513,6 +602,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineShort()
     {
         // Arrange
@@ -523,6 +613,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineShortFormat()
     {
         // Arrange
@@ -536,6 +627,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineUShort()
     {
         // Arrange
@@ -546,6 +638,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineUShortFormat()
     {
         // Arrange
@@ -559,6 +652,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineInt()
     {
         // Arrange
@@ -569,6 +663,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineIntFormat()
     {
         // Arrange
@@ -582,6 +677,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineUInt()
     {
         // Arrange
@@ -592,6 +688,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineUIntFormat()
     {
         // Arrange
@@ -605,6 +702,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineLong()
     {
         // Arrange
@@ -615,6 +713,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineLongFormat()
     {
         // Arrange
@@ -628,6 +727,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineULong()
     {
         // Arrange
@@ -638,6 +738,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineULongFormat()
     {
         // Arrange
@@ -651,6 +752,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineFloat()
     {
         // Arrange
@@ -661,6 +763,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineFloatFormat()
     {
         // Arrange
@@ -674,6 +777,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineDouble()
     {
         // Arrange
@@ -684,6 +788,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineDoubleFormat()
     {
         // Arrange
@@ -697,6 +802,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineDecimal()
     {
         // Arrange
@@ -707,6 +813,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineDecimalFormat()
     {
         // Arrange
@@ -720,6 +827,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineBool([Values] bool value)
     {
         // Arrange
@@ -735,6 +843,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendLineObject()
     {
         // Arrange
@@ -745,6 +854,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendNamespace([Values] bool newLine)
     {
         // Arrange
@@ -773,6 +883,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendGeneratedCodeAttribute()
     {
         // Arrange
@@ -793,6 +904,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendExcludeFromCodeCoverageAttribute()
     {
         // Arrange
@@ -811,6 +923,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void AppendEmbeddedAttribute()
     {
         // Arrange
@@ -829,6 +942,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     [TestCase("#if TEST", "endif")]
     [TestCase("if TEST", "#endif")]
     public void AppendConditionalPreprocessorSymbol(string condition, string preprocessor)
@@ -851,6 +965,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void Clear()
     {
         // Arrange
@@ -864,6 +979,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void WithBlock()
     {
         // Arrange
@@ -888,6 +1004,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void WithIndent()
     {
         // Arrange
@@ -912,6 +1029,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     [TestCase("TEST")]
     [TestCase("#if TEST")]
     [TestCase("if TEST")]
@@ -937,6 +1055,7 @@ public class CodeWriterTests
     }
 
     [Test]
+    [Repeat(REPEATS)]
     public void ThrowsWhenDisposed()
     {
         // Arrange
@@ -951,6 +1070,7 @@ public class CodeWriterTests
         Assert.Throws<ObjectDisposedException>(() => w.Append("test"), "Append(string?) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.Append("test".AsSpan()), "Append(ReadOnlySpan<char>) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.Append("test".AsMemory()), "Append(ReadOnlyMemory<char>) does not throw when disposed");
+        Assert.Throws<ObjectDisposedException>(() => w.Append(new ArrayBuilder<char>()), "Append(ArrayBuilder<char>) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.Append('a'), "Append(char) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.Append('a', 5), "Append(char, int) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.Append(Array.Empty<char>()), "Append(char[]) does not throw when disposed");
@@ -986,6 +1106,7 @@ public class CodeWriterTests
         Assert.Throws<ObjectDisposedException>(() => w.AppendLine("test"), "AppendLine(string?) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.AppendLine("test".AsSpan()), "AppendLine(ReadOnlySpan<char>) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.AppendLine("test".AsMemory()), "AppendLine(ReadOnlyMemory<char>) does not throw when disposed");
+        Assert.Throws<ObjectDisposedException>(() => w.AppendLine(new ArrayBuilder<char>()), "AppendLine(ArrayBuilder<char>) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.AppendLine('a'), "AppendLine(char) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.AppendLine('a', 5), "AppendLine(char, int) does not throw when disposed");
         Assert.Throws<ObjectDisposedException>(() => w.AppendLine(Array.Empty<char>(), 0, 1), "AppendLine(char[], int, int) does not throw when disposed");

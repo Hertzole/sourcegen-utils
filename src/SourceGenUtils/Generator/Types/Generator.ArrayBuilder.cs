@@ -257,7 +257,7 @@ partial class Generator
                             Signature = "internal partial void Add(T value)",
                             Implementation = (code, in _) =>
                             {
-                                code.AppendLine("EnsureCapacity(array.Length + 1);");
+                                code.AppendLine("EnsureCapacity(size + 1);");
                                 code.AppendLine("array[size++] = value;");
                             },
                             Dependencies = [$"{writer_no_generic}.EnsureCapacity(int)"]
@@ -268,7 +268,7 @@ partial class Generator
                             Signature = "internal partial void AddRange(global::System.ReadOnlySpan<T> items)",
                             Implementation = (code, in _) =>
                             {
-                                code.AppendLine("EnsureCapacity(array.Length + items.Length);");
+                                code.AppendLine("EnsureCapacity(size + items.Length);");
                                 code.AppendLine("items.CopyTo(global::System.MemoryExtensions.AsSpan(array, size));");
                                 code.AppendLine("size += items.Length;");
                             },

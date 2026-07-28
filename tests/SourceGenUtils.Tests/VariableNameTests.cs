@@ -1,3 +1,4 @@
+using Hertzole.SourceGenUtils;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -26,10 +27,13 @@ internal class VariableNameTests : GeneratorTests
         return
         [
             "NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)",
+            $"NicifyVariableName(System.ReadOnlySpan<char>, {Generator.ARRAY_BUILDER}<char>)",
             "NicifyVariableName(string)",
             "RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
+            $"RemovePrefix(System.ReadOnlySpan<char>, {Generator.ARRAY_BUILDER}<char>)",
             "RemovePrefix(string)",
             "UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)",
+            $"UppercaseStart(System.ReadOnlySpan<char>, {Generator.ARRAY_BUILDER}<char>)",
             "UppercaseStart(string)",
             "StartsWithOn(System.ReadOnlySpan<char>)",
             "GetNiceNameLength(string)",
@@ -44,7 +48,9 @@ internal class VariableNameTests : GeneratorTests
         [
             "VariableNames.NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)",
             "VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
-            "VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)"
+            "VariableNames.UppercaseStart(System.ReadOnlySpan<char>, System.Span<char>)",
+            "VariableNames.HasConstantPrefix(System.ReadOnlySpan<char>)",
+            "VariableNames.HasMemberPrefix(System.ReadOnlySpan<char>)"
         ];
 
         AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("VariableNames.NicifyVariableName(\"hello\", new char[64]);"); }, expectedMethods);
@@ -55,7 +61,9 @@ internal class VariableNameTests : GeneratorTests
     {
         string[] expectedMethods =
         [
-            "VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)"
+            "VariableNames.RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
+            "VariableNames.HasConstantPrefix(System.ReadOnlySpan<char>)",
+            "VariableNames.HasMemberPrefix(System.ReadOnlySpan<char>)"
         ];
 
         AssertCallingMethodCreatesMethods(writer => { writer.AppendLine("VariableNames.RemovePrefix(\"hello\", new char[64]);"); }, expectedMethods);
@@ -110,14 +118,14 @@ internal class VariableNameTests : GeneratorTests
                                 public static partial int RemovePrefix(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)
                                 {
                                     // Check for prefixes like 'm_'.
-                                    if (value.Length > 2 && value[1] == '_')
+                                    if (HasMemberPrefix(value))
                                     {
                                         value.Slice(2).CopyTo(destination);
                                         return value.Length - 2;
                                     }
 
                                     // Check for names that start with '_' or 'k' (konstants).
-                                    if (value.Length > 1 && (value[0] == '_' || value[0] == 'k'))
+                                    if (value.Length > 1 && (value[0] == '_' || HasConstantPrefix(value)))
                                     {
                                         value.Slice(1).CopyTo(destination);
                                         return value.Length - 1;

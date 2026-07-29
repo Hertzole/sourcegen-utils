@@ -20,7 +20,10 @@
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/Hertzole/sourcegenutils</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>sourcegen, source, source generator, incremental, incremental generator, util, utility, utils, string, stringbuilder, builder, string builder, code, codewriter, code writer</PackageTags>
+        <Description>Provides common utilities for source generation.
+            Use code writer for building your code and common extensions to speed up development and get consistent results.
+        </Description>
+        <PackageTags>sourcegen, source, generator, sourcegenerator, incremental, incrementalgenerator, util, utility, utils, string, stringbuilder, builder, code, writer, codewriter</PackageTags>
         <NeutralLanguage>en-US</NeutralLanguage>
     </PropertyGroup>
 

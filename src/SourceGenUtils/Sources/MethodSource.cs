@@ -5,15 +5,14 @@ namespace Hertzole.SourceGenUtils;
 
 internal sealed class MethodSource : BaseSource
 {
+    private int? parameterCount;
+    private string? parameterTypesKey;
+
     public required string Name { get; init; }
     public string EmptyStub { get; init; } = string.Empty;
     public required ImplementationHandler Implementation { get; init; }
-    public Guid Identifier { get; } = Guid.NewGuid();
     public bool SkipPartial { get; init; } = false;
     public bool AlwaysWrite { get; init; }
-
-    private int? parameterCount;
-    private string? parameterTypesKey;
 
     public int ParameterCount
     {
@@ -24,15 +23,17 @@ internal sealed class MethodSource : BaseSource
                 return parameterCount.Value;
             }
 
-            int openParen = Signature.IndexOf('(');
-            int closeParen = Signature.LastIndexOf(')');
+            ReadOnlySpan<char> signatureSpan = Signature.AsSpan();
+
+            int openParen = signatureSpan.IndexOf('(');
+            int closeParen = signatureSpan.LastIndexOf(')');
             if (openParen < 0 || closeParen <= openParen)
             {
                 parameterCount = -1;
                 return -1;
             }
 
-            string inner = Signature.Substring(openParen + 1, closeParen - openParen - 1).Trim();
+            ReadOnlySpan<char> inner = signatureSpan.Slice(openParen + 1, closeParen - openParen - 1).Trim();
             if (inner.Length == 0)
             {
                 parameterCount = 0;
@@ -71,20 +72,20 @@ internal sealed class MethodSource : BaseSource
                 return parameterTypesKey;
             }
 
-            int openParen = Signature.IndexOf('(');
-            int closeParen = Signature.LastIndexOf(')');
+            ReadOnlySpan<char> signatureSpan = Signature.AsSpan();
+
+            int openParen = signatureSpan.IndexOf('(');
+            int closeParen = signatureSpan.LastIndexOf(')');
             if (openParen < 0 || closeParen <= openParen + 1)
             {
                 parameterTypesKey = string.Empty;
-                Log.Info(Name + " Empty 1");
                 return string.Empty;
             }
 
-            string inner = Signature.Substring(openParen + 1, closeParen - openParen - 1).Trim();
+            ReadOnlySpan<char> inner = signatureSpan.Slice(openParen + 1, closeParen - openParen - 1).Trim();
             if (inner.Length == 0)
             {
                 parameterTypesKey = string.Empty;
-                Log.Info(Name + " Empty 2");
                 return string.Empty;
             }
 
@@ -104,34 +105,33 @@ internal sealed class MethodSource : BaseSource
                 }
                 else if (c == ',' && depth == 0)
                 {
-                    types.Add(ExtractTypeName(inner.Substring(start, i - start)));
+                    types.Add(ExtractTypeName(inner.Slice(start, i - start)));
                     start = i + 1;
                 }
             }
 
-            types.Add(ExtractTypeName(inner.Substring(start)));
+            types.Add(ExtractTypeName(inner.Slice(start)));
 
             parameterTypesKey = string.Join(", ", types);
-            Log.Info<MethodSource>($"{Name}: {parameterTypesKey}");
             return parameterTypesKey;
         }
     }
 
-    private static string ExtractTypeName(string paramSegment)
+    private static string ExtractTypeName(ReadOnlySpan<char> paramSegment)
     {
         // Strip default value (e.g. " = default")
         int equalsIndex = paramSegment.IndexOf('=');
         if (equalsIndex >= 0)
         {
-            paramSegment = paramSegment.Substring(0, equalsIndex).TrimEnd();
+            paramSegment = paramSegment.Slice(0, equalsIndex).TrimEnd();
         }
 
         // Extract type part: everything before the last space (parameter name)
         int lastSpace = paramSegment.LastIndexOf(' ');
-        string typePart;
+        ReadOnlySpan<char> typePart;
         if (lastSpace >= 0)
         {
-            typePart = paramSegment.Substring(0, lastSpace).Trim();
+            typePart = paramSegment.Slice(0, lastSpace).Trim();
         }
         else
         {
@@ -141,35 +141,35 @@ internal sealed class MethodSource : BaseSource
         // Strip parameter modifiers
         if (typePart.StartsWith("this ", StringComparison.Ordinal))
         {
-            typePart = typePart.Substring(5);
+            typePart = typePart.Slice(5);
         }
         else if (typePart.StartsWith("out ", StringComparison.Ordinal))
         {
-            typePart = typePart.Substring(4);
+            typePart = typePart.Slice(4);
         }
         else if (typePart.StartsWith("ref ", StringComparison.Ordinal))
         {
-            typePart = typePart.Substring(4);
+            typePart = typePart.Slice(4);
         }
         else if (typePart.StartsWith("in ", StringComparison.Ordinal))
         {
-            typePart = typePart.Substring(3);
+            typePart = typePart.Slice(3);
         }
         else if (typePart.StartsWith("params ", StringComparison.Ordinal))
         {
-            typePart = typePart.Substring(7);
+            typePart = typePart.Slice(7);
         }
 
         if (typePart.StartsWith("global::", StringComparison.Ordinal))
         {
-            typePart = typePart.Substring(8);
+            typePart = typePart.Slice(8);
         }
 
         if (typePart.EndsWith("?"))
         {
-            typePart = typePart.Substring(0, typePart.Length - 1);
+            typePart = typePart.Slice(0, typePart.Length - 1);
         }
 
-        return typePart;
+        return typePart.ToString();
     }
 }

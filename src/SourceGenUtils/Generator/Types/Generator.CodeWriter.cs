@@ -935,7 +935,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(bool value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) => { writer.AppendLine("return AppendLine(value ? \"true\" : \"false\");"); },
-                    Dependencies = appendDependencies,
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("bool")
                 },
@@ -945,7 +945,7 @@ partial class Generator
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine(object value)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) => { writer.AppendLine("return value == null ? this : AppendLine(value.ToString());"); },
-                    Dependencies = appendDependencies,
+                    Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = CreateAppendLineTrivia("object")
                 },

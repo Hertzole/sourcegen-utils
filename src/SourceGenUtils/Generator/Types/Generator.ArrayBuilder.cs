@@ -25,7 +25,7 @@ partial class Generator
         [
             ARRAY_BUILDER + ".Dispose()",
             writer_no_generic + ".Create()",
-            OBJECT_POOL + ".ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
+            OBJECT_POOL + ".ObjectPool(System.Func<T>, System.Action<T>, System.Action<T>, System.Action<T>)",
             OBJECT_POOL + ".Get()"
         ];
 

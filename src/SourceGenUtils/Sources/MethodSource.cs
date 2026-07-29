@@ -165,6 +165,11 @@ internal sealed class MethodSource : BaseSource
             typePart = typePart.Substring(8);
         }
 
+        if (typePart.EndsWith("?"))
+        {
+            typePart = typePart.Substring(0, typePart.Length - 1);
+        }
+
         return typePart;
     }
 }

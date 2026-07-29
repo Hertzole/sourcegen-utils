@@ -126,7 +126,7 @@ partial class Generator
         return
         [
             $"{poolName}.OnCreate()",
-            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
+            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>, System.Action<T>, System.Action<T>)",
             $"{OBJECT_POOL}.Get()"
         ];
     }
@@ -137,7 +137,7 @@ partial class Generator
         [
             $"{poolName}.OnCreate()",
             $"{poolName}.OnReturn({collection})",
-            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
+            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>, System.Action<T>, System.Action<T>)",
             $"{OBJECT_POOL}.Get(T)"
         ];
     }
@@ -147,7 +147,7 @@ partial class Generator
         return
         [
             $"{poolName}.OnReturn({collection})",
-            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>?, System.Action<T>?, System.Action<T>?)",
+            $"{OBJECT_POOL}.ObjectPool(System.Func<T>, System.Action<T>, System.Action<T>, System.Action<T>)",
             $"{OBJECT_POOL}.Return(T)"
         ];
     }

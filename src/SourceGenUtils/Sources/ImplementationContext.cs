@@ -22,13 +22,26 @@ internal readonly struct ImplementationContext
 
     public bool HasCalledMethod(string method)
     {
+        // Normalize: strip '?' from parameter types for nullable matching.
+        // The calledMethods set stores keys without '?', so if the lookup key
+        // somehow has one, remove it before searching.
         ReadOnlySpan<char> span = method.AsSpan();
         int startPos = span.IndexOf('(');
         int endPos = span.IndexOf(')');
         if (startPos == -1 && endPos == -1)
         {
-            // No args, use other 
+            // No args, use other
             return calledMethodsWithoutArgs.Contains(method);
+        }
+
+        if (endPos > startPos)
+        {
+            // Check if there's a '?' in the parameter portion that doesn't belong
+            ReadOnlySpan<char> paramsPortion = span.Slice(startPos + 1, endPos - startPos - 1);
+            if (paramsPortion.IndexOf('?') >= 0)
+            {
+                method = method.Replace("?", string.Empty);
+            }
         }
 
         return calledMethods.Contains(method);

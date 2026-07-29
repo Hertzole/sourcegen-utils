@@ -1404,7 +1404,7 @@ partial class Generator
                         writer.AppendLine(disposed_call);
                         writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.ConditionalScope(this, conditional);");
                     },
-                    Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope(Hertzole.SourceGen.CodeWriter, string?)", throw_if_disposed],
+                    Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope(Hertzole.SourceGen.CodeWriter, string)", throw_if_disposed],
                     Trivia = new TriviaSource
                     {
                         Summary = "Temporarily changes the indentation level. Returns a disposable scope that restores the original indentation when disposed.",
@@ -1553,7 +1553,7 @@ partial class Generator
                                 writer.AppendLine("this.writer = writer;");
                                 writer.AppendLine("writer.AppendConditionalSymbol(condition);");
                             },
-                            Dependencies = [CODE_WRITER + ".ConditionalScope.Dispose()", CODE_WRITER + ".AppendConditionalSymbol(string?)"],
+                            Dependencies = [CODE_WRITER + ".ConditionalScope.Dispose()", CODE_WRITER + ".AppendConditionalSymbol(string)"],
                             Trivia = new TriviaSource
                             {
                                 Summary = "Creates a new conditional scope.",
@@ -1569,7 +1569,7 @@ partial class Generator
                             Name = "Dispose",
                             Signature = "public partial void Dispose()",
                             Implementation = (writer, in _) => { writer.AppendLine("writer.AppendPreprocessorSymbol(\"#endif\");"); },
-                            Dependencies = [CODE_WRITER + ".AppendPreprocessorSymbol(string?)"],
+                            Dependencies = [CODE_WRITER + ".AppendPreprocessorSymbol(string)"],
                             Trivia = new TriviaSource
                             {
                                 Summary = "Closes the conditional."

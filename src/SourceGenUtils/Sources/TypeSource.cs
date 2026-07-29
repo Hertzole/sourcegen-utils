@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Hertzole.SourceGenUtils;
@@ -13,6 +14,8 @@ internal sealed class TypeSource : IHasAttributes
     public Dictionary<string, TypeSource>? Types { get; init; }
     public string[]? Attributes { get; init; }
     public string? ConditionalPreprocessorSymbol { get; init; }
+
+    [ExcludeFromCodeCoverage]
     public TriviaSource? Trivia { get; init; }
 
     public bool ContainsMethod(string methodName, CancellationToken cancellationToken)

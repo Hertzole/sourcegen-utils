@@ -420,7 +420,7 @@ public sealed partial class Generator : IIncrementalGenerator
         return true;
     }
 
-    private static HashSet<string> ExpandDependencies(HashSet<string> calledMethods, CancellationToken cancellationToken)
+    internal static HashSet<string> ExpandDependencies(HashSet<string> calledMethods, CancellationToken cancellationToken)
     {
         // PERF: Pool collections
         HashSet<string> expanded = new HashSet<string>(calledMethods);

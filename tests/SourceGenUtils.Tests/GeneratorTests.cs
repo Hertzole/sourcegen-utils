@@ -1,19 +1,27 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
+using Bogus;
 using Hertzole.SourceGenUtils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
 
 [TestFixture]
-internal abstract class GeneratorTests
+[Parallelizable(ParallelScope.All)]
+internal abstract partial class GeneratorTests
 {
+    protected readonly Faker Fake = new Faker();
+
     [Test]
     public void Exists()
     {
@@ -21,148 +29,44 @@ internal abstract class GeneratorTests
         AssertFileAndShellExists(GetTypeName(), result);
     }
 
-    [Test]
-    public void NoCalls_GeneratesDefault()
+    /// <summary>
+    ///     Removes any namespaces from a method name string. For example, My.Namespace.Type.Method(string value) ->
+    ///     Method(string value)
+    /// </summary>
+    protected static ReadOnlySpan<char> GetMethodNameWithArgs(ReadOnlySpan<char> method)
     {
-        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>();
-        AssertFileAndShellExists(GetTypeName(), result);
+        int parentheses = method.IndexOf('(');
 
-        SyntaxTree content = result.GeneratedTrees.Single(t => t.FilePath.EndsWith($"{GetTypeName()}.g.cs"));
-        SyntaxTree shell = result.GeneratedTrees.Single(t => t.FilePath.EndsWith($"{GetTypeName()}.Shell.g.cs"));
+        // Slices from the start to the first '(': My.Namespace.Type.Method(
+        ReadOnlySpan<char> firstSlice = method.Slice(0, parentheses);
 
-        Assert.That(content.ToString(), Is.EqualTo(GetTypeContent(Generator.TypesToGenerate[GetTypeName()], GetTypeName())));
-        Assert.That(shell.ToString(), Is.EqualTo(GetTypeShellContent(Generator.TypesToGenerate[GetTypeName()])));
+        // Finds the last dot in the first slice: My.Namespace.Type
+        int lastDot = firstSlice.LastIndexOf('.');
+
+        // Slices from the last dot to the end: Type.Method(...)
+        ReadOnlySpan<char> methodName = method.Slice(lastDot + 1);
+
+        return methodName;
     }
 
-    [Test]
-    public void TypeOutline_Content()
+    /// <summary>
+    ///     Removes any namespaces and args from a method name string. For example, My.Namespace.Type.Method(string value) ->
+    ///     Method
+    /// </summary>
+    protected static ReadOnlySpan<char> GetMethodNameWithoutArgs(ReadOnlySpan<char> method)
     {
-        // Arrange
-        TypeSource type = Generator.TypesToGenerate[GetTypeName()];
-        string expected = GetTypeOutline();
-        TypeSource newType = new TypeSource
-        {
-            Signature = type.Signature,
-            Attributes = type.Attributes,
-            ConditionalPreprocessorSymbol = type.ConditionalPreprocessorSymbol
-        };
+        int parentheses = method.IndexOf('(');
 
-        CodeWriter writer = new CodeWriter();
+        // Slices from the start to the first '(': My.Namespace.Type.Method(
+        ReadOnlySpan<char> firstSlice = method.Slice(0, parentheses);
 
-        // Act
-        Generator.AppendType(newType, GetTypeName(), writer, new ImplementationContext());
-        string result = writer.ToString();
-        writer.Clear();
-        writer.AppendGeneratedCodeAttribute(Generator.generatorName, Generator.generatorVersion);
-        writer.AppendExcludeFromCodeCoverageAttribute();
-        writer.Append(expected);
+        // Finds the last dot in the first slice: My.Namespace.Type
+        int lastDot = firstSlice.LastIndexOf('.');
 
-        // Assert
-        Assert.That(result, Is.EqualTo(writer.ToString()));
-    }
+        // Slices from the last dot to the end: Type.Method(...)
+        ReadOnlySpan<char> methodName = method.Slice(lastDot + 1, parentheses);
 
-    [Test]
-    public void Shell_SkipsPartialMethods()
-    {
-        // Arrange
-        TypeSource type = Generator.TypesToGenerate[GetTypeName()];
-        HashSet<string> shellMethods = GetCalledMethods(GetShellMethods(), GetTypeName());
-
-        if (type.Methods == null || type.Methods.Length == 0)
-        {
-            Assert.Pass($"There's no methods in type {GetTypeName()}.");
-            return;
-        }
-
-        // Assert
-        IEnumerable<IGrouping<string, MethodSource>> methodGroups =
-            type.Methods.GroupBy(m => $"{Generator.NAMESPACE}.{GetTypeName()}.{m.Name}({m.ParameterTypesKey})");
-
-        foreach (IGrouping<string, MethodSource> group in methodGroups)
-        {
-            bool anyNonSkipPartial = group.Any(m => !m.SkipPartial);
-
-            if (anyNonSkipPartial)
-            {
-                Assert.That(shellMethods, Does.Contain(group.Key), $"Partial methods do not contain '{group.Key}' when they should have.");
-            }
-            else
-            {
-                Assert.That(shellMethods, Does.Not.Contain(group.Key), $"Partial methods contained '{group.Key}' when it shouldn't have.");
-            }
-        }
-    }
-
-    protected string GetTypeContent(params string[]? calledMethods)
-    {
-        return GetTypeContent(Generator.TypesToGenerate[GetTypeName()], GetTypeName(), calledMethods);
-    }
-
-    public void AssertCallingMethodCreatesMethods(Action<CodeWriter> writeCall, params string[] expectedCalledMethods)
-    {
-        // Arrange
-        string source = GenerateCall(writeCall);
-        string expected = GetTypeContent(expectedCalledMethods);
-
-        // Act
-        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>(source);
-
-        // Assert
-        AssertGenerateTypeHasContent(expected, result);
-    }
-
-    public void AssertCallingMethodCreatesMethods(Action<CodeWriter> writeCall, MetadataReference[] additionalReferences, params string[] expectedCalledMethods)
-    {
-        // Arrange
-        string source = GenerateCall(writeCall);
-        string expected = GetTypeContent(expectedCalledMethods);
-
-        // Act
-        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>([source], additionalReferences);
-
-        // Assert
-        AssertGenerateTypeHasContent(expected, result);
-    }
-
-    public void EmptyContentTest(string path, string expected)
-    {
-        // Arrange
-        string content = GetMethodContentInternal(path, false);
-
-        // Assert
-        Assert.AreEqual(expected, content);
-    }
-
-    protected static string GetTypeContent(TypeSource type, string typeName, string[]? calledMethods = null)
-    {
-        CodeWriter writer = new CodeWriter();
-        writer.AppendNullable();
-        writer.AppendNamespace(Generator.NAMESPACE);
-
-        if (!typeName.StartsWith(Generator.NAMESPACE))
-        {
-            typeName = $"{Generator.NAMESPACE}.{typeName}";
-        }
-
-        Generator.AppendType(type, typeName, writer, new ImplementationContext(GetCalledMethods(calledMethods), CancellationToken.None, false));
-
-        return writer.ToString();
-    }
-
-    protected static string GetTypeShellContent(TypeSource type)
-    {
-        CodeWriter writer = new CodeWriter();
-        writer.AppendNullable();
-        writer.AppendNamespace(Generator.NAMESPACE);
-
-        Generator.AppendShellType(writer, type, CancellationToken.None);
-
-        return writer.ToString();
-    }
-
-    public static GeneratorDriverRunResult AssertGeneratedOutput<T>(string source) where T : IIncrementalGenerator, new()
-    {
-        return AssertGeneratedOutput<T>([source]);
+        return methodName;
     }
 
     public static GeneratorDriverRunResult AssertGeneratedOutput<T>(string[]? sources = null, MetadataReference[]? additionalReferences = null)
@@ -221,208 +125,98 @@ internal abstract class GeneratorTests
         AssertResultContainsFile($"{fileName}.Shell.g.cs", result);
     }
 
-    public void AssertGenerateTypeHasContent(string expected, GeneratorDriverRunResult result)
+    protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
     {
-        SyntaxTree? generatedFile = result.GeneratedTrees.FirstOrDefault(t => t.FilePath.EndsWith($"{GetTypeName()}.g.cs"));
-        Assert.That(generatedFile, Is.Not.Null, "Generated file is null.");
-        Assert.That(generatedFile!.GetText().ToString(), Is.EqualTo(expected), "Generated file content does not match expected.");
-    }
+        CancellationToken ct = CancellationToken.None;
+        TypeSource type = Generator.TypesToGenerate[typeName];
 
-    protected static string GenerateCall(Action<CodeWriter> write, string[]? usings = null)
-    {
+        // Expand method names to full paths
+        for (int i = 0; i < calledMethods.Length; i++)
+        {
+            if (!calledMethods[i].StartsWith(Generator.NAMESPACE))
+            {
+                calledMethods[i] = $"{Generator.NAMESPACE}.{calledMethods[i]}";
+            }
+        }
+
+        // Expand dependencies (constructors etc.)
+        HashSet<string> expanded = Generator.ExpandDependencies(new HashSet<string>(calledMethods), ct);
+
+        // Generate implementation (.g.cs)
         CodeWriter writer = new CodeWriter();
         writer.AppendNullable();
+        writer.AppendNamespace(Generator.NAMESPACE);
+        Generator.AppendType(type, $"{Generator.NAMESPACE}.{typeName}", writer, new ImplementationContext(expanded, ct, false));
+        string impl = writer.ToString();
 
-        writer.AppendLine("using Hertzole.SourceGen;");
-        if (usings != null && usings.Length > 0)
+        // Generate shell (.Shell.g.cs)
+        writer.Clear();
+        writer.AppendNullable();
+        writer.AppendNamespace(Generator.NAMESPACE);
+        Generator.AppendShellType(writer, type, ct);
+        string shell = writer.ToString();
+
+        // Strip EmbeddedAttribute — Roslyn generates this, not a real type
+        shell = EmbeddedAttributeRegex().Replace(shell, string.Empty);
+
+        // Compile
+        string fullSource = impl + "\n" + shell;
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(fullSource, CSharpParseOptions.Default.WithPreprocessorSymbols("DEBUG"));
+
+        MetadataReference[] refs = AppDomain.CurrentDomain.GetAssemblies()
+                                            .Where(a => !a.IsDynamic && !string.IsNullOrWhiteSpace(a.Location))
+                                            .Select(a => MetadataReference.CreateFromFile(a.Location))
+                                            .ToArray<MetadataReference>();
+
+        CSharpCompilation compilation = CSharpCompilation.Create("test",
+            [tree], refs,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        using MemoryStream ms = new MemoryStream();
+        EmitResult emitResult = compilation.Emit(ms);
+
+        if (!emitResult.Success)
         {
-            for (int i = 0; i < usings.Length; i++)
-            {
-                writer.AppendLine($"using {usings[i]};");
-            }
+            Assert.Fail(string.Join("\n", emitResult.Diagnostics
+                                                    .Where(d => d.Severity == DiagnosticSeverity.Error)
+                                                    .Select(d => d.ToString())));
         }
 
-        writer.AppendLine("public class TestMethodCaller");
-        using (writer.WithBlock())
-        {
-            writer.AppendLine("public void TestMethod()");
-            using (writer.WithBlock())
-            {
-                write.Invoke(writer);
-            }
-        }
+        ms.Position = 0;
+        Assembly asm = Assembly.Load(ms.ToArray());
+        Type? foundType = asm.GetType($"{Generator.NAMESPACE}.{typeName}");
 
-        return writer.ToString();
+        Assert.That(foundType, Is.Not.Null, $"Can't find type {Generator.NAMESPACE}.{typeName}");
+
+        return foundType!;
     }
 
-    public static string GetMethodContent(string path, params string[] calledMethods)
+    protected static MethodInfo GetMethod(Type type, string name, BindingFlags flags)
     {
-        return GetMethodContentInternal(path, true, calledMethods);
+        MethodInfo? method = type.GetMethod(name, flags);
+
+        Assert.That(method, Is.Not.Null, $"Can't find method '{name}' in type '{type.FullName}'");
+        return method!;
     }
 
-    private static string GetMethodContentInternal(string path, bool addThisToCalledMethods, params string[] calledMethods)
+    protected static MethodInfo GetMethod(Type type, string name, BindingFlags flags, params Type[] types)
     {
-        MethodSource method = GetMethod(path);
+        MethodInfo? method = type.GetMethod(name, flags, types);
 
-        CodeWriter writer = new CodeWriter();
-
-        string fullName = !path.StartsWith(Generator.NAMESPACE) ? $"{Generator.NAMESPACE}.{path}" : path;
-
-        List<string> calls = new List<string>(calledMethods);
-        if (addThisToCalledMethods)
-        {
-            calls.Add(fullName);
-        }
-
-        Generator.AppendMethod(writer, method, fullName,
-            new ImplementationContext(GetCalledMethods(calls.ToArray()), CancellationToken.None, false));
-
-        return writer.ToString();
+        Assert.That(method, Is.Not.Null, $"Can't find method '{name}' in type '{type.FullName}'");
+        return method!;
     }
 
-    public static string GetFieldContent(string path, params string[] calledMethods)
+    protected static FieldInfo GetField(Type type, string name, BindingFlags flags)
     {
-        FieldSource field = GetField(path);
+        FieldInfo? field = type.GetField(name, flags);
 
-        CodeWriter writer = new CodeWriter();
-
-        Generator.WriteFieldOrProperty(field, writer, new ImplementationContext(GetCalledMethods(calledMethods), CancellationToken.None, false));
-
-        return writer.ToString();
-    }
-
-    public static MethodSource GetMethod(string path)
-    {
-        TypeSource type = GetType(path);
-        int parentheses = path.IndexOf('(');
-        if (parentheses < 0)
-        {
-            throw new ArgumentException("Invalid method path", nameof(path));
-        }
-
-        string withoutArgs = path.Substring(0, parentheses);
-
-        int lastDot = withoutArgs.LastIndexOf('.');
-        if (lastDot < 0)
-        {
-            throw new ArgumentException("Invalid method path", nameof(path));
-        }
-
-        string args = path.Substring(path.IndexOf('('));
-
-        string methodName = withoutArgs.Substring(lastDot + 1) + args;
-
-        if (type.Methods == null)
-        {
-            throw new ArgumentException("Type doesn't have methods.");
-        }
-
-        MethodSource? method = type.Methods.FirstOrDefault(x => $"{x.Name}({x.ParameterTypesKey})" == methodName);
-        if (method == null)
-        {
-            throw new ArgumentException($"No method called '{methodName}'.");
-        }
-
-        return method;
-    }
-
-    public static FieldSource GetField(string path)
-    {
-        TypeSource type = GetType(path);
-        int lastDot = path.LastIndexOf('.');
-        if (lastDot < 0)
-        {
-            throw new ArgumentException("Invalid field path", nameof(path));
-        }
-
-        string fieldName = path.Substring(lastDot + 1);
-
-        if (type.Fields == null)
-        {
-            throw new ArgumentException("Type doesn't have fields.");
-        }
-
-        return type.Fields[fieldName];
-    }
-
-    public static TypeSource GetType(string path)
-    {
-        if (path.StartsWith(Generator.NAMESPACE))
-        {
-            path = path.Substring(Generator.NAMESPACE.Length + 1);
-        }
-
-        int parentheses = path.IndexOf('(');
-        if (parentheses >= 0)
-        {
-            path = path.Substring(0, parentheses);
-        }
-
-        TypeSource? currentType = null;
-        bool first = true;
-
-        int tries = 0;
-
-        do
-        {
-            int index = path.IndexOf('.');
-            if (index != -1)
-            {
-                string typeName = path.Substring(0, index);
-                if (first)
-                {
-                    currentType = Generator.TypesToGenerate[typeName];
-                    first = false;
-                }
-                else
-                {
-                    Assert.That(currentType, Is.Not.Null, "currentType should have been populated by now.");
-                    Assert.That(currentType!.Types, Is.Not.Null, $"There are no more types in {typeName}.");
-
-                    currentType = currentType.Types![typeName];
-                }
-            }
-            else
-            {
-                currentType ??= Generator.TypesToGenerate[path];
-
-                Assert.That(currentType, Is.Not.Null, $"There was no type called {path}.");
-
-                return currentType!;
-            }
-
-            path = path.Substring(index + 1);
-        } while (tries++ < 100);
-
-        throw new ArgumentException($"Could not find type {path}.");
-    }
-
-    protected static HashSet<string> GetCalledMethods(string[]? calledMethods, string? className = null)
-    {
-        if (calledMethods != null)
-        {
-            bool hasClassName = !string.IsNullOrWhiteSpace(className);
-
-            for (int i = 0; i < calledMethods.Length; i++)
-            {
-                if (hasClassName && !calledMethods.StartsWith(className))
-                {
-                    calledMethods[i] = $"{className}.{calledMethods[i]}";
-                }
-
-                if (!calledMethods[i].StartsWith(Generator.NAMESPACE))
-                {
-                    calledMethods[i] = $"{Generator.NAMESPACE}.{calledMethods[i]}";
-                }
-            }
-        }
-
-        return new HashSet<string>(calledMethods ?? Array.Empty<string>());
+        Assert.That(field, Is.Not.Null, $"Can't find field '{name}' in type '{type.FullName}'");
+        return field!;
     }
 
     protected abstract string GetTypeName();
 
-    protected abstract string GetTypeOutline();
-
-    protected abstract string[]? GetShellMethods();
+    [GeneratedRegex(@"[ \t]*\[global::Microsoft\.CodeAnalysis\.EmbeddedAttribute\]\r?\n?")]
+    private static partial Regex EmbeddedAttributeRegex();
 }

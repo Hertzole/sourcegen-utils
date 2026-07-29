@@ -112,13 +112,12 @@ partial class Generator
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (!isInitialized)");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("isInitialized = true;");
                             writer.AppendLine("global::System.IO.File.WriteAllText(path, string.Empty);");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine(
                             "using (global::System.IO.FileStream stream = global::System.IO.File.Open(path, global::System.IO.FileMode.Append, global::System.IO.FileAccess.Write, global::System.IO.FileShare.Read))");
 

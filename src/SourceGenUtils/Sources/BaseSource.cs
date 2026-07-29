@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Hertzole.SourceGenUtils;
 
 internal abstract class BaseSource : IHasAttributes
@@ -12,5 +14,7 @@ internal abstract class BaseSource : IHasAttributes
 
     public string[]? Attributes { get; init; }
     public string? ConditionalPreprocessorSymbol { get; init; }
+
+    [ExcludeFromCodeCoverage]
     public TriviaSource? Trivia { get; init; }
 }

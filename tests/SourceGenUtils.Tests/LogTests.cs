@@ -1,9 +1,11 @@
-using Hertzole.SourceGenUtils;
-using Microsoft.CodeAnalysis;
+using System;
+using System.IO;
+using System.Reflection;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
 
+[NonParallelizable]
 internal class LogTests : GeneratorTests
 {
     /// <inheritdoc />
@@ -12,177 +14,99 @@ internal class LogTests : GeneratorTests
         return "Log";
     }
 
-    /// <inheritdoc />
-    protected override string GetTypeOutline()
-    {
-        return """
-               [global::System.Diagnostics.CodeAnalysis.SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1035:Do not use APIs banned for analyzers", Justification = "This is only used in debug builds.")]
-               internal static partial class Log
-               {
-               }
-               """;
-    }
-
-    /// <inheritdoc />
-    protected override string[] GetShellMethods()
-    {
-        return ["Info(object)", "Warning(object)", "Error(object)", "ClearLogs()"];
-    }
-
     [Test]
-    public void Call_Info()
+    [TestCase("Info(object)", "INFO")]
+    [TestCase("Warning(object)", "WARNING")]
+    [TestCase("Error(object)", "ERROR")]
+    public void WriteTest(string methodName, string prefix)
     {
         // Arrange
-        string source = GenerateCall(writer => { writer.AppendLine("Log.Info(\"hello\");"); });
-        string expected = GetTypeContent("Log.Info(object)", "Log.Write(string)");
+        Type type = CompileGeneratedType("Log", $"Log.{methodName}");
+        MethodInfo method = GetMethod(type, GetMethodNameWithoutArgs(methodName).ToString(), BindingFlags.Static | BindingFlags.Public);
+        string logsPath = GetField(type, "path", BindingFlags.NonPublic | BindingFlags.Static).GetValue<string>();
+        string message = Fake.Lorem.Sentence();
 
         // Act
-        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>(source);
+        method.InvokeStatic(message);
 
         // Assert
-        AssertGenerateTypeHasContent(expected, result);
+        AssertLogMessage(logsPath, message, prefix);
     }
 
     [Test]
-    public void Call_Warning()
+    public void ClearLogs()
     {
         // Arrange
-        string source = GenerateCall(writer => { writer.AppendLine("Log.Warning(\"hello\");"); });
-        string expected = GetTypeContent("Log.Warning(object)", "Log.Write(string)");
+        string[] messages = Fake.Lorem.Paragraphs().Split("\n\n");
+        Type type = CompileGeneratedType("Log", "Log.ClearLogs()", "Log.Info(object)");
+        MethodInfo clearMethod = GetMethod(type, "ClearLogs", BindingFlags.Static | BindingFlags.Public);
+        string logsPath = GetField(type, "path", BindingFlags.NonPublic | BindingFlags.Static).GetValue<string>();
+        MethodInfo writeMethod = GetMethod(type, "Info", BindingFlags.Public | BindingFlags.Static);
 
         // Act
-        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>(source);
+        for (int i = 0; i < messages.Length; i++)
+        {
+            writeMethod.InvokeStatic(messages[i]);
+        }
+
+        bool emptyAfterWrite = string.IsNullOrWhiteSpace(File.ReadAllText(logsPath));
+
+        clearMethod.InvokeStatic();
 
         // Assert
-        AssertGenerateTypeHasContent(expected, result);
+        Assert.That(emptyAfterWrite, Is.False, "No logs were written.");
+        Assert.That(File.ReadAllText(logsPath), Is.Empty, "Logs were not cleared.");
     }
 
     [Test]
-    public void Call_Error()
+    public void CanWriteMultipleLogs()
     {
         // Arrange
-        string source = GenerateCall(writer => { writer.AppendLine("Log.Error(\"hello\");"); });
-        string expected = GetTypeContent("Log.Error(object)", "Log.Write(string)");
+        string[] messages = Fake.Lorem.Paragraphs().Split("\n\n");
+        Type type = CompileGeneratedType("Log", "Log.Info(object)");
+        string logsPath = GetField(type, "path", BindingFlags.NonPublic | BindingFlags.Static).GetValue<string>();
+        MethodInfo writeMethod = GetMethod(type, "Info", BindingFlags.Public | BindingFlags.Static);
 
         // Act
-        GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>(source);
+        for (int i = 0; i < messages.Length; i++)
+        {
+            writeMethod.InvokeStatic(messages[i]);
+        }
 
         // Assert
-        AssertGenerateTypeHasContent(expected, result);
+        string content = File.ReadAllText(logsPath);
+        Assert.That(content, Is.Not.Empty, "Logs were not written.");
+        for (int i = 0; i < messages.Length; i++)
+        {
+            Assert.That(content, Contains.Substring(messages[i]));
+        }
     }
 
-    [Test]
-    public void Info_Content()
+    private static void AssertLogMessage(string path, string message, string prefix)
     {
-        // Arrange
-        string content = GetMethodContent("Log.Info(object)");
-        const string expected = """
-                                [global::System.Diagnostics.Conditional("DEBUG")]
-                                public static partial void Info(object message)
-                                {
-                                #if DEBUG
-                                    Write($"[INFO] {message}");
-                                #endif
-                                }
-                                """;
+        if (!File.Exists(path))
+        {
+            Assert.Fail("Log file does not exist.");
+            return;
+        }
 
-        // Assert
-        Assert.That(content, Is.EqualTo(expected));
-    }
+        string[] lines = File.ReadAllLines(path);
 
-    [Test]
-    public void Warning_Content()
-    {
-        // Arrange
-        string content = GetMethodContent("Log.Warning(object)");
-        const string expected = """
-                                [global::System.Diagnostics.Conditional("DEBUG")]
-                                public static partial void Warning(object message)
-                                {
-                                #if DEBUG
-                                    Write($"[WARNING] {message}");
-                                #endif
-                                }
-                                """;
+        Assert.That(lines, Has.Length.EqualTo(1), "There should only be one line.");
 
-        // Assert
-        Assert.That(content, Is.EqualTo(expected));
-    }
+        ReadOnlySpan<char> line = lines[0].AsSpan();
 
-    [Test]
-    public void Error_Content()
-    {
-        // Arrange
-        string content = GetMethodContent("Log.Error(object)");
-        const string expected = """
-                                [global::System.Diagnostics.Conditional("DEBUG")]
-                                public static partial void Error(object message)
-                                {
-                                #if DEBUG
-                                    Write($"[ERROR] {message}");
-                                #endif
-                                }
-                                """;
+        int timestampEndIndex = line.IndexOf(']');
 
-        // Assert
-        Assert.That(content, Is.EqualTo(expected));
-    }
+        if (timestampEndIndex == -1)
+        {
+            Assert.Fail("Timestamp end not found");
+            return;
+        }
 
-    [Test]
-    public void Write_Content()
-    {
-        // Arrange
-        string content = GetMethodContent("Log.Write(string)");
-        const string expected = """
-                                #if DEBUG
-                                private static void Write(string message)
-                                {
-                                    if (!isInitialized)
-                                    {
-                                        isInitialized = true;
-                                        global::System.IO.File.WriteAllText(path, string.Empty);
-                                    }
+        string withoutTimestamp = line.Slice(timestampEndIndex + 1).ToString();
 
-                                    using (global::System.IO.FileStream stream = global::System.IO.File.Open(path, global::System.IO.FileMode.Append, global::System.IO.FileAccess.Write, global::System.IO.FileShare.Read))
-                                    {
-                                        byte[] bytes = global::System.Text.Encoding.UTF8.GetBytes($"[{System.DateTimeOffset.Now:HH:mm:ss.fff}] {message}{System.Environment.NewLine}");
-                                        stream.Write(bytes, 0, bytes.Length);
-                                    }
-                                }
-                                #endif
-                                """;
-
-        // Assert
-        Assert.That(content, Is.EqualTo(expected));
-    }
-
-    [Test]
-    public void Field_IsInitialized_Content()
-    {
-        // Arrange
-        string content = GetFieldContent("Log.isInitialized", "Log.Write(string)");
-        const string expected = """
-                                #if DEBUG
-                                private static bool isInitialized = false;
-                                #endif
-                                """;
-
-        // Assert
-        Assert.That(content, Is.EqualTo(expected));
-    }
-
-    [Test]
-    public void Field_Path_Content()
-    {
-        // Arrange
-        string content = GetFieldContent("Log.path", "Log.Write(string)");
-        const string expected = """
-                                #if DEBUG
-                                private static readonly string path = global::System.IO.Path.GetFullPath(global::System.IO.Path.Combine(global::System.IO.Directory.GetCurrentDirectory(), global::System.Reflection.Assembly.GetCallingAssembly().GetName().Name + ".log"));
-                                #endif
-                                """;
-
-        // Assert
-        Assert.That(content, Is.EqualTo(expected));
+        Assert.That(withoutTimestamp, Does.Contain($"[{prefix}]"));
+        Assert.That(withoutTimestamp, Does.Contain(message));
     }
 }

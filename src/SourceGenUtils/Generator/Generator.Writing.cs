@@ -257,10 +257,18 @@ partial class Generator
             }
             else
             {
+                writer.AppendConditionalSymbol("DEBUG");
+                writer.Append("throw new global::System.NotImplementedException(\"");
+                writer.Append(fullName);
+                writer.AppendLine(" has not been properly emitted. This is a bug!\");");
+
                 if (!string.IsNullOrWhiteSpace(method.EmptyStub))
                 {
+                    writer.AppendPreprocessorSymbol("else");
                     writer.AppendLine(method.EmptyStub);
                 }
+
+                writer.AppendPreprocessorSymbol("endif");
             }
         }
 

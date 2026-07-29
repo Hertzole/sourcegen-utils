@@ -20,7 +20,7 @@ namespace SourceGenUtils.Tests;
 [Parallelizable(ParallelScope.All)]
 internal abstract partial class GeneratorTests
 {
-    protected readonly Faker Fake = new Faker();
+    protected static readonly Faker Fake = new Faker();
 
     [Test]
     public void Exists()
@@ -128,32 +128,46 @@ internal abstract partial class GeneratorTests
     protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
     {
         CancellationToken ct = CancellationToken.None;
-        TypeSource type = Generator.TypesToGenerate[typeName];
 
         // Expand method names to full paths
+        List<string> calledList = new List<string>(calledMethods.Length);
         for (int i = 0; i < calledMethods.Length; i++)
         {
-            if (!calledMethods[i].StartsWith(Generator.NAMESPACE))
+            if (string.IsNullOrEmpty(calledMethods[i]))
             {
-                calledMethods[i] = $"{Generator.NAMESPACE}.{calledMethods[i]}";
+                continue;
             }
+
+            // Add namespace if needed, otherwise just add the method.
+            calledList.Add(!calledMethods[i].StartsWith(Generator.NAMESPACE) ? $"{Generator.NAMESPACE}.{calledMethods[i]}" : calledMethods[i]);
         }
 
         // Expand dependencies (constructors etc.)
-        HashSet<string> expanded = Generator.ExpandDependencies(new HashSet<string>(calledMethods), ct);
+        HashSet<string> expanded = Generator.ExpandDependencies(new HashSet<string>(calledList), ct);
 
         // Generate implementation (.g.cs)
-        CodeWriter writer = new CodeWriter();
+        ImplementationContext implementationContext = new ImplementationContext(expanded, ct, false);
+
+        using CodeWriter writer = new CodeWriter();
         writer.AppendNullable();
         writer.AppendNamespace(Generator.NAMESPACE);
-        Generator.AppendType(type, $"{Generator.NAMESPACE}.{typeName}", writer, new ImplementationContext(expanded, ct, false));
+
+        foreach (KeyValuePair<string, TypeSource> source in Generator.TypesToGenerate)
+        {
+            Generator.AppendType(source.Value, $"{Generator.NAMESPACE}.{source.Key}", writer, in implementationContext);
+        }
+
         string impl = writer.ToString();
 
         // Generate shell (.Shell.g.cs)
         writer.Clear();
         writer.AppendNullable();
         writer.AppendNamespace(Generator.NAMESPACE);
-        Generator.AppendShellType(writer, type, ct);
+        foreach (KeyValuePair<string, TypeSource> source in Generator.TypesToGenerate)
+        {
+            Generator.AppendShellType(writer, source.Value, ct);
+        }
+
         string shell = writer.ToString();
 
         // Strip EmbeddedAttribute — Roslyn generates this, not a real type
@@ -191,6 +205,15 @@ internal abstract partial class GeneratorTests
         return foundType!;
     }
 
+    public static object CreateInstance(Type type, params object[] args)
+    {
+        object? instance = Activator.CreateInstance(type, args);
+
+        Assert.That(instance, Is.Not.Null, $"Can't create instance from '{type}'");
+
+        return instance!;
+    }
+
     protected static MethodInfo GetMethod(Type type, string name, BindingFlags flags)
     {
         MethodInfo? method = type.GetMethod(name, flags);
@@ -213,6 +236,126 @@ internal abstract partial class GeneratorTests
 
         Assert.That(field, Is.Not.Null, $"Can't find field '{name}' in type '{type.FullName}'");
         return field!;
+    }
+
+    protected static string GetTypesString(params Type[] types)
+    {
+        return types.Length == 0 ? string.Empty : string.Join(", ", types.Select(GetTypeString));
+    }
+
+    private static string GetTypeString(Type type)
+    {
+        if (type.IsArray)
+        {
+            return GetTypeString(type.GetElementType()!);
+        }
+
+        if (type == typeof(string))
+        {
+            return "string";
+        }
+
+        if (type == typeof(byte))
+        {
+            return "byte";
+        }
+
+        if (type == typeof(sbyte))
+        {
+            return "sbyte";
+        }
+
+        if (type == typeof(short))
+        {
+            return "short";
+        }
+
+        if (type == typeof(ushort))
+        {
+            return "ushort";
+        }
+
+        if (type == typeof(int))
+        {
+            return "int";
+        }
+
+        if (type == typeof(uint))
+        {
+            return "uint";
+        }
+
+        if (type == typeof(long))
+        {
+            return "long";
+        }
+
+        if (type == typeof(ulong))
+        {
+            return "ulong";
+        }
+
+        if (type == typeof(float))
+        {
+            return "float";
+        }
+
+        if (type == typeof(double))
+        {
+            return "double";
+        }
+
+        if (type == typeof(decimal))
+        {
+            return "decimal";
+        }
+
+        if (type == typeof(char))
+        {
+            return "char";
+        }
+
+        if (type == typeof(bool))
+        {
+            return "bool";
+        }
+
+        if (type == typeof(object))
+        {
+            return "object";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (!string.IsNullOrEmpty(type.Namespace))
+        {
+            sb.Append(type.Namespace);
+            sb.Append('.');
+        }
+
+        if (type.IsGenericType)
+        {
+            ReadOnlySpan<char> span = type.Name.AsSpan();
+            int genericArgIndex = span.IndexOf("`");
+
+            sb.Append(span.Slice(0, genericArgIndex));
+            sb.Append('<');
+            for (int i = 0; i < type.GenericTypeArguments.Length; i++)
+            {
+                sb.Append(GetTypeString(type.GenericTypeArguments[i]));
+                if (i < type.GenericTypeArguments.Length - 1)
+                {
+                    sb.Append(", ");
+                }
+            }
+
+            sb.Append('>');
+        }
+        else
+        {
+            sb.Append(type.Name);
+        }
+
+        return sb.ToString();
     }
 
     protected abstract string GetTypeName();

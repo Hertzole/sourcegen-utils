@@ -5,9 +5,9 @@ namespace SourceGenUtils.Tests;
 
 public static class Extensions
 {
-    public static void InvokeInstance(this MethodInfo method, object instance, params object[] args)
+    public static object? InvokeInstance(this MethodInfo method, object instance, params object[] args)
     {
-        method.Invoke(instance, args);
+        return method.Invoke(instance, args);
     }
 
     public static T InvokeInstance<T>(this MethodInfo method, object instance, params object[] args)
@@ -25,9 +25,9 @@ public static class Extensions
         return (T) result!;
     }
 
-    public static void InvokeStatic(this MethodInfo method, params object[] args)
+    public static object? InvokeStatic(this MethodInfo method, params object[] args)
     {
-        method.Invoke(null, args);
+        return method.Invoke(null, args);
     }
 
     public static T InvokeStatic<T>(this MethodInfo method, params object[] args)

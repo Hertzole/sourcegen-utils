@@ -25,7 +25,7 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const workflow_id = context.workflow;
+            const workflow_id = "stryker.yml";
             const branch = context.ref.replace("refs/heads/", "");
 
             const runs = await github.rest.actions.listWorkflowRuns({

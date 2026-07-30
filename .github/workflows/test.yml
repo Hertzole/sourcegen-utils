@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [master]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '.github/workflows/test.yml'
 
 jobs:
   test:

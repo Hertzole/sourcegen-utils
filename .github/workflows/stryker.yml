@@ -1,0 +1,75 @@
+name: Update Stryker
+
+on:
+  schedule:
+    # Runs every day at 03:00 UTC
+    - cron: "0 3 * * *"
+
+  # Optional: allow manual runs
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+
+    outputs:
+      has_changes: ${{ steps.check.outputs.has_changes }}
+
+    steps:
+      - name: Check whether commits changed since last successful run
+        id: check
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const workflow_id = context.workflow;
+            const branch = context.ref.replace("refs/heads/", "");
+
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id,
+              branch,
+              event: "schedule",
+              status: "success",
+              per_page: 2
+            });
+
+            const previousRun = runs.data.workflow_runs
+              .filter(run => run.id !== context.runId)[0];
+
+            if (!previousRun) {
+              core.info("No previous successful scheduled run found. Running job.");
+              core.setOutput("has_changes", "true");
+              return;
+            }
+
+            const previousSha = previousRun.head_sha;
+            const currentSha = context.sha;
+
+            core.info(`Previous successful run SHA: ${previousSha}`);
+            core.info(`Current SHA: ${currentSha}`);
+
+            if (previousSha === currentSha) {
+              core.info("No commits since last successful run.");
+              core.setOutput("has_changes", "false");
+            } else {
+              core.info("Commits found since last successful run.");
+              core.setOutput("has_changes", "true");
+            }
+
+  daily-job:
+    needs: check-changes
+    if: needs.check-changes.outputs.has_changes == 'true'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run daily task
+        run: |
+          echo "Running because there have been commits since the last daily run."

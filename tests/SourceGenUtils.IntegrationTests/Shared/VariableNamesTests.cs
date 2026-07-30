@@ -97,7 +97,7 @@ public class VariableNamesTests
         int expectedWritten = "PlayerHealth".Length;
 
         // Act
-        int written = VariableNames.NicifyVariableName(value, builder);
+        int written = VariableNames.NicifyVariableName(value.AsSpan(), builder);
 
         // Assert
         Assert.That(written, Is.EqualTo(expectedWritten));

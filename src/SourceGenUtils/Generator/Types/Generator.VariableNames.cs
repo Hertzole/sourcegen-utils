@@ -123,28 +123,49 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "NicifyVariableName",
+                    Signature = $"public static partial int NicifyVariableName(string value, global::{ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("return NicifyVariableName(global::System.MemoryExtensions.AsSpan(value), builder);");
+                    },
+                    EmptyStub = "return 0;",
+                    Dependencies =
+                    [
+                        variable_names + $".NicifyVariableName(System.ReadOnlySpan<char>, {ARRAY_BUILDER}<char>)"
+                    ],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = nicify_trivia,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The variable name to transform."
+                        },
+                        Returns = "The nicified variable name."
+                    }
+                },
+                new MethodSource
+                {
                     Name = "RemovePrefix",
                     Signature = "public static partial int RemovePrefix(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("// Check for prefixes like 'm_'.");
                         writer.AppendLine("if (HasMemberPrefix(value))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("value.Slice(2).CopyTo(destination);");
                             writer.AppendLine("return value.Length - 2;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("// Check for names that start with '_' or 'k' (konstants).");
                         writer.AppendLine("if (value.Length > 1 && (value[0] == '_' || HasConstantPrefix(value)))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("value.Slice(1).CopyTo(destination);");
                             writer.AppendLine("return value.Length - 1;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("value.CopyTo(destination);");
                         writer.AppendLine("return value.Length;");
                     },
@@ -228,28 +249,46 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "RemovePrefix",
+                    Signature = $"public static partial int RemovePrefix(string value, global::{ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) => { writer.AppendLine("return RemovePrefix(global::System.MemoryExtensions.AsSpan(value), builder);"); },
+                    EmptyStub = "return 0;",
+                    Dependencies =
+                    [
+                        variable_names + $".RemovePrefix(System.ReadOnlySpan<char>, {ARRAY_BUILDER}<char>)"
+                    ],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c>.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The variable name to process."
+                        },
+                        Returns = "The variable name with the prefix removed."
+                    }
+                },
+                new MethodSource
+                {
                     Name = "UppercaseStart",
                     Signature = "public static partial void UppercaseStart(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("// Empty string.");
                             writer.AppendLine("value.CopyTo(destination);");
                             writer.AppendLine("return;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("if (value[0] == char.ToUpperInvariant(value[0]))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("// Already uppercase.");
                             writer.AppendLine("value.CopyTo(destination);");
                             writer.AppendLine("return;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("value.CopyTo(destination);");
                         writer.AppendLine("destination[0] = char.ToUpperInvariant(value[0]);");
                     },
@@ -270,22 +309,20 @@ partial class Generator
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("// Empty string.");
                             writer.AppendLine("return;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("if (value[0] == char.ToUpperInvariant(value[0]))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("// Already uppercase.");
                             writer.AppendLine("builder.AddRange(value);");
                             writer.AppendLine("return;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(value.Length);");
                         writer.AppendLine("value.CopyTo(global::System.MemoryExtensions.AsSpan(destination));");
                         writer.AppendLine("destination[0] = char.ToUpperInvariant(value[0]);");
@@ -313,21 +350,19 @@ partial class Generator
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("// Empty string.");
                             writer.AppendLine("return string.Empty;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("if (value[0] == char.ToUpperInvariant(value[0]))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("// Already uppercase.");
                             writer.AppendLine("return value;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(value.Length);");
                         writer.AppendLine("global::System.MemoryExtensions.AsSpan(value).CopyTo(global::System.MemoryExtensions.AsSpan(destination));");
                         writer.AppendLine("destination[0] = char.ToUpperInvariant(value[0]);");
@@ -336,6 +371,25 @@ partial class Generator
                         writer.AppendLine("return result;");
                     },
                     EmptyStub = "return string.Empty;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns a new string with the first character uppercased.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The input string."
+                        },
+                        Returns = "A new string with the first character uppercased."
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "UppercaseStart",
+                    Signature = $"public static partial void UppercaseStart(string value, global::{ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) => { writer.AppendLine("UppercaseStart(global::System.MemoryExtensions.AsSpan(value), builder);"); },
+                    Dependencies =
+                    [
+                        variable_names + $".UppercaseStart(System.ReadOnlySpan<char>, {ARRAY_BUILDER}<char>)"
+                    ],
                     Trivia = new TriviaSource
                     {
                         Summary = "Returns a new string with the first character uppercased.",
@@ -370,6 +424,27 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "StartsWithOn",
+                    Signature = "public static partial bool StartsWithOn(string? value)",
+                    Implementation = (writer, in _) => { writer.AppendLine("return StartsWithOn(global::System.MemoryExtensions.AsSpan(value));"); },
+                    Dependencies =
+                    [
+                        variable_names + ".StartsWithOn(System.ReadOnlySpan<char>)"
+                    ],
+                    EmptyStub = "return false;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Determines whether the value starts with <c>on</c> or <c>On</c> followed by an uppercase character (e.g. <c>OnValueChanged</c>).",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["value"] = "The value to check."
+                        },
+                        Returns = "<c>true</c> if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise <c>false</c>."
+                    }
+                },
+                new MethodSource
+                {
                     Name = "GetNiceNameLength",
                     Signature = "public static partial int GetNiceNameLength(string value)",
                     Implementation = (writer, in _) => { writer.AppendLine("return GetNiceNameLength(global::System.MemoryExtensions.AsSpan(value));"); },
@@ -384,28 +459,25 @@ partial class Generator
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("return 0;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("// Remove '_' prefix or k/K (konstant) prefix.");
                         writer.AppendLine("if (value.Length > 1 && value[0] == '_' || HasConstantPrefix(value))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("return value.Length - 1;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("// Remove prefixes like 'm_'.");
                         writer.AppendLine("if (HasMemberPrefix(value))");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
                             writer.AppendLine("return value.Length - 2;");
                         }
 
-                        writer.AppendLine();
                         writer.AppendLine("return value.Length;");
                     },
                     EmptyStub = "return 0;",

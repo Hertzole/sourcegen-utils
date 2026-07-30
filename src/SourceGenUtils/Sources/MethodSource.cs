@@ -143,11 +143,7 @@ internal sealed class MethodSource : BaseSource
         {
             typePart = typePart.Slice(5);
         }
-        else if (typePart.StartsWith("out ", StringComparison.Ordinal))
-        {
-            typePart = typePart.Slice(4);
-        }
-        else if (typePart.StartsWith("ref ", StringComparison.Ordinal))
+        else if (typePart.StartsWith("out ", StringComparison.Ordinal) || typePart.StartsWith("ref ", StringComparison.Ordinal))
         {
             typePart = typePart.Slice(4);
         }

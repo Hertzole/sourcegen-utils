@@ -68,8 +68,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run daily task
-        run: |
-          echo "Running because there have been commits since the last daily run."
+      - name: Checkout
+        uses: actions/checkout@v7
+        
+      - uses: fast-actions/setup-dotnet@v1
+        with:
+          sdk-version: '10.x'
+          
+      - name: Install Stryker.NET
+        run: dotnet tool install -g dotnet-stryker
+          
+      - name: Build
+        run: dotnet build
+        
+      - name: Run Stryker
+        run: dotnet stryker
+        
+      - name: Upload report
+        uses: actions/upload-artifact@v7
+        with:
+          name: stryker-report
+          path: StrykerOutput/**.html

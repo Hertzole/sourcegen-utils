@@ -18,7 +18,7 @@ namespace SourceGenUtils.Tests;
 
 [TestFixture]
 [Parallelizable(ParallelScope.All)]
-internal abstract partial class GeneratorTests
+public abstract partial class GeneratorTests
 {
     protected static readonly Faker Fake = new Faker();
 
@@ -138,8 +138,7 @@ internal abstract partial class GeneratorTests
                 continue;
             }
 
-            // Add namespace if needed, otherwise just add the method.
-            calledList.Add(!calledMethods[i].StartsWith(Generator.NAMESPACE) ? $"{Generator.NAMESPACE}.{calledMethods[i]}" : calledMethods[i]);
+            calledList.Add(AppendTypeIfNeeded(typeName, calledMethods[i]));
         }
 
         // Expand dependencies (constructors etc.)
@@ -203,6 +202,37 @@ internal abstract partial class GeneratorTests
         Assert.That(foundType, Is.Not.Null, $"Can't find type {Generator.NAMESPACE}.{typeName}");
 
         return foundType!;
+
+        static string AppendTypeIfNeeded(string typeName, string method)
+        {
+            ReadOnlySpan<char> span = method.AsSpan();
+            int parensIndex = span.IndexOf('(');
+
+            if (parensIndex < 0)
+            {
+                return method;
+            }
+
+            ReadOnlySpan<char> slice = span.Slice(0, parensIndex);
+            int dot = slice.IndexOf('.');
+            if (dot < 0)
+            {
+                // There is no dot. We can assume the user meant a method inside the typeName.
+                return AppendNamespace($"{typeName}.{method}");
+            }
+
+            return AppendNamespace(method);
+        }
+
+        static string AppendNamespace(string value)
+        {
+            if (!value.StartsWith($"{Generator.NAMESPACE}."))
+            {
+                return Generator.NAMESPACE + "." + value;
+            }
+
+            return value;
+        }
     }
 
     public static object CreateInstance(Type type, params object[] args)

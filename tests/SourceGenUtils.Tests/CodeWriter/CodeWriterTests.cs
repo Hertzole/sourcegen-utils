@@ -175,19 +175,6 @@ internal partial class CodeWriterTests : GeneratorTests
 
     private static object CompileCodeWriter(params string[] calledMethods)
     {
-        for (int i = 0; i < calledMethods.Length; i++)
-        {
-            if (string.IsNullOrWhiteSpace(calledMethods[i]))
-            {
-                continue;
-            }
-
-            if (!calledMethods[i].StartsWith("CodeWriter"))
-            {
-                calledMethods[i] = "CodeWriter." + calledMethods[i];
-            }
-        }
-
         string[] calledWithConstructor = new string[calledMethods.Length + 1];
         calledMethods.CopyTo(calledWithConstructor, 0);
         calledWithConstructor[calledMethods.Length] = "CodeWriter.CodeWriter()";

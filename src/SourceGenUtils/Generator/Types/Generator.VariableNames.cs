@@ -76,7 +76,7 @@ partial class Generator
                     [
                         variable_names + ".NicifyVariableName(System.ReadOnlySpan<char>, System.Span<char>)",
                         variable_names + ".GetNiceNameLength(System.ReadOnlySpan<char>)",
-                        ARRAY_BUILDER + ".AddRange(System.ReadOnlySpan<char)"
+                        ARRAY_BUILDER + ".AddRange(System.ReadOnlySpan<T>)"
                     ],
                     Trivia = new TriviaSource
                     {
@@ -181,7 +181,8 @@ partial class Generator
                     Dependencies =
                     [
                         variable_names + ".RemovePrefix(System.ReadOnlySpan<char>, System.Span<char>)",
-                        variable_names + ".GetNiceNameLength(System.ReadOnlySpan<char>)"
+                        variable_names + ".GetNiceNameLength(System.ReadOnlySpan<char>)",
+                        ARRAY_BUILDER + ".AddRange(System.ReadOnlySpan<T>)"
                     ],
                     Trivia = new TriviaSource
                     {
@@ -291,6 +292,10 @@ partial class Generator
                         writer.AppendLine("builder.AddRange(global::System.MemoryExtensions.AsSpan(destination, 0, value.Length));");
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
                     },
+                    Dependencies =
+                    [
+                        ARRAY_BUILDER + ".AddRange(System.ReadOnlySpan<T>)"
+                    ],
                     Trivia = new TriviaSource
                     {
                         Summary = "Returns a new string with the first character uppercased.",

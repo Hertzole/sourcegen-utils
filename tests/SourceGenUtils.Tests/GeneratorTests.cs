@@ -125,7 +125,7 @@ public abstract partial class GeneratorTests
         AssertResultContainsFile($"{fileName}.Shell.g.cs", result);
     }
 
-    protected static string[] AppendTypeIfNeeded(string? typeName, string[] methods)
+    protected static string[] AppendTypeIfNeeded(string typeName, string[] methods)
     {
         for (int i = 0; i < methods.Length; i++)
         {
@@ -135,7 +135,7 @@ public abstract partial class GeneratorTests
         return methods;
     }
 
-    protected static string AppendTypeIfNeeded(string? typeName, string method)
+    protected static string AppendTypeIfNeeded(string typeName, string method)
     {
         ReadOnlySpan<char> span = method.AsSpan();
         int parensIndex = span.IndexOf('(');
@@ -171,12 +171,19 @@ public abstract partial class GeneratorTests
 
     protected static Assembly CompileAssembly(params string[] calledMethods)
     {
-        return CompileAssembly(null, calledMethods);
+        return CompileAssembly(null, false, calledMethods);
     }
 
-    private static Assembly CompileAssembly(string? typeName, params string[] calledMethods)
+    protected static Assembly CompileUnsafeAssembly(params string[] calledMethods)
+    {
+        return CompileAssembly(null, true, calledMethods);
+    }
+
+    private static Assembly CompileAssembly(string? typeName, bool allowUnsafe, string[] calledMethods)
     {
         CancellationToken ct = CancellationToken.None;
+
+        typeName ??= string.Empty;
 
         // Expand method names to full paths
         List<string> calledList = new List<string>(calledMethods.Length);
@@ -232,7 +239,7 @@ public abstract partial class GeneratorTests
 
         CSharpCompilation compilation = CSharpCompilation.Create("test",
             [tree], refs,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
 
         using MemoryStream ms = new MemoryStream();
         EmitResult emitResult = compilation.Emit(ms);
@@ -248,14 +255,24 @@ public abstract partial class GeneratorTests
         return Assembly.Load(ms.ToArray());
     }
 
-    protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
+    private static Type CompileGeneratedType(string typeName, bool allowUnsafe, string[] calledMethods)
     {
-        Assembly asm = CompileAssembly(typeName, calledMethods);
+        Assembly asm = CompileAssembly(typeName, allowUnsafe, calledMethods);
         Type? foundType = asm.GetType($"{Generator.NAMESPACE}.{typeName}");
 
         Assert.That(foundType, Is.Not.Null, $"Can't find type {Generator.NAMESPACE}.{typeName}");
 
         return foundType!;
+    }
+
+    protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
+    {
+        return CompileGeneratedType(typeName, false, calledMethods);
+    }
+
+    protected static Type CompileUnsafeGeneratedType(string typeName, params string[] calledMethods)
+    {
+        return CompileGeneratedType(typeName, true, calledMethods);
     }
 
     public static object CreateInstance(Type type, params object?[] args)

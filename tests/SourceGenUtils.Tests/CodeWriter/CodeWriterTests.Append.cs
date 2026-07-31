@@ -9,16 +9,16 @@ internal partial class CodeWriterTests
 {
     [Test]
     [TestCaseSource(nameof(AppendCases))]
-    public void Append<T>(T value)
+    public void Append<T>(T value, bool isUnsafe)
     {
-        CreateAppendTest(AppendType.Append, value);
+        CreateAppendTest(AppendType.Append, isUnsafe, value);
     }
 
     [Test]
     [TestCaseSource(nameof(AppendFormatCases))]
-    public void AppendFormat<T>(T value) where T : IFormattable
+    public void AppendFormat<T>(T value, bool isUnsafe) where T : IFormattable
     {
-        CreateAppendFormatTest(AppendType.Append, value);
+        CreateAppendFormatTest(AppendType.Append, isUnsafe, value);
     }
 
     [Test]
@@ -49,13 +49,13 @@ internal partial class CodeWriterTests
     }
 
     [Test]
-    public void AppendCharRepeat()
+    public void AppendCharRepeat([Values] bool isUnsafe)
     {
         // Arrange
         char value = Fake.Random.Char();
         int repeatCount = Fake.Random.Int(5, 10);
         string expected = new string(value, repeatCount);
-        object writerInstance = CompileCodeWriter("CodeWriter.Append(char, int)", "CodeWriter.ToString()");
+        object writerInstance = CompileCodeWriter(isUnsafe, "CodeWriter.Append(char, int)", "CodeWriter.ToString()");
         MethodInfo appendMethod = GetMethod(writerInstance.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(char), typeof(int));
 
         // Act
@@ -66,12 +66,12 @@ internal partial class CodeWriterTests
     }
 
     [Test]
-    public void AppendCharArray()
+    public void AppendCharArray([Values] bool isUnsafe)
     {
         // Arrange
         char[] value = Fake.Random.Chars();
         string expected = new string(value);
-        object writer = CompileCodeWriter("Append(char[])", "ToString()");
+        object writer = CompileCodeWriter(isUnsafe, "Append(char[])", "ToString()");
         MethodInfo appendMethod = GetMethod(writer.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(char[]));
 
         // Act
@@ -82,14 +82,14 @@ internal partial class CodeWriterTests
     }
 
     [Test]
-    public void AppendCharArraySpan()
+    public void AppendCharArraySpan([Values] bool isUnsafe)
     {
         // Arrange
         char[] value = Fake.Random.Chars(count: 32);
         int start = Fake.Random.Int(2, 7);
         int count = Fake.Random.Int(3, 5);
         string expected = value.AsSpan(start, count).ToString();
-        object writer = CompileCodeWriter("Append(char[], int, int)", "ToString()");
+        object writer = CompileCodeWriter(isUnsafe, "Append(char[], int, int)", "ToString()");
         MethodInfo appendMethod = GetMethod(writer.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(char[]), typeof(int), typeof(int));
 
         // Act

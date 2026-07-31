@@ -12,22 +12,38 @@ internal partial class CodeWriterTests : GeneratorTests
     {
         get
         {
-            yield return new TestCaseData("Test message");
-            yield return new TestCaseData("Test message".AsMemory());
-            yield return new TestCaseData('a');
-            yield return new TestCaseData(byte.MaxValue);
-            yield return new TestCaseData(sbyte.MinValue);
-            yield return new TestCaseData(short.MinValue);
-            yield return new TestCaseData(ushort.MaxValue);
-            yield return new TestCaseData(int.MinValue);
-            yield return new TestCaseData(uint.MaxValue);
-            yield return new TestCaseData(long.MinValue);
-            yield return new TestCaseData(ulong.MaxValue);
-            yield return new TestCaseData(1.1f);
-            yield return new TestCaseData(1.1d);
-            yield return new TestCaseData(1.1m);
-            yield return new TestCaseData(false);
-            yield return new TestCaseData(new TestObj());
+            yield return new TestCaseData("Test message", false).SetName("string");
+            yield return new TestCaseData("Test message", true).SetName("string (Unsafe)");
+            yield return new TestCaseData("Test message".AsMemory(), false).SetName("ReadOnlyMemory<char>");
+            yield return new TestCaseData("Test message".AsMemory(), true).SetName("ReadOnlyMemory<char> (Unsafe)");
+            yield return new TestCaseData('a', false).SetName("char");
+            yield return new TestCaseData('a', true).SetName("char (Unsafe)");
+            yield return new TestCaseData(byte.MaxValue, false).SetName("byte");
+            yield return new TestCaseData(byte.MaxValue, true).SetName("byte (Unsafe)");
+            yield return new TestCaseData(sbyte.MinValue, false).SetName("sbyte");
+            yield return new TestCaseData(sbyte.MinValue, true).SetName("sbyte (Unsafe)");
+            yield return new TestCaseData(short.MinValue, false).SetName("short");
+            yield return new TestCaseData(short.MinValue, true).SetName("short (Unsafe)");
+            yield return new TestCaseData(ushort.MaxValue, false).SetName("ushort");
+            yield return new TestCaseData(ushort.MaxValue, true).SetName("ushort (Unsafe)");
+            yield return new TestCaseData(int.MinValue, false).SetName("int");
+            yield return new TestCaseData(int.MinValue, true).SetName("int (Unsafe)");
+            yield return new TestCaseData(uint.MaxValue, false).SetName("uint");
+            yield return new TestCaseData(uint.MaxValue, true).SetName("uint (Unsafe)");
+            yield return new TestCaseData(long.MinValue, false).SetName("long");
+            yield return new TestCaseData(long.MinValue, true).SetName("long (Unsafe)");
+            yield return new TestCaseData(ulong.MaxValue, false).SetName("ulong");
+            yield return new TestCaseData(ulong.MaxValue, true).SetName("ulong (Unsafe)");
+            yield return new TestCaseData(1.1f, false).SetName("float");
+            yield return new TestCaseData(1.1f, true).SetName("float (Unsafe)");
+            yield return new TestCaseData(1.1d, false).SetName("double");
+            yield return new TestCaseData(1.1d, true).SetName("double (Unsafe)");
+            yield return new TestCaseData(1.1m, false).SetName("decimal");
+            yield return new TestCaseData(1.1m, true).SetName("decimal (Unsafe)");
+            yield return new TestCaseData(false, false).SetName("bool");
+            yield return new TestCaseData(false, true).SetName("bool (Unsafe)");
+            yield return new TestCaseData(new TestObj(), false).SetName("object");
+            yield return new TestCaseData(new TestObj(), true).SetName("object (Unsafe)");
         }
     }
 
@@ -35,17 +51,28 @@ internal partial class CodeWriterTests : GeneratorTests
     {
         get
         {
-            yield return new TestCaseData(byte.MaxValue);
-            yield return new TestCaseData(sbyte.MinValue);
-            yield return new TestCaseData(short.MaxValue);
-            yield return new TestCaseData(ushort.MinValue);
-            yield return new TestCaseData(int.MaxValue);
-            yield return new TestCaseData(uint.MinValue);
-            yield return new TestCaseData(long.MaxValue);
-            yield return new TestCaseData(ulong.MinValue);
-            yield return new TestCaseData(1.1f);
-            yield return new TestCaseData(1.1d);
-            yield return new TestCaseData(1.1m);
+            yield return new TestCaseData(byte.MaxValue, false).SetName("byte");
+            yield return new TestCaseData(byte.MaxValue, true).SetName("byte (unsafe)");
+            yield return new TestCaseData(sbyte.MinValue, false).SetName("sbyte");
+            yield return new TestCaseData(sbyte.MinValue, true).SetName("sbyte (unsafe)");
+            yield return new TestCaseData(short.MaxValue, false).SetName("short");
+            yield return new TestCaseData(short.MaxValue, true).SetName("short (unsafe)");
+            yield return new TestCaseData(ushort.MinValue, false).SetName("ushort");
+            yield return new TestCaseData(ushort.MinValue, true).SetName("ushort (unsafe)");
+            yield return new TestCaseData(int.MaxValue, false).SetName("int");
+            yield return new TestCaseData(int.MaxValue, true).SetName("int (unsafe)");
+            yield return new TestCaseData(uint.MinValue, false).SetName("uint");
+            yield return new TestCaseData(uint.MinValue, true).SetName("uint (unsafe)");
+            yield return new TestCaseData(long.MaxValue, false).SetName("long");
+            yield return new TestCaseData(long.MaxValue, true).SetName("long (unsafe)");
+            yield return new TestCaseData(ulong.MinValue, false).SetName("ulong");
+            yield return new TestCaseData(ulong.MinValue, true).SetName("ulong (unsafe)");
+            yield return new TestCaseData(1.1f, false).SetName("float");
+            yield return new TestCaseData(1.1f, true).SetName("float (Unsafe)");
+            yield return new TestCaseData(1.1d, false).SetName("double");
+            yield return new TestCaseData(1.1d, true).SetName("double (Unsafe)");
+            yield return new TestCaseData(1.1m, false).SetName("decimal");
+            yield return new TestCaseData(1.1m, true).SetName("decimal (Unsafe)");
         }
     }
 
@@ -70,7 +97,7 @@ internal partial class CodeWriterTests : GeneratorTests
         return "CodeWriter";
     }
 
-    private static void CreateAppendTest<T>(AppendType appendType, T value)
+    private static void CreateAppendTest<T>(AppendType appendType, bool isUnsafe, T value)
     {
         Type type = typeof(T);
 
@@ -94,7 +121,7 @@ internal partial class CodeWriterTests : GeneratorTests
         };
 
         // Arrange
-        object writer = CompileCodeWriter($"{appendMethod}({GetTypesString(type)})", "ToString()", appendLineMethodName);
+        object writer = CompileCodeWriter(isUnsafe, $"{appendMethod}({GetTypesString(type)})", "ToString()", appendLineMethodName);
         MethodInfo targetMethod = GetMethod(writer.GetType(), appendMethod, BindingFlags.Public | BindingFlags.Instance, type);
         MethodInfo? appendLineMethod = null;
         string expectedMessage;
@@ -140,7 +167,7 @@ internal partial class CodeWriterTests : GeneratorTests
         AssertWriter(expectedMessage, writer, returnedValue);
     }
 
-    private static void CreateAppendFormatTest<T>(AppendType appendType, T value) where T : IFormattable
+    private static void CreateAppendFormatTest<T>(AppendType appendType, bool isUnsafe, T value) where T : IFormattable
     {
         string appendMethod = appendType switch
         {
@@ -154,7 +181,7 @@ internal partial class CodeWriterTests : GeneratorTests
         CultureInfo culture = Fake.PickRandom(CultureInfo.GetCultures(CultureTypes.AllCultures));
         const string format = "P1";
         string expected = value.ToString(format, culture);
-        object writer = CompileCodeWriter($"{appendMethod}({GetTypesString(type)}, string, System.IFormatProvider)", "ToString()");
+        object writer = CompileCodeWriter(isUnsafe, $"{appendMethod}({GetTypesString(type)}, string, System.IFormatProvider)", "ToString()");
         MethodInfo method = GetMethod(writer.GetType(), appendMethod, BindingFlags.Public | BindingFlags.Instance, type, typeof(string),
             typeof(IFormatProvider));
 
@@ -173,12 +200,10 @@ internal partial class CodeWriterTests : GeneratorTests
         Assert.That(returnedValue!.GetType(), Is.EqualTo(writer.GetType()));
     }
 
-    private static object CompileCodeWriter(params string[] calledMethods)
+    private static object CompileCodeWriter(bool isUnsafe, params string[] calledMethods)
     {
-        string[] calledWithConstructor = new string[calledMethods.Length + 1];
-        calledMethods.CopyTo(calledWithConstructor, 0);
-        calledWithConstructor[calledMethods.Length] = "CodeWriter.CodeWriter()";
-        Type type = CompileGeneratedType("CodeWriter", calledWithConstructor);
+        string[] calledWithConstructor = ["CodeWriter.CodeWriter()", .. calledMethods];
+        Type type = isUnsafe ? CompileUnsafeGeneratedType("CodeWriter", calledWithConstructor) : CompileGeneratedType("CodeWriter", calledWithConstructor);
         object? writer = Activator.CreateInstance(type);
 
         Assert.That(writer, Is.Not.Null, $"Couldn't create writer from type {type.FullName}");

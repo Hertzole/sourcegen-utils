@@ -7,15 +7,15 @@ internal partial class CodeWriterTests
 {
     [Test]
     [TestCaseSource(nameof(AppendCases))]
-    public void AppendLine<T>(T value)
+    public void AppendLine<T>(T value, bool isUnsafe)
     {
-        CreateAppendTest(AppendType.AppendLine, value);
+        CreateAppendTest(AppendType.AppendLine, isUnsafe, value);
     }
 
     [Test]
     [TestCaseSource(nameof(AppendFormatCases))]
-    public void AppendLineFormat<T>(T value) where T : IFormattable
+    public void AppendLineFormat<T>(T value, bool isUnsafe) where T : IFormattable
     {
-        CreateAppendFormatTest(AppendType.AppendLine, value);
+        CreateAppendFormatTest(AppendType.AppendLine, isUnsafe, value);
     }
 }

@@ -8,7 +8,8 @@ zero unused code - only what you call gets generated.
 - **Only include what you use** - methods you never call are never generated
 - **Zero runtime dependencies** - everything is emitted as source into your project, no external library references
   needed
-- **Code writer** - a `StringBuilder`-based code writer with automatic indentation and a fluent API
+- **Code writer** - a `StringBuilder`-based code writer with automatic indentation and append methods built for source
+  generation
 - **Performant** - heavy use of spans and pools in generated code
 
 ## Installation
@@ -171,7 +172,7 @@ The generator operates in two phases:
    called methods get full implementations. Uncalled methods compile as empty stubs.
 
 This means adding the NuGet package has a minimal impact on your assembly size until you actually use a utility. When
-nothing is used, it adds roughly 10 kb to your assembly.
+nothing is used, it adds roughly 11 kb to your assembly.
 
 ## Requirements
 

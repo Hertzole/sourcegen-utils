@@ -125,7 +125,56 @@ public abstract partial class GeneratorTests
         AssertResultContainsFile($"{fileName}.Shell.g.cs", result);
     }
 
-    protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
+    protected static string[] AppendTypeIfNeeded(string? typeName, string[] methods)
+    {
+        for (int i = 0; i < methods.Length; i++)
+        {
+            methods[i] = AppendTypeIfNeeded(typeName, methods[i]);
+        }
+
+        return methods;
+    }
+
+    protected static string AppendTypeIfNeeded(string? typeName, string method)
+    {
+        ReadOnlySpan<char> span = method.AsSpan();
+        int parensIndex = span.IndexOf('(');
+
+        if (parensIndex < 0)
+        {
+            return method;
+        }
+
+        if (!string.IsNullOrEmpty(typeName))
+        {
+            ReadOnlySpan<char> slice = span.Slice(0, parensIndex);
+            int dot = slice.IndexOf('.');
+            if (dot < 0)
+            {
+                // There is no dot. We can assume the user meant a method inside the typeName.
+                return AppendNamespace($"{typeName}.{method}");
+            }
+        }
+
+        return AppendNamespace(method);
+    }
+
+    protected static string AppendNamespace(string value)
+    {
+        if (!value.StartsWith($"{Generator.NAMESPACE}."))
+        {
+            return Generator.NAMESPACE + "." + value;
+        }
+
+        return value;
+    }
+
+    protected static Assembly CompileAssembly(params string[] calledMethods)
+    {
+        return CompileAssembly(null, calledMethods);
+    }
+
+    private static Assembly CompileAssembly(string? typeName, params string[] calledMethods)
     {
         CancellationToken ct = CancellationToken.None;
 
@@ -196,46 +245,20 @@ public abstract partial class GeneratorTests
         }
 
         ms.Position = 0;
-        Assembly asm = Assembly.Load(ms.ToArray());
+        return Assembly.Load(ms.ToArray());
+    }
+
+    protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
+    {
+        Assembly asm = CompileAssembly(typeName, calledMethods);
         Type? foundType = asm.GetType($"{Generator.NAMESPACE}.{typeName}");
 
         Assert.That(foundType, Is.Not.Null, $"Can't find type {Generator.NAMESPACE}.{typeName}");
 
         return foundType!;
-
-        static string AppendTypeIfNeeded(string typeName, string method)
-        {
-            ReadOnlySpan<char> span = method.AsSpan();
-            int parensIndex = span.IndexOf('(');
-
-            if (parensIndex < 0)
-            {
-                return method;
-            }
-
-            ReadOnlySpan<char> slice = span.Slice(0, parensIndex);
-            int dot = slice.IndexOf('.');
-            if (dot < 0)
-            {
-                // There is no dot. We can assume the user meant a method inside the typeName.
-                return AppendNamespace($"{typeName}.{method}");
-            }
-
-            return AppendNamespace(method);
-        }
-
-        static string AppendNamespace(string value)
-        {
-            if (!value.StartsWith($"{Generator.NAMESPACE}."))
-            {
-                return Generator.NAMESPACE + "." + value;
-            }
-
-            return value;
-        }
     }
 
-    public static object CreateInstance(Type type, params object[] args)
+    public static object CreateInstance(Type type, params object?[] args)
     {
         object? instance = Activator.CreateInstance(type, args);
 

@@ -7,12 +7,11 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -39,7 +38,7 @@ jobs:
 
       - name: Push to GitHub Packages
         run: dotnet nuget push "src/SourceGenUtils/bin/Release/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate
-        
+
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
         id: nuget_login

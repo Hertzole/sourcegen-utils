@@ -1,7 +1,5 @@
 <Solution>
   <Folder Name="/tests/">
-    <Project Path="tests/SourceGenUtils.IntegrationTests/SourceGenUtils.IntegrationTests.csproj"/>
-    <Project Path="tests/SourceGenUtils.IntegrationTests.Unsafe/SourceGenUtils.IntegrationTests.Unsafe.csproj"/>
     <Project Path="tests/SourceGenUtils.Tests/SourceGenUtils.Tests.csproj"/>
   </Folder>
   <Project Path="src/SourceGenUtils/SourceGenUtils.csproj" />

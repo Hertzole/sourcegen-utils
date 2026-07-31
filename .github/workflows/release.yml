@@ -38,9 +38,6 @@ jobs:
       - name: Pack
         run: dotnet pack -c Release -p:AssemblyVersion="${{ steps.version.outputs.ASSEMBLY_VERSION }}" -p:Version="${{ steps.version.outputs.VERSION }}"
 
-      - name: Push to GitHub Packages
-        run: dotnet nuget push "src/SourceGenUtils/bin/Release/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate
-
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
         id: nuget_login

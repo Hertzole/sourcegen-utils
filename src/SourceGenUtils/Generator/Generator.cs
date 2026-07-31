@@ -49,7 +49,8 @@ public sealed partial class Generator : IIncrementalGenerator
             ["StringBuilderPool"] = CreateStringBuilderPool(),
             ["ArrayBuilder"] = CreateArrayBuilder(),
             ["ArrayBuilderExtensions"] = CreateArrayBuilderExtensions(),
-            ["ContextExtensions"] = CreateContextExtensions()
+            ["ContextExtensions"] = CreateContextExtensions(),
+            ["SymbolExtensions"] = CreateSymbolExtensions()
         };
 
         foreach (KeyValuePair<string, TypeSource> typeKvp in TypesToGenerate)

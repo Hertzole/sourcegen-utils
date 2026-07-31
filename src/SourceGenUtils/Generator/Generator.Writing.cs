@@ -292,7 +292,7 @@ partial class Generator
         //TODO: Pool
         //PERF: Use spans?
         StringBuilder sb = new StringBuilder(signature);
-        sb.Replace(" = null", string.Empty).Replace(" = default", string.Empty);
+        sb.Replace(" = null", string.Empty).Replace(" = default", string.Empty).Replace(" = true", string.Empty).Replace(" = false", string.Empty);
         return sb.ToString();
     }
 

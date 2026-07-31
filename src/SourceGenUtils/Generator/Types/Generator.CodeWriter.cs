@@ -18,6 +18,8 @@ partial class Generator
         const string disposed_call = "ThrowIfDisposed();";
         const string format_provider = "global::System.IFormatProvider";
         const string format_provider_para = $"{format_provider}? provider = null";
+        const string ms_code = "Microsoft.CodeAnalysis";
+        const string g_ms_code = "global::" + ms_code;
         string[] builderDependencies =
         [
             CODE_WRITER + ".Append",
@@ -532,6 +534,36 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "Append",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} Append({g_ms_code}.ITypeSymbol value, bool partial = true, bool appendNamespace = true)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("if (appendNamespace)");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("AppendNamespace(value.ContainingNamespace);");
+                        }
+
+                        writer.AppendLine("Append(global::Hertzole.SourceGen.SymbolExtensions.GetDeclarationString(value, partial));");
+                        writer.AppendLine("Append(' ');");
+                        writer.AppendLine(
+                            $"Append(value.ToDisplayString({g_ms_code}.NullableFlowState.None, {g_ms_code}.SymbolDisplayFormat.MinimallyQualifiedFormat));");
+
+                        writer.AppendLine(return_this);
+                    },
+                    Dependencies =
+                    [
+                        $"{CODE_WRITER}.AppendNamespace({ms_code}.INamespaceSymbol)",
+                        CODE_WRITER + ".Append(string)",
+                        CODE_WRITER + ".Append(char)",
+                        $"{NAMESPACE}.SymbolExtensions.GetDeclarationString({ms_code}.ITypeSymbol, bool)"
+                    ],
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("object")
+                },
+                new MethodSource
+                {
                     Name = "AppendLine",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendLine()",
                     Attributes = AggressiveInlineAttribute,
@@ -951,8 +983,24 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "AppendLine",
+                    Signature =
+                        $"public partial {GLOBAL_CODE_WRITER} AppendLine({g_ms_code}.INamedTypeSymbol value, bool partial = true, bool appendNamespace = true)",
+                    Attributes = AggressiveInlineAttribute,
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("Append(value, partial, appendNamespace);");
+                        writer.AppendLine("AppendLine();");
+                        writer.AppendLine(return_this);
+                    },
+                    Dependencies = [$"{CODE_WRITER}.Append({ms_code}.INamedTypeSymbol, bool, bool)", CODE_WRITER + ".AppendLine()"],
+                    EmptyStub = return_this,
+                    Trivia = CreateAppendTrivia("object")
+                },
+                new MethodSource
+                {
                     Name = "AppendNamespace",
-                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendNamespace(global::Microsoft.CodeAnalysis.INamespaceSymbol? symbol)",
+                    Signature = $"public partial {GLOBAL_CODE_WRITER} AppendNamespace({g_ms_code}.INamespaceSymbol? symbol)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in _) =>
                     {
@@ -1082,13 +1130,13 @@ partial class Generator
                     Name = "AppendEmbeddedAttribute",
                     Signature = $"public partial {GLOBAL_CODE_WRITER} AppendEmbeddedAttribute()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in _) => { writer.AppendLine("return AppendLine(\"[global::Microsoft.CodeAnalysis.EmbeddedAttribute]\");"); },
+                    Implementation = (writer, in _) => { writer.AppendLine($"return AppendLine(\"[{g_ms_code}.EmbeddedAttribute]\");"); },
                     Dependencies = dependsOnAppendLine,
                     EmptyStub = return_this,
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            "Appends an <c>[Embedded]</c> attribute to the current line. You should only use this if you've added <c>Microsoft.CodeAnalysis.EmbeddedAttribute</c>.",
+                            $"Appends an <c>[Embedded]</c> attribute to the current line. You should only use this if you've added <c>{ms_code}.EmbeddedAttribute</c>.",
                         Returns = "The current code writer instance."
                     }
                 },

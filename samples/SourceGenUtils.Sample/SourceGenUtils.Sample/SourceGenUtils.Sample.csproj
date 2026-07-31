@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\..\src\SourceGenUtils\SourceGenUtils.csproj" OutputItemType="Analyzer" PrivateAssets="All"/>
+        <ProjectReference Include="..\..\..\src\SourceGenUtils\SourceGenUtils.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
 

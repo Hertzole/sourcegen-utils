@@ -37,7 +37,7 @@ public class ObjectPoolTests : GeneratorTests
         // Act
         PoolScopeWrapper scope = pool.Get(out object item1);
         scope.Dispose();
-        object item2 = pool.Get();
+        using PoolScopeWrapper scope2 = pool.Get(out object item2);
 
         // Assert
         Assert.That(item2, Is.Not.Null);
@@ -193,25 +193,6 @@ public class ObjectPoolTests : GeneratorTests
         public void Return(object item)
         {
             returnMethod.InvokeInstance(instance, item);
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            disposeMethod.InvokeInstance(instance);
-        }
-    }
-
-    private readonly struct PoolScopeWrapper : IDisposable
-    {
-        private readonly object instance;
-        private readonly MethodInfo disposeMethod;
-
-        public PoolScopeWrapper(object instance)
-        {
-            this.instance = instance;
-
-            disposeMethod = GetMethod(instance.GetType(), "Dispose", BindingFlags.Public | BindingFlags.Instance);
         }
 
         /// <inheritdoc />

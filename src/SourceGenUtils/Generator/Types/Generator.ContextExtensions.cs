@@ -28,6 +28,11 @@ partial class Generator
             }
         };
 
+        static string[] Dependencies()
+        {
+            return [$"{CODE_WRITER}.ToString()", $"{CODE_WRITER}.Clear()"];
+        }
+
         static MethodSource AddSource(string context)
         {
             return new MethodSource
@@ -39,6 +44,7 @@ partial class Generator
                     writer.AppendLine($"context.AddSource(hintName, {source_text}.From(writer.ToString(), {global_encoding}.UTF8));");
                     writer.AppendLine("writer.Clear();");
                 },
+                Dependencies = Dependencies(),
                 Trivia = new TriviaSource
                 {
                     Summary = $"Adds source code from the provided <see cref=\"{CODE_WRITER}\" /> to the compilation.",
@@ -65,6 +71,7 @@ partial class Generator
                     writer.AppendLine($"context.AddSource(hintName, {source_text}.From(writer.ToString(), encoding));");
                     writer.AppendLine("writer.Clear();");
                 },
+                Dependencies = Dependencies(),
                 Trivia = new TriviaSource
                 {
                     Summary =

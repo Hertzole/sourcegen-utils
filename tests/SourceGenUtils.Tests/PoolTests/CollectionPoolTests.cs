@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using Hertzole.SourceGenUtils;
 using NUnit.Framework;
 
@@ -10,7 +11,8 @@ namespace SourceGenUtils.Tests.PoolTests;
 [TestFixture(typeof(HashSet<object>))]
 [TestFixture(typeof(Queue<object>))]
 [TestFixture(typeof(Stack<object>))]
-public class CollectionPoolTests<T> : GeneratorTests where T : IReadOnlyCollection<object>
+[TestFixture(typeof(StringBuilder))]
+public class CollectionPoolTests<T> : GeneratorTests
 {
     private readonly string typeName;
     private readonly string genericTypeName;
@@ -42,6 +44,13 @@ public class CollectionPoolTests<T> : GeneratorTests where T : IReadOnlyCollecti
         {
             typeName = "StackPool";
             genericTypeName = "System.Collections.Generic.Stack<T>";
+            return;
+        }
+
+        if (typeof(T) == typeof(StringBuilder))
+        {
+            typeName = "StringBuilderPool";
+            genericTypeName = "System.Text.StringBuilder";
             return;
         }
 
@@ -100,7 +109,7 @@ public class CollectionPoolTests<T> : GeneratorTests where T : IReadOnlyCollecti
         // Assert
         Assert.That(item2, Is.Not.Null);
         Assert.That(item2, Is.SameAs(item1));
-        Assert.That(item2.Count, Is.EqualTo(0));
+        Assert.That(IsCleared(item2), Is.True);
     }
 
     /// <inheritdoc />
@@ -130,9 +139,27 @@ public class CollectionPoolTests<T> : GeneratorTests where T : IReadOnlyCollecti
             case Stack<object> stack:
                 stack.Push(item);
                 break;
+            case StringBuilder sb:
+                sb.Append(item);
+                break;
             default:
                 throw new ArgumentException("Unsupported collection type");
         }
+    }
+
+    private static bool IsCleared(T value)
+    {
+        if (value is IReadOnlyCollection<object> col)
+        {
+            return col.Count == 0;
+        }
+
+        if (value is StringBuilder sb)
+        {
+            return sb.Length == 0;
+        }
+
+        return false;
     }
 
     private sealed class PoolWrapper
@@ -144,7 +171,16 @@ public class CollectionPoolTests<T> : GeneratorTests where T : IReadOnlyCollecti
         public PoolWrapper(string typeName, params string[] calledMethods)
         {
             Assembly asm = CompileAssembly(AppendTypeIfNeeded(typeName, calledMethods));
-            Type type = asm.GetType($"{Generator.NAMESPACE}.{typeName}`1", true)!.MakeGenericType(typeof(object));
+
+            Type type;
+            if (typeof(T) == typeof(StringBuilder))
+            {
+                type = asm.GetType($"{Generator.NAMESPACE}.StringBuilderPool", true)!;
+            }
+            else
+            {
+                type = asm.GetType($"{Generator.NAMESPACE}.{typeName}`1", true)!.MakeGenericType(typeof(object));
+            }
 
             getMethod = GetMethod(type, "Get", BindingFlags.Public | BindingFlags.Static, Array.Empty<Type>());
             getOutMethod = GetMethod(type, "Get", BindingFlags.Public | BindingFlags.Static, typeof(T).MakeByRefType());

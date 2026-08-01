@@ -64,6 +64,6 @@ internal static class Constants
 
     public static string GetTypeTriviaReference<T>(string? displayName = null)
     {
-        return GetTypeTriviaReference($"global::{typeof(T).GetCompleteName()}", displayName, out _);
+        return GetTypeTriviaReference($"global::{typeof(T).GetCompleteName()}", string.IsNullOrEmpty(displayName) ? typeof(T).Name : displayName, out _);
     }
 }

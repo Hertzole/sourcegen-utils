@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 namespace Hertzole.SourceGenUtils;
 
@@ -10,12 +11,14 @@ partial class Generator
         const string global_builder = $"global::{builder}";
         const string global_pool = $"global::{OBJECT_POOL}<{global_builder}>";
 
+        string stringBuilderTriviaRef = GetTypeTriviaReference<StringBuilder>();
+
         return new TypeSource
         {
             Signature = "internal static partial class StringBuilderPool",
             Trivia = new TriviaSource
             {
-                Summary = "Provides a shared pool of <c>StringBuilder</c> instances to reduce allocations."
+                Summary = $"Provides a shared pool of {stringBuilderTriviaRef} instances to reduce allocations."
             },
             Fields = new Dictionary<string, FieldSource>
             {
@@ -35,8 +38,8 @@ partial class Generator
                     Dependencies = CreatePoolGetDependencies(STRING_BUILDER_POOL),
                     Trivia = new TriviaSource
                     {
-                        Summary = "Retrieves a <c>StringBuilder</c> from the pool.",
-                        Returns = "A <c>StringBuilder</c> from the pool."
+                        Summary = $"Retrieves a {stringBuilderTriviaRef} from the pool.",
+                        Returns = $"A {stringBuilderTriviaRef} from the pool."
                     }
                 },
                 new MethodSource
@@ -48,12 +51,12 @@ partial class Generator
                     Dependencies = CreatePoolGetOutDependencies(STRING_BUILDER_POOL, builder),
                     Trivia = new TriviaSource
                     {
-                        Summary = "Retrieves a <c>StringBuilder</c> from the pool and wraps it in a disposable scope that returns it automatically.",
+                        Summary = $"Retrieves a {stringBuilderTriviaRef}from the pool and wraps it in a disposable scope that returns it automatically.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["item"] = "When this method returns, contains the <c>StringBuilder</c> retrieved from the pool."
+                            ["item"] = $"When this method returns, contains the {stringBuilderTriviaRef} retrieved from the pool."
                         },
-                        Returns = "A disposable scope that returns the <c>StringBuilder</c> to the pool when disposed."
+                        Returns = $"A disposable scope that returns the {stringBuilderTriviaRef} to the pool when disposed."
                     }
                 },
                 new MethodSource
@@ -64,10 +67,10 @@ partial class Generator
                     Dependencies = CreatePoolReturnDependencies(STRING_BUILDER_POOL, builder),
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns a <c>StringBuilder</c> to the pool.",
+                        Summary = $"Returns a {stringBuilderTriviaRef} to the pool and clears the StringBuilder.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["item"] = "The <c>StringBuilder</c> to return to the pool."
+                            ["item"] = $"The {stringBuilderTriviaRef} to return to the pool."
                         }
                     }
                 },

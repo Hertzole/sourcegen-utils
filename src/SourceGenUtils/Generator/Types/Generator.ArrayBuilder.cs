@@ -212,7 +212,7 @@ partial class Generator
                         {
                             ["item"] = "The item to remove."
                         },
-                        Returns = "<c>true</c> if the item was found and removed; otherwise <c>false</c>."
+                        Returns = $"{TRIVIA_TRUE} if the item was found and removed; otherwise {TRIVIA_FALSE}."
                     }
                 },
                 new MethodSource
@@ -498,7 +498,7 @@ partial class Generator
             Signature = "internal static partial class ArrayBuilderExtensions",
             Trivia = new TriviaSource
             {
-                Summary = "Extension methods for <see cref=\"Hertzole.SourceGen.ArrayBuilder{T}\"/>."
+                Summary = $"Extension methods for {GetTypeTriviaReference($"{GLOBAL_ARRAY_BUILDER}{{T}}", "ArrayBuilder<T>")}."
             },
             Methods =
             [
@@ -519,7 +519,7 @@ partial class Generator
                     Dependencies = [$"{NAMESPACE}.ArrayBuilder.AddRange(System.ReadOnlySpan<T>)"],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Appends a string to the builder. Does nothing if the value is <c>null</c> or empty.",
+                        Summary = $"Appends a string to the builder. Does nothing if the value is {TRIVIA_NULL} or empty.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["builder"] = "The character builder.",

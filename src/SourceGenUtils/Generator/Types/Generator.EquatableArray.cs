@@ -361,7 +361,7 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are equal.",
-                        Returns = "<c>true</c> if <paramref name=\"left\"/> is equal to <paramref name=\"right\"/>; otherwise <c>false</c>."
+                        Returns = $"{TRIVIA_TRUE} if <paramref name=\"left\"/> is equal to <paramref name=\"right\"/>; otherwise {TRIVIA_FALSE}."
                     }
                 },
                 new MethodSource
@@ -383,7 +383,7 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are not equal.",
-                        Returns = "<c>true</c> if <paramref name=\"left\"/> is not equal to <paramref name=\"right\"/>; otherwise <c>false</c>."
+                        Returns = $"{TRIVIA_TRUE} if <paramref name=\"left\"/> is not equal to <paramref name=\"right\"/>; otherwise {TRIVIA_FALSE}."
                     }
                 }
             ]

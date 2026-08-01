@@ -83,8 +83,8 @@ partial class Generator
                     EmptyStub = "return null!;",
                     Trivia = new TriviaSource
                     {
-                        Summary = "Creates a new <c>StringBuilder</c> with an initial capacity of 1024 characters.",
-                        Returns = "A new <c>StringBuilder</c>."
+                        Summary = $"Creates a new {stringBuilderTriviaRef} with an initial capacity of 1024 characters.",
+                        Returns = $"A new {stringBuilderTriviaRef}."
                     }
                 },
                 new MethodSource
@@ -95,7 +95,7 @@ partial class Generator
                     Implementation = (writer, in _) => { writer.AppendLine("item.Clear();"); },
                     Trivia = new TriviaSource
                     {
-                        Summary = "Clears the <c>StringBuilder</c> when it is returned to the pool."
+                        Summary = $"Clears the {stringBuilderTriviaRef} when it is returned to the pool."
                     }
                 }
             ]

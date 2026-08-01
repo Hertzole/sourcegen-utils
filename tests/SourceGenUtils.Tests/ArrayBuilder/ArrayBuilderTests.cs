@@ -62,6 +62,24 @@ public class ArrayBuilderTests : GeneratorTests
     }
 
     [Test]
+    public void AddRange_String()
+    {
+        // Arrange
+        using ArrayBuilderWrapper<char> builder =
+            CompileWrapper<char>($"{Constants.NAMESPACE}.ArrayBuilderExtensions.AddRange({Constants.ARRAY_BUILDER}<char>, string)", "ToString()");
+
+        Type extensionsType = builder.Instance.GetType().Assembly.GetType($"{Constants.NAMESPACE}.ArrayBuilderExtensions", true)!;
+        MethodInfo method = GetMethod(extensionsType, "AddRange", BindingFlags.Static | BindingFlags.Public, builder.Instance.GetType(), typeof(string));
+        string message = Fake.Lorem.Sentence();
+
+        // Act
+        method.InvokeStatic(builder.Instance, message);
+
+        // Assert
+        Assert.That(builder.ToString(), Is.EqualTo(message));
+    }
+
+    [Test]
     public void Remove()
     {
         // Arrange
@@ -194,7 +212,7 @@ public class ArrayBuilderTests : GeneratorTests
 
     public readonly struct ArrayBuilderWrapper<T> : IDisposable
     {
-        private readonly object instance;
+        public readonly object Instance;
         private readonly PropertyInfo lengthProperty;
         private readonly PropertyInfo indexer;
         private readonly MethodInfo addMethod;
@@ -210,22 +228,17 @@ public class ArrayBuilderTests : GeneratorTests
 
         public int Length
         {
-            get { return (int) lengthProperty.GetValue(instance)!; }
-        }
-
-        public T this[int index]
-        {
-            get { return (T) indexer.GetMethod!.InvokeInstance(instance, index)!; }
+            get { return (int) lengthProperty.GetValue(Instance)!; }
         }
 
         public T[] InternalArray
         {
-            get { return (T[]) internalArray.GetValue(writerField.GetValue(instance))!; }
+            get { return (T[]) internalArray.GetValue(writerField.GetValue(Instance))!; }
         }
 
         public ArrayBuilderWrapper(object instance)
         {
-            this.instance = instance;
+            Instance = instance;
             Type type = instance.GetType();
 
             lengthProperty = GetProperty(type, "Length", BindingFlags.Public | BindingFlags.Instance)!;
@@ -244,46 +257,51 @@ public class ArrayBuilderTests : GeneratorTests
             internalArray = GetField(writerType!, "array", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
+        public T this[int index]
+        {
+            get { return (T) indexer.GetMethod!.InvokeInstance(Instance, index)!; }
+        }
+
         public void Add(T value)
         {
-            addMethod.InvokeInstance(instance, value);
+            addMethod.InvokeInstance(Instance, value);
         }
 
         public void AddRange(IEnumerable<T> values)
         {
-            addRangeIEnumerable.InvokeInstance(instance, values);
+            addRangeIEnumerable.InvokeInstance(Instance, values);
         }
 
         public bool Remove(T value)
         {
-            return removeMethod.InvokeInstance<bool>(instance, value);
+            return removeMethod.InvokeInstance<bool>(Instance, value);
         }
 
         public void RemoveAt(int index)
         {
-            removeAtMethod.InvokeInstance(instance, index);
+            removeAtMethod.InvokeInstance(Instance, index);
         }
 
         public void Clear()
         {
-            clearMethod.InvokeInstance(instance);
+            clearMethod.InvokeInstance(Instance);
         }
 
         public T[] ToArray()
         {
-            return (T[]) toArrayMethod.InvokeInstance(instance)!;
+            return (T[]) toArrayMethod.InvokeInstance(Instance)!;
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            return (string) toString.InvokeInstance(instance)!;
+            return (string) toString.InvokeInstance(Instance)!;
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            disposeMethod.InvokeInstance(instance);
+            disposeMethod.InvokeInstance(Instance);
         }
     }
 }

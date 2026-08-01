@@ -1,4 +1,5 @@
 using System.Reflection;
+using Bogus;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -61,5 +62,16 @@ public static class Extensions
         Assert.That(result, Is.TypeOf<T>());
 
         return (T) result!;
+    }
+
+    public static int[] Ints(this Randomizer randomizer, int count)
+    {
+        int[] result = new int[count];
+        for (int i = 0; i < count; i++)
+        {
+            result[i] = randomizer.Int();
+        }
+
+        return result;
     }
 }

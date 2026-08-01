@@ -116,6 +116,62 @@ public class ArrayBuilderTests : GeneratorTests
     }
 
     [Test]
+    public void IndexOf_Valid()
+    {
+        // Arrange
+        using ArrayBuilderWrapper<int> builder = CompileWrapper<int>("IndexOf(T)", "AddRange(System.Collections.Generic.IEnumerable<T>)");
+        builder.AddRange([1, 2, 3, 4, 5]);
+
+        // Act
+        int index = builder.IndexOf(3);
+
+        // Assert
+        Assert.That(index, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void IndexOf_Invalid()
+    {
+        // Arrange
+        using ArrayBuilderWrapper<int> builder = CompileWrapper<int>("IndexOf(T)", "AddRange(System.Collections.Generic.IEnumerable<T>)");
+        builder.AddRange([1, 2, 3, 4, 5]);
+
+        // Act
+        int index = builder.IndexOf(8);
+
+        // Assert
+        Assert.That(index, Is.EqualTo(-1));
+    }
+
+    [Test]
+    public void Contains_True()
+    {
+        // Arrange
+        using ArrayBuilderWrapper<int> builder = CompileWrapper<int>("Contains(T)", "AddRange(System.Collections.Generic.IEnumerable<T>)");
+        builder.AddRange([1, 2, 3, 4, 5]);
+
+        // Act
+        bool found = builder.Contains(3);
+
+        // Assert
+        Assert.That(found, Is.True);
+    }
+
+    [Test]
+    public void Contains_False()
+    {
+        // Arrange
+        using ArrayBuilderWrapper<int> builder = CompileWrapper<int>("Contains(T)", "AddRange(System.Collections.Generic.IEnumerable<T>)");
+        builder.AddRange([1, 2, 3, 4, 5]);
+
+        // Act
+        bool found = builder.Contains(8);
+
+        // Assert
+        Assert.That(found, Is.False);
+    }
+
+    [Test]
     public void Clear()
     {
         // Arrange
@@ -219,6 +275,8 @@ public class ArrayBuilderTests : GeneratorTests
         private readonly MethodInfo addRangeIEnumerable;
         private readonly MethodInfo removeMethod;
         private readonly MethodInfo removeAtMethod;
+        private readonly MethodInfo indexOfMethod;
+        private readonly MethodInfo containsMethod;
         private readonly MethodInfo clearMethod;
         private readonly MethodInfo disposeMethod;
         private readonly MethodInfo toArrayMethod;
@@ -247,6 +305,8 @@ public class ArrayBuilderTests : GeneratorTests
             addRangeIEnumerable = GetMethod(type, "AddRange", BindingFlags.Public | BindingFlags.Instance, typeof(IEnumerable<T>));
             removeMethod = GetMethod(type, "Remove", BindingFlags.Public | BindingFlags.Instance);
             removeAtMethod = GetMethod(type, "RemoveAt", BindingFlags.Public | BindingFlags.Instance);
+            indexOfMethod = GetMethod(type, "IndexOf", BindingFlags.Public | BindingFlags.Instance);
+            containsMethod = GetMethod(type, "Contains", BindingFlags.Public | BindingFlags.Instance);
             clearMethod = GetMethod(type, "Clear", BindingFlags.Public | BindingFlags.Instance);
             disposeMethod = GetMethod(type, "Dispose", BindingFlags.Public | BindingFlags.Instance);
             toArrayMethod = GetMethod(type, "ToArray", BindingFlags.Public | BindingFlags.Instance);
@@ -280,6 +340,16 @@ public class ArrayBuilderTests : GeneratorTests
         public void RemoveAt(int index)
         {
             removeAtMethod.InvokeInstance(Instance, index);
+        }
+
+        public int IndexOf(T value)
+        {
+            return (int) indexOfMethod.InvokeInstance(Instance, value)!;
+        }
+
+        public bool Contains(T value)
+        {
+            return (bool) containsMethod.InvokeInstance(Instance, value)!;
         }
 
         public void Clear()

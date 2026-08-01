@@ -217,6 +217,38 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "IndexOf",
+                    Signature = "public partial int IndexOf(T item)",
+                    Implementation = (code, in _) => { code.AppendLine("return global::System.Array.IndexOf(writer.array, item, 0, writer.size);"); },
+                    EmptyStub = "return 0;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Gets the index of an item in the array.",
+                        Returns = "The index of the item in the array, or -1 if the item was not found.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["item"] = "The item to check for."
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "Contains",
+                    Signature = "public partial bool Contains(T item)",
+                    Implementation = (code, in _) => { code.AppendLine("return global::System.Array.IndexOf(writer.array, item, 0, writer.size) != -1;"); },
+                    EmptyStub = "return false;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Checks if the specified item is added to the array.",
+                        Returns = $"{TRIVIA_TRUE} if the item was found; otherwise {TRIVIA_FALSE}.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["item"] = "The item to check for."
+                        }
+                    }
+                },
+                new MethodSource
+                {
                     Name = "Clear",
                     Signature = "public partial void Clear()",
                     Implementation = (codeWriter, in _) => { codeWriter.AppendLine("writer.Clear();"); },

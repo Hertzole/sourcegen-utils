@@ -73,6 +73,21 @@ partial class Generator
                         }
 
                         codeWriter.AppendLine("return writer.array[index];");
+                    },
+                    SetImplementation = (codeWriter, in context) =>
+                    {
+                        if (!context.HasCalledMethod($"{ARRAY_BUILDER}.ArrayBuilder"))
+                        {
+                            return;
+                        }
+
+                        codeWriter.AppendLine("if (index < 0 || index >= writer.size)");
+                        using (codeWriter.WithBlock(true))
+                        {
+                            codeWriter.AppendLine("throw new global::System.ArgumentOutOfRangeException(nameof(index));");
+                        }
+
+                        codeWriter.AppendLine("writer.array[index] = value;");
                     }
                 }
             },

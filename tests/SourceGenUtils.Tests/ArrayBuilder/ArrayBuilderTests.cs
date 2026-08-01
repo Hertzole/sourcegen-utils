@@ -252,6 +252,70 @@ public class ArrayBuilderTests : GeneratorTests
         Assert.That(builder.InternalArray, Is.Empty);
     }
 
+    [Test]
+    public void Indexer_Get()
+    {
+        // Arrange
+        using ArrayBuilderWrapper<int> builder = CompileWrapper<int>("Add(T)");
+        int value = Fake.Random.Int();
+        builder.Add(value);
+
+        // Act
+        int result = builder[0];
+
+        // Assert
+        Assert.That(result, Is.EqualTo(value));
+    }
+
+    [Test]
+    public void Indexer_Set()
+    {
+        // Arrange
+        using ArrayBuilderWrapper<int> builder = CompileWrapper<int>("Add(T)");
+        int value = Fake.Random.Int();
+        int setValue = value + 69;
+        builder.Add(value);
+
+        // Act
+        builder[0] = setValue;
+
+        // Assert
+        Assert.That(builder[0], Is.EqualTo(setValue));
+    }
+
+    [Test]
+    [TestCase(-1)]
+    [TestCase(1)]
+    [TestCase(10)]
+    public void Indexer_Get_OutOfRange_ThrowsException(int index)
+    {
+        // Arrange
+        ArrayBuilderWrapper<int> builder = CompileWrapper<int>("Add(T)");
+        int value = Fake.Random.Int();
+        builder.Add(value);
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            int i = builder[index];
+        });
+    }
+
+    [Test]
+    [TestCase(-1)]
+    [TestCase(1)]
+    [TestCase(10)]
+    public void Indexer_Set_OutOfRange_ThrowsException(int index)
+    {
+        // Arrange
+        ArrayBuilderWrapper<int> builder = CompileWrapper<int>("Add(T)");
+        int value = Fake.Random.Int();
+        builder.Add(value);
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => { builder[index] = 420; });
+    }
+
     /// <inheritdoc />
     protected override string GetTypeName()
     {
@@ -299,7 +363,7 @@ public class ArrayBuilderTests : GeneratorTests
             Instance = instance;
             Type type = instance.GetType();
 
-            lengthProperty = GetProperty(type, "Length", BindingFlags.Public | BindingFlags.Instance)!;
+            lengthProperty = GetProperty(type, "Count", BindingFlags.Public | BindingFlags.Instance)!;
             indexer = GetProperty(type, "Item", BindingFlags.Public | BindingFlags.Instance)!;
             addMethod = GetMethod(type, "Add", BindingFlags.Public | BindingFlags.Instance);
             addRangeIEnumerable = GetMethod(type, "AddRange", BindingFlags.Public | BindingFlags.Instance, typeof(IEnumerable<T>));
@@ -320,6 +384,7 @@ public class ArrayBuilderTests : GeneratorTests
         public T this[int index]
         {
             get { return (T) indexer.GetMethod!.InvokeInstance(Instance, index)!; }
+            set { indexer.SetMethod!.InvokeInstance(Instance, index, value); }
         }
 
         public void Add(T value)

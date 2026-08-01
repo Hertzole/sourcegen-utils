@@ -8,7 +8,15 @@ public static class Extensions
 {
     public static object? InvokeInstance(this MethodInfo method, object instance, params object?[] args)
     {
-        return method.Invoke(instance, args);
+        try
+        {
+            return method.Invoke(instance, args);
+        }
+
+        catch (TargetInvocationException e)
+        {
+            throw e.InnerException!;
+        }
     }
 
     public static T InvokeInstance<T>(this MethodInfo method, object instance, params object?[] args)

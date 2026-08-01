@@ -30,6 +30,10 @@ internal static class Constants
     public const string MEMORY_EXT = "System.MemoryExtensions";
     public const string GLOBAL_MEMORY_EXT = $"global::{MEMORY_EXT}";
 
+    public const string TRIVIA_NULL = "<see langword=\"null\" />";
+    public const string TRIVIA_TRUE = "<see langword=\"true\" />";
+    public const string TRIVIA_FALSE = "<see langword=\"false\" />";
+
     public static readonly string[] AggressiveInlineAttribute =
         ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
 

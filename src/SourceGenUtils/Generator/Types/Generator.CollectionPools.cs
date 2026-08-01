@@ -29,14 +29,15 @@ partial class Generator
         string globalCollection = $"global::{collection}";
         string pool = $"global::{NAMESPACE}.ObjectPool<{globalCollection}>";
         string collectionPool = $"{NAMESPACE}.{name}";
-        string shortName = collection.Replace("System.Collections.Generic.", string.Empty).Replace("<", "&lt;").Replace(">", "&gt;");
+        string shortName = collection.Replace("System.Collections.Generic.", string.Empty);
+        string collectionTriviaRef = GetTypeTriviaReference(globalCollection.Replace("<T>", "{T}"), shortName, out string displayName);
 
         return new TypeSource
         {
             Signature = $"internal static partial class {name}<T>",
             Trivia = new TriviaSource
             {
-                Summary = $"Provides a shared pool of <c>{shortName}</c> instances to reduce allocations."
+                Summary = $"Provides a shared pool of {collectionTriviaRef} instances to reduce allocations."
             },
             Fields = new Dictionary<string, FieldSource>
             {
@@ -57,8 +58,8 @@ partial class Generator
                     Dependencies = CreatePoolGetDependencies(collectionPool),
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Retrieves a <c>{shortName}</c> from the pool.",
-                        Returns = $"A <c>{shortName}</c> from the pool."
+                        Summary = $"Retrieves a {collectionTriviaRef} from the pool.",
+                        Returns = $"A {collectionTriviaRef} from the pool."
                     }
                 },
                 new MethodSource
@@ -70,12 +71,12 @@ partial class Generator
                     Dependencies = CreatePoolGetOutDependencies(collectionPool, collection),
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Retrieves a <c>{shortName}</c> from the pool and wraps it in a disposable scope that returns it automatically.",
+                        Summary = $"Retrieves a {collectionTriviaRef} from the pool and wraps it in a disposable scope that returns it automatically.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["item"] = $"When this method returns, contains the <c>{shortName}</c> retrieved from the pool."
+                            ["item"] = $"When this method returns, contains the {collectionTriviaRef} retrieved from the pool."
                         },
-                        Returns = $"A disposable scope that returns the <c>{shortName}</c> to the pool when disposed."
+                        Returns = $"A disposable scope that returns the {collectionTriviaRef} to the pool when disposed."
                     }
                 },
                 new MethodSource
@@ -86,10 +87,10 @@ partial class Generator
                     Dependencies = CreatePoolReturnDependencies(collectionPool, collection),
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Returns a <c>{shortName}</c> to the pool.",
+                        Summary = $"Returns a {collectionTriviaRef} to the pool.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["item"] = $"The <c>{shortName}</c> to return to the pool."
+                            ["item"] = $"The {collectionTriviaRef} to return to the pool."
                         }
                     }
                 },
@@ -102,8 +103,8 @@ partial class Generator
                     EmptyStub = "return null!;",
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Creates a new empty <c>{shortName}</c>.",
-                        Returns = $"A new empty <c>{shortName}</c>."
+                        Summary = $"Creates a new empty {collectionTriviaRef}.",
+                        Returns = $"A new empty {collectionTriviaRef}."
                     }
                 },
                 new MethodSource

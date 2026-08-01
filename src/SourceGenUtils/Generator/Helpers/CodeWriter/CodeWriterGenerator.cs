@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text;
 
 namespace Hertzole.SourceGenUtils.Helpers;
 
@@ -580,29 +579,5 @@ internal static partial class CodeWriterGenerator
                ctx.HasCalledMethod(CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute()") ||
                ctx.HasCalledMethod(CODE_WRITER + ".AppendConditionalSymbol") ||
                ctx.HasCalledMethod(CODE_WRITER + ".AppendPreprocessorSymbol");
-    }
-
-    private static string GetTypeTriviaReference(string type, string? displayName, out string newDisplayName)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.Append("<see cref=\"");
-        sb.Append(type);
-
-        if (string.IsNullOrEmpty(displayName))
-        {
-            sb.Append("\" />");
-            newDisplayName = type.Replace("<", "&lt;").Replace(">", "&gt;");
-        }
-        else
-        {
-            newDisplayName = displayName!.Replace("<", "&lt;").Replace(">", "&gt;");
-
-            sb.Append("\">");
-            sb.Append(newDisplayName);
-            sb.Append("</see>");
-        }
-
-        return sb.ToString();
     }
 }

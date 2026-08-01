@@ -8,6 +8,8 @@ partial class Generator
     {
         const string variable_names = NAMESPACE + ".VariableNames";
         const string nicify_trivia = "Removes common prefixes (e.g. <c>m_</c>, <c>_</c>, <c>k</c>) and uppercases the first character.";
+        const string nicify_trivia_builder =
+            "Removes common prefixes (e.g. <c>m_</c>, <c>_</c>, <c>k</c>) and uppercases the first character and appends it to the specified builder.";
 
         TriviaSource getNiceNameLengthTrivia = new TriviaSource
         {
@@ -58,16 +60,16 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "NicifyVariableName",
-                    Signature = $"public static partial int NicifyVariableName(global::System.ReadOnlySpan<char> value, global::{ARRAY_BUILDER}<char> builder)",
+                    Signature = $"public static partial int NicifyVariableName({GLOBAL_R_SPAN}<char> value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine(
                             "char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength(value));");
 
                         writer.AppendLine(
-                            "int written = NicifyVariableName(value, global::System.MemoryExtensions.AsSpan(destination));");
+                            $"int written = NicifyVariableName(value, {GLOBAL_MEMORY_EXT}.AsSpan(destination));");
 
-                        writer.AppendLine("builder.AddRange(global::System.MemoryExtensions.AsSpan(destination, 0, written));");
+                        writer.AppendLine($"builder.AddRange({GLOBAL_MEMORY_EXT}.AsSpan(destination, 0, written));");
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
                         writer.AppendLine("return written;");
                     },
@@ -80,11 +82,11 @@ partial class Generator
                     ],
                     Trivia = new TriviaSource
                     {
-                        Summary = nicify_trivia,
+                        Summary = nicify_trivia_builder,
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to transform.",
-                            ["destination"] = "The buffer to write the result to."
+                            ["builder"] = "The builder to write the result to."
                         },
                         Returns = "The number of characters written to the destination."
                     }
@@ -96,10 +98,10 @@ partial class Generator
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine(
-                            "char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength(global::System.MemoryExtensions.AsSpan(value)));");
+                            $"char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength({GLOBAL_MEMORY_EXT}.AsSpan(value)));");
 
                         writer.AppendLine(
-                            "int written = NicifyVariableName(global::System.MemoryExtensions.AsSpan(value), global::System.MemoryExtensions.AsSpan(destination));");
+                            $"int written = NicifyVariableName({GLOBAL_MEMORY_EXT}.AsSpan(value), {GLOBAL_MEMORY_EXT}.AsSpan(destination));");
 
                         writer.AppendLine("string result = global::System.MemoryExtensions.AsSpan(destination, 0, written).ToString();");
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
@@ -124,11 +126,8 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "NicifyVariableName",
-                    Signature = $"public static partial int NicifyVariableName(string value, global::{ARRAY_BUILDER}<char> builder)",
-                    Implementation = (writer, in _) =>
-                    {
-                        writer.AppendLine("return NicifyVariableName(global::System.MemoryExtensions.AsSpan(value), builder);");
-                    },
+                    Signature = $"public static partial int NicifyVariableName(string value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) => { writer.AppendLine($"return NicifyVariableName({GLOBAL_MEMORY_EXT}.AsSpan(value), builder);"); },
                     EmptyStub = "return 0;",
                     Dependencies =
                     [
@@ -136,18 +135,19 @@ partial class Generator
                     ],
                     Trivia = new TriviaSource
                     {
-                        Summary = nicify_trivia,
+                        Summary = nicify_trivia_builder,
                         Parameters = new Dictionary<string, string>
                         {
-                            ["value"] = "The variable name to transform."
+                            ["value"] = "The variable name to transform.",
+                            ["builder"] = "The builder to write the result to."
                         },
-                        Returns = "The nicified variable name."
+                        Returns = "The number of characters written to the destination."
                     }
                 },
                 new MethodSource
                 {
                     Name = "RemovePrefix",
-                    Signature = "public static partial int RemovePrefix(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)",
+                    Signature = $"public static partial int RemovePrefix({GLOBAL_R_SPAN}<char> value, global::System.Span<char> destination)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("// Check for prefixes like 'm_'.");
@@ -189,12 +189,12 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "RemovePrefix",
-                    Signature = $"public static partial int RemovePrefix(global::System.ReadOnlySpan<char> value, global::{ARRAY_BUILDER}<char> builder)",
+                    Signature = $"public static partial int RemovePrefix({GLOBAL_R_SPAN}<char> value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength(value));");
-                        writer.AppendLine("int written = RemovePrefix(value, global::System.MemoryExtensions.AsSpan(destination));");
-                        writer.AppendLine("builder.AddRange(global::System.MemoryExtensions.AsSpan(destination, 0, written));");
+                        writer.AppendLine($"int written = RemovePrefix(value, {GLOBAL_MEMORY_EXT}.AsSpan(destination));");
+                        writer.AppendLine($"builder.AddRange({GLOBAL_MEMORY_EXT}.AsSpan(destination, 0, written));");
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
                         writer.AppendLine("return written;");
                     },
@@ -207,12 +207,14 @@ partial class Generator
                     ],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c>.",
+                        Summary =
+                            "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c> and writes the result to the specified builder.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["value"] = "The variable name to process."
+                            ["value"] = "The variable name to process.",
+                            ["builder"] = "The builder to write the result to."
                         },
-                        Returns = "The variable name with the prefix removed."
+                        Returns = "The number of characters written to the destination."
                     }
                 },
                 new MethodSource
@@ -222,12 +224,11 @@ partial class Generator
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine(
-                            "char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength(global::System.MemoryExtensions.AsSpan(value)));");
+                            $"char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNiceNameLength({GLOBAL_MEMORY_EXT}.AsSpan(value)));");
 
-                        writer.AppendLine(
-                            "int written = RemovePrefix(global::System.MemoryExtensions.AsSpan(value), global::System.MemoryExtensions.AsSpan(destination));");
+                        writer.AppendLine($"int written = RemovePrefix({GLOBAL_MEMORY_EXT}.AsSpan(value), {GLOBAL_MEMORY_EXT}.AsSpan(destination));");
 
-                        writer.AppendLine("string result = global::System.MemoryExtensions.AsSpan(destination, 0, written).ToString();");
+                        writer.AppendLine($"string result = {GLOBAL_MEMORY_EXT}.AsSpan(destination, 0, written).ToString();");
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
                         writer.AppendLine("return result;");
                     },
@@ -250,8 +251,8 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "RemovePrefix",
-                    Signature = $"public static partial int RemovePrefix(string value, global::{ARRAY_BUILDER}<char> builder)",
-                    Implementation = (writer, in _) => { writer.AppendLine("return RemovePrefix(global::System.MemoryExtensions.AsSpan(value), builder);"); },
+                    Signature = $"public static partial int RemovePrefix(string value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) => { writer.AppendLine($"return RemovePrefix({GLOBAL_MEMORY_EXT}.AsSpan(value), builder);"); },
                     EmptyStub = "return 0;",
                     Dependencies =
                     [
@@ -259,18 +260,20 @@ partial class Generator
                     ],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c>.",
+                        Summary =
+                            "Removes common variable name prefixes such as <c>m_</c>, <c>_</c>, and <c>k</c> and writes the result to the specified builder.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["value"] = "The variable name to process."
+                            ["value"] = "The variable name to process.",
+                            ["builder"] = "The builder to write the result to."
                         },
-                        Returns = "The variable name with the prefix removed."
+                        Returns = "The number of characters written to the destination."
                     }
                 },
                 new MethodSource
                 {
                     Name = "UppercaseStart",
-                    Signature = "public static partial void UppercaseStart(global::System.ReadOnlySpan<char> value, global::System.Span<char> destination)",
+                    Signature = $"public static partial void UppercaseStart({GLOBAL_R_SPAN}<char> value, global::System.Span<char> destination)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
@@ -305,7 +308,7 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "UppercaseStart",
-                    Signature = $"public static partial void UppercaseStart(global::System.ReadOnlySpan<char> value, global::{ARRAY_BUILDER}<char> builder)",
+                    Signature = $"public static partial void UppercaseStart({GLOBAL_R_SPAN}<char> value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
@@ -324,23 +327,23 @@ partial class Generator
                         }
 
                         writer.AppendLine("char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(value.Length);");
-                        writer.AppendLine("value.CopyTo(global::System.MemoryExtensions.AsSpan(destination));");
+                        writer.AppendLine($"value.CopyTo({GLOBAL_MEMORY_EXT}.AsSpan(destination));");
                         writer.AppendLine("destination[0] = char.ToUpperInvariant(value[0]);");
-                        writer.AppendLine("builder.AddRange(global::System.MemoryExtensions.AsSpan(destination, 0, value.Length));");
+                        writer.AppendLine($"builder.AddRange({GLOBAL_MEMORY_EXT}.AsSpan(destination, 0, value.Length));");
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
                     },
                     Dependencies =
                     [
-                        ARRAY_BUILDER + ".AddRange(System.ReadOnlySpan<T>)"
+                        $"{ARRAY_BUILDER}.AddRange({R_SPAN}<T>)"
                     ],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns a new string with the first character uppercased.",
+                        Summary = "Uppercases the first character of the value and writes the result to the specified builder.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["value"] = "The input string."
-                        },
-                        Returns = "A new string with the first character uppercased."
+                            ["value"] = "The input string.",
+                            ["builder"] = "The builder to write the result to."
+                        }
                     }
                 },
                 new MethodSource
@@ -364,9 +367,9 @@ partial class Generator
                         }
 
                         writer.AppendLine("char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(value.Length);");
-                        writer.AppendLine("global::System.MemoryExtensions.AsSpan(value).CopyTo(global::System.MemoryExtensions.AsSpan(destination));");
+                        writer.AppendLine($"{GLOBAL_MEMORY_EXT}.AsSpan(value).CopyTo({GLOBAL_MEMORY_EXT}.AsSpan(destination));");
                         writer.AppendLine("destination[0] = char.ToUpperInvariant(value[0]);");
-                        writer.AppendLine("string result = global::System.MemoryExtensions.AsSpan(destination, 0, value.Length).ToString();");
+                        writer.AppendLine($"string result = {GLOBAL_MEMORY_EXT}.AsSpan(destination, 0, value.Length).ToString();");
                         writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
                         writer.AppendLine("return result;");
                     },
@@ -384,20 +387,20 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "UppercaseStart",
-                    Signature = $"public static partial void UppercaseStart(string value, global::{ARRAY_BUILDER}<char> builder)",
-                    Implementation = (writer, in _) => { writer.AppendLine("UppercaseStart(global::System.MemoryExtensions.AsSpan(value), builder);"); },
+                    Signature = $"public static partial void UppercaseStart(string value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) => { writer.AppendLine($"UppercaseStart({GLOBAL_MEMORY_EXT}.AsSpan(value), builder);"); },
                     Dependencies =
                     [
-                        variable_names + $".UppercaseStart(System.ReadOnlySpan<char>, {ARRAY_BUILDER}<char>)"
+                        $"{variable_names}.UppercaseStart({R_SPAN}<char>, {ARRAY_BUILDER}<char>)"
                     ],
                     Trivia = new TriviaSource
                     {
                         Summary = "Returns a new string with the first character uppercased.",
                         Parameters = new Dictionary<string, string>
                         {
-                            ["value"] = "The input string."
-                        },
-                        Returns = "A new string with the first character uppercased."
+                            ["value"] = "The input string.",
+                            ["builder"] = "The builder to write the result to."
+                        }
                     }
                 },
                 new MethodSource
@@ -419,14 +422,14 @@ partial class Generator
                         {
                             ["value"] = "The value to check."
                         },
-                        Returns = "<c>true</c> if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise <c>false</c>."
+                        Returns = $"{TRIVIA_TRUE} if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise {TRIVIA_FALSE}."
                     }
                 },
                 new MethodSource
                 {
                     Name = "StartsWithOn",
                     Signature = "public static partial bool StartsWithOn(string? value)",
-                    Implementation = (writer, in _) => { writer.AppendLine("return StartsWithOn(global::System.MemoryExtensions.AsSpan(value));"); },
+                    Implementation = (writer, in _) => { writer.AppendLine($"return StartsWithOn({GLOBAL_MEMORY_EXT}.AsSpan(value));"); },
                     Dependencies =
                     [
                         variable_names + ".StartsWithOn(System.ReadOnlySpan<char>)"
@@ -440,22 +443,22 @@ partial class Generator
                         {
                             ["value"] = "The value to check."
                         },
-                        Returns = "<c>true</c> if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise <c>false</c>."
+                        Returns = $"{TRIVIA_TRUE} if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise {TRIVIA_FALSE}."
                     }
                 },
                 new MethodSource
                 {
                     Name = "GetNiceNameLength",
                     Signature = "public static partial int GetNiceNameLength(string value)",
-                    Implementation = (writer, in _) => { writer.AppendLine("return GetNiceNameLength(global::System.MemoryExtensions.AsSpan(value));"); },
-                    Dependencies = [variable_names + ".GetNiceNameLength(System.ReadOnlySpan<char>)"],
+                    Implementation = (writer, in _) => { writer.AppendLine($"return GetNiceNameLength({GLOBAL_MEMORY_EXT}.AsSpan(value));"); },
+                    Dependencies = [variable_names + $".GetNiceNameLength({R_SPAN}<char>)"],
                     EmptyStub = "return 0;",
                     Trivia = getNiceNameLengthTrivia
                 },
                 new MethodSource
                 {
                     Name = "GetNiceNameLength",
-                    Signature = "public static partial int GetNiceNameLength(global::System.ReadOnlySpan<char> value)",
+                    Signature = $"public static partial int GetNiceNameLength({GLOBAL_R_SPAN}<char> value)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
@@ -491,7 +494,7 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "HasConstantPrefix",
-                    Signature = "private static bool HasConstantPrefix(global::System.ReadOnlySpan<char> value)",
+                    Signature = $"private static bool HasConstantPrefix({GLOBAL_R_SPAN}<char> value)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length <= 1)");
@@ -508,7 +511,7 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "HasMemberPrefix",
-                    Signature = "private static bool HasMemberPrefix(global::System.ReadOnlySpan<char> value)",
+                    Signature = $"private static bool HasMemberPrefix({GLOBAL_R_SPAN}<char> value)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length <= 2)");

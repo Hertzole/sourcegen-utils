@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 namespace Hertzole.SourceGenUtils.Helpers;
 
@@ -40,7 +41,8 @@ internal static partial class CodeWriterGenerator
             Signature = "internal sealed partial class CodeWriter : global::System.IDisposable",
             Trivia = new TriviaSource
             {
-                Summary = "Wrapper around <c>StringBuilder</c> that provides formatting for code writing."
+                Summary =
+                    "Wrapper around <see cref=\"global::System.Text.StringBuilder\">StringBuilder</see> that provides formatting and utility methods for code writing."
             },
             Fields = new Dictionary<string, FieldSource>
             {
@@ -270,7 +272,7 @@ internal static partial class CodeWriterGenerator
                 Dependencies = [$"{STRING_BUILDER_POOL}.Get()"],
                 Trivia = new TriviaSource
                 {
-                    Summary = "Creates a new instance of a code writer."
+                    Summary = $"Creates a new instance of a {GetTypeTriviaReference(GLOBAL_CODE_WRITER, "CodeWriter", out _)}."
                 }
             },
             .. GetAppendMethods(),
@@ -312,7 +314,7 @@ internal static partial class CodeWriterGenerator
                 Trivia = new TriviaSource
                 {
                     Summary = "Clears all written content and resets the writer state.",
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -424,7 +426,8 @@ internal static partial class CodeWriterGenerator
                 Dependencies = [$"{STRING_BUILDER_POOL}.Return(System.Text.StringBuilder)"],
                 Trivia = new TriviaSource
                 {
-                    Summary = "Disposes the code writer and returns the underlying <c>StringBuilder</c> to the pool."
+                    Summary =
+                        $"Disposes the code writer and returns the underlying {GetTypeTriviaReference("global::System.Text.StringBuilder", "StringBuilder", out _)} to the pool."
                 }
             },
             new MethodSource
@@ -462,7 +465,28 @@ internal static partial class CodeWriterGenerator
                 Trivia = new TriviaSource
                 {
                     Summary = "Opens a new code block. Returns a disposable scope that closes the block and restores indentation when disposed.",
-                    Returns = "A disposable scope that closes the block when disposed."
+                    Returns = "A disposable scope that closes the block when disposed.",
+                    Example = """
+                              <code>
+                              using CodeWriter writer = new CodeWriter();
+
+                              writer.AppendLine("public class MyClass");
+                              using (writer.WithBlock())
+                              {
+                                  writer.AppendLine("public int myField;");
+                              }
+
+                              return writer.ToString();
+                              </code>
+
+                              Output:
+                              <code>
+                              public class MyClass
+                              {
+                                  public int myField;
+                              }
+                              </code>
+                              """
                 }
             },
             new MethodSource
@@ -483,28 +507,64 @@ internal static partial class CodeWriterGenerator
                     {
                         ["newIndent"] = "The indentation level to use within the scope."
                     },
-                    Returns = "A disposable scope that restores the original indentation when disposed."
+                    Returns = "A disposable scope that restores the original indentation when disposed.",
+                    Example = """
+                              <code>
+                              using CodeWriter writer = new CodeWriter();
+
+                              writer.AppendLine("if (true == false)
+                              using (writer.WithIndent(1))
+                              {
+                                  writer.AppendLine("return false;");
+                              }
+                              return writer.ToString();
+                              </code>
+
+                              Output:
+                              <code>
+                              if (true == false)
+                                  return false;
+                              </code>
+                              """
                 }
             },
             new MethodSource
             {
                 Name = "WithCondition",
-                Signature = "public partial global::" + NAMESPACE + ".CodeWriter.ConditionalScope WithCondition(string? conditional)",
+                Signature = "public partial global::" + NAMESPACE + ".CodeWriter.ConditionalScope WithCondition(string? condition)",
                 EmptyStub = "return default;",
                 Implementation = (writer, in _) =>
                 {
                     writer.AppendLine(disposed_call);
-                    writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.ConditionalScope(this, conditional);");
+                    writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.ConditionalScope(this, condition);");
                 },
                 Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope(Hertzole.SourceGen.CodeWriter, string)", throw_if_disposed],
                 Trivia = new TriviaSource
                 {
-                    Summary = "Temporarily changes the indentation level. Returns a disposable scope that restores the original indentation when disposed.",
+                    Summary =
+                        "Creates a scope in a preprocessor conditional block. Returns a disposable scope that closes the conditional block when disposed.",
                     Parameters = new Dictionary<string, string>
                     {
-                        ["newIndent"] = "The indentation level to use within the scope."
+                        ["condition"] = "The condition."
                     },
-                    Returns = "A disposable scope that restores the original indentation when disposed."
+                    Returns = "A disposable scope that closes the conditional block when disposed.",
+                    Example = """
+                              <code>
+                              using CodeWriter writer = new CodeWriter();
+
+                              using (writer.WithCondition("DEBUG"))
+                              {
+                                  writer.AppendLine("Log(\"This is a debug message\");");
+                              }
+                              </code>
+
+                              Output:
+                              <code>
+                              #if DEBUG
+                              Log("This is a debug message");
+                              #endif
+                              </code>
+                              """
                 }
             }
         ];
@@ -520,5 +580,29 @@ internal static partial class CodeWriterGenerator
                ctx.HasCalledMethod(CODE_WRITER + ".AppendExcludeFromCodeCoverageAttribute()") ||
                ctx.HasCalledMethod(CODE_WRITER + ".AppendConditionalSymbol") ||
                ctx.HasCalledMethod(CODE_WRITER + ".AppendPreprocessorSymbol");
+    }
+
+    private static string GetTypeTriviaReference(string type, string? displayName, out string newDisplayName)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.Append("<see cref=\"");
+        sb.Append(type);
+
+        if (string.IsNullOrEmpty(displayName))
+        {
+            sb.Append("\" />");
+            newDisplayName = type.Replace("<", "&lt;").Replace(">", "&gt;");
+        }
+        else
+        {
+            newDisplayName = displayName!.Replace("<", "&lt;").Replace(">", "&gt;");
+
+            sb.Append("\">");
+            sb.Append(newDisplayName);
+            sb.Append("</see>");
+        }
+
+        return sb.ToString();
     }
 }

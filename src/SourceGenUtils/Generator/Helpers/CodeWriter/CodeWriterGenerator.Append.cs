@@ -1,10 +1,13 @@
 using System.Collections.Generic;
-using System.Text;
 
 namespace Hertzole.SourceGenUtils.Helpers;
 
 internal partial class CodeWriterGenerator
 {
+    private const string APPEND_RETURN_TRIVIA = "The current code writer instance after the append operation.";
+    private const string FORMAT_TRIVIA = "A standard or custom numeric format string.";
+    private const string FORMAT_PROVIDER_TRIVIA = "A optional object that supplies culture-specific formatting information.";
+
     private static MethodSource[] GetAppendMethods()
     {
         return
@@ -24,7 +27,7 @@ internal partial class CodeWriterGenerator
                         writer.AppendLine("builder.Append(value);");
                     }
 
-                    writer.AppendLine("return this;");
+                    writer.AppendLine(return_this);
                 },
                 Dependencies = appendDependencies,
                 EmptyStub = return_this,
@@ -33,7 +36,7 @@ internal partial class CodeWriterGenerator
             new MethodSource
             {
                 Name = "Append",
-                Signature = $"public partial {GLOBAL_CODE_WRITER} Append(global::System.ReadOnlySpan<char> value)",
+                Signature = $"public partial {GLOBAL_CODE_WRITER} Append({GLOBAL_R_SPAN}<char> value)",
                 Attributes = AggressiveInlineAttribute,
                 Implementation = (writer, in context) =>
                 {
@@ -67,31 +70,31 @@ internal partial class CodeWriterGenerator
                         }
                     }
 
-                    writer.AppendLine("return this;");
+                    writer.AppendLine(return_this);
                 },
                 Dependencies = appendDependencies,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("ReadOnlySpan<char>")
+                Trivia = CreateAppendTrivia($"{GLOBAL_R_SPAN}{{Char}}", "ReadOnlySpan<char>")
             },
             new MethodSource
             {
                 Name = "Append",
-                Signature = $"public partial {GLOBAL_CODE_WRITER} Append(global::System.ReadOnlyMemory<char> value)",
+                Signature = $"public partial {GLOBAL_CODE_WRITER} Append({GLOBAL_R_MEMORY}<char> value)",
                 Attributes = AggressiveInlineAttribute,
                 Implementation = (writer, in _) => { writer.AppendLine("return Append(value.Span);"); },
-                Dependencies = [CODE_WRITER + ".Append(System.ReadOnlySpan<char>)"],
+                Dependencies = [CODE_WRITER + $".Append({R_SPAN}<char>)"],
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("ReadOnlyMemory<char>")
+                Trivia = CreateAppendTrivia($"{GLOBAL_R_MEMORY}{{Char}}", "ReadOnlyMemory<char>")
             },
             new MethodSource
             {
                 Name = "Append",
-                Signature = $"public partial {GLOBAL_CODE_WRITER} Append(global::{NAMESPACE}.ArrayBuilder<char> value)",
+                Signature = $"public partial {GLOBAL_CODE_WRITER} Append({GLOBAL_ARRAY_BUILDER}<char> value)",
                 Attributes = AggressiveInlineAttribute,
                 Implementation = (writer, in _) => { writer.AppendLine("return Append(value.AsSpan());"); },
-                Dependencies = [CODE_WRITER + ".Append(System.ReadOnlySpan<char>)", ARRAY_BUILDER + ".AsSpan()"],
+                Dependencies = [CODE_WRITER + $".Append({R_SPAN}<char>)", $"{ARRAY_BUILDER}.AsSpan()"],
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("ArrayBuilder<char>")
+                Trivia = CreateAppendTrivia($"{GLOBAL_ARRAY_BUILDER}{{Char}}", "ArrayBuilder<char>")
             },
             new MethodSource
             {
@@ -119,13 +122,14 @@ internal partial class CodeWriterGenerator
                 EmptyStub = return_this,
                 Trivia = new TriviaSource
                 {
-                    Summary = "Appends the specified number of copies of the specified value to the current line.",
+                    Summary =
+                        "Appends the specified number of copies of the specified <see cref=\"char\"/> value to the current line without creating a new line.",
                     Parameters = new Dictionary<string, string>
                     {
-                        ["value"] = "The value to append.",
-                        ["repeatCount"] = "How many times the value should be inserted."
+                        ["value"] = "The char to append.",
+                        ["repeatCount"] = "How many times the char should be inserted."
                     },
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -136,7 +140,15 @@ internal partial class CodeWriterGenerator
                 Implementation = AppendImplementation,
                 Dependencies = appendDependencies,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("char[]")
+                Trivia = new TriviaSource
+                {
+                    Summary = "Appends the specified <see cref=\"char\"/> array to the current line without creating a new line.",
+                    Parameters = new Dictionary<string, string>
+                    {
+                        ["value"] = "The char array to append."
+                    },
+                    Returns = APPEND_RETURN_TRIVIA
+                }
             },
             new MethodSource
             {
@@ -154,14 +166,14 @@ internal partial class CodeWriterGenerator
                 EmptyStub = return_this,
                 Trivia = new TriviaSource
                 {
-                    Summary = "Appends a subarray of characters to the current line.",
+                    Summary = "Appends a subarray of characters to the current line without creating a new line.",
                     Parameters = new Dictionary<string, string>
                     {
                         ["value"] = "The character array to append.",
                         ["startIndex"] = "The starting position in the character array.",
                         ["charCount"] = "The number of characters to append."
                     },
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -182,7 +194,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("byte")
+                Trivia = CreateAppendFormatTrivia("byte")
             },
             new MethodSource
             {
@@ -202,7 +214,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("sbyte")
+                Trivia = CreateAppendFormatTrivia("sbyte")
             },
             new MethodSource
             {
@@ -222,7 +234,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("short")
+                Trivia = CreateAppendFormatTrivia("short")
             },
             new MethodSource
             {
@@ -242,7 +254,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("ushort")
+                Trivia = CreateAppendFormatTrivia("ushort")
             },
             new MethodSource
             {
@@ -262,7 +274,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("int")
+                Trivia = CreateAppendFormatTrivia("int")
             },
             new MethodSource
             {
@@ -282,7 +294,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("uint")
+                Trivia = CreateAppendFormatTrivia("uint")
             },
             new MethodSource
             {
@@ -302,7 +314,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("long")
+                Trivia = CreateAppendFormatTrivia("long")
             },
             new MethodSource
             {
@@ -322,7 +334,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("ulong")
+                Trivia = CreateAppendFormatTrivia("ulong")
             },
             new MethodSource
             {
@@ -342,7 +354,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("float")
+                Trivia = CreateAppendFormatTrivia("float")
             },
             new MethodSource
             {
@@ -362,7 +374,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("double")
+                Trivia = CreateAppendFormatTrivia("double")
             },
             new MethodSource
             {
@@ -382,7 +394,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("decimal")
+                Trivia = CreateAppendFormatTrivia("decimal")
             },
             new MethodSource
             {
@@ -402,12 +414,21 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => { writer.AppendLine("return value == null ? this : Append(value.ToString());"); },
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("object")
+                Trivia = new TriviaSource
+                {
+                    Summary = "Appends the string representation of the specified object to the current line without creating a new line.",
+                    Parameters = new Dictionary<string, string>
+                    {
+                        ["value"] = "The object to append."
+                    },
+                    Returns = APPEND_RETURN_TRIVIA
+                }
             },
             new MethodSource
             {
                 Name = "Append",
-                Signature = $"public partial {GLOBAL_CODE_WRITER} Append({GLOBAL_MS_CODE}.ITypeSymbol value, bool partial = true, bool appendNamespace = true)",
+                Signature =
+                    $"public partial {GLOBAL_CODE_WRITER} Append({GLOBAL_MS_CODE}.ITypeSymbol value, bool isPartial = true, bool appendNamespace = true)",
                 Attributes = AggressiveInlineAttribute,
                 Implementation = (writer, in _) =>
                 {
@@ -417,7 +438,7 @@ internal partial class CodeWriterGenerator
                         writer.AppendLine("AppendNamespace(value.ContainingNamespace);");
                     }
 
-                    writer.AppendLine("Append(global::Hertzole.SourceGen.SymbolExtensions.GetDeclarationString(value, partial));");
+                    writer.AppendLine("Append(global::Hertzole.SourceGen.SymbolExtensions.GetDeclarationString(value, isPartial));");
                     writer.AppendLine("Append(' ');");
                     writer.AppendLine(
                         $"Append(value.ToDisplayString({GLOBAL_MS_CODE}.NullableFlowState.None, {GLOBAL_MS_CODE}.SymbolDisplayFormat.MinimallyQualifiedFormat));");
@@ -427,12 +448,26 @@ internal partial class CodeWriterGenerator
                 Dependencies =
                 [
                     $"{CODE_WRITER}.AppendNamespace({MS_CODE}.INamespaceSymbol)",
-                    CODE_WRITER + ".Append(string)",
-                    CODE_WRITER + ".Append(char)",
+                    $"{CODE_WRITER}.Append(string)",
+                    $"{CODE_WRITER}.Append(char)",
                     $"{NAMESPACE}.SymbolExtensions.GetDeclarationString({MS_CODE}.ITypeSymbol, bool)"
                 ],
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("object")
+                Trivia = new TriviaSource
+                {
+                    Summary =
+                        $"Appends the string representation of the specified {GetTypeTriviaReference($"{GLOBAL_MS_CODE}.ITypeSymbol", "ITypeSymbol", out _)}, " +
+                        $"along with its required declarations, without creating a newline.<br/>\n" +
+                        $"Optionally inserts the <c>partial</c> keyword in the declaration if <paramref name=\"isPartial\"/> is <see langword=\"true\"/>.<br/>\n" +
+                        $"Optionally inserts the namespace if <paramref name=\"appendNamespace\"/> is <see langword=\"true\"/>.",
+                    Parameters = new Dictionary<string, string>
+                    {
+                        ["value"] = "The type to append.",
+                        ["isPartial"] = "Whether to append the <c>partial</c> keyword in the declaration.",
+                        ["appendNamespace"] = "Whether to append the namespace."
+                    },
+                    Returns = APPEND_RETURN_TRIVIA
+                }
             }
         ];
     }
@@ -457,19 +492,35 @@ internal partial class CodeWriterGenerator
         }
     }
 
-    private static TriviaSource CreateAppendTrivia(string type)
+    private static TriviaSource CreateAppendTrivia(string type, string? displayName = null)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.Append(type).Replace("<", "&lt;").Replace(">", "&gt;");
+        string typeRef = GetTypeTriviaReference(type, displayName, out string name);
 
         return new TriviaSource
         {
-            Summary = $"Appends <c>{sb}</c> to the current line.",
+            Summary = $"Appends {typeRef} to the current line without creating a new line.",
             Parameters = new Dictionary<string, string>
             {
-                ["value"] = "The value to insert."
+                ["value"] = $"The {name} to insert."
             },
-            Returns = "The current code writer instance."
+            Returns = APPEND_RETURN_TRIVIA
+        };
+    }
+
+    private static TriviaSource CreateAppendFormatTrivia(string type, string? displayName = null)
+    {
+        string typeRef = GetTypeTriviaReference(type, displayName, out string name);
+
+        return new TriviaSource
+        {
+            Summary = $"Appends {typeRef} with the specified format to the current line without creating a new line.",
+            Parameters = new Dictionary<string, string>
+            {
+                ["value"] = $"The {name} to insert.",
+                ["format"] = FORMAT_TRIVIA,
+                ["provider"] = FORMAT_PROVIDER_TRIVIA
+            },
+            Returns = APPEND_RETURN_TRIVIA
         };
     }
 }

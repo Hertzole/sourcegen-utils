@@ -19,6 +19,9 @@ internal static class Constants
     public const string R_SPAN = "System.ReadOnlySpan";
     public const string GLOBAL_R_SPAN = $"global::{R_SPAN}";
 
+    public const string R_MEMORY = "System.ReadOnlyMemory";
+    public const string GLOBAL_R_MEMORY = $"global::{R_MEMORY}";
+
     public const string MEMORY_EXT = "System.MemoryExtensions";
     public const string GLOBAL_MEMORY_EXT = $"global::{MEMORY_EXT}";
 

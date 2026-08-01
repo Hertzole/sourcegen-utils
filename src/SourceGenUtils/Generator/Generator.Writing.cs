@@ -60,14 +60,11 @@ partial class Generator
             writer.AppendLine("</returns>");
         }
 
-        static void Append(CodeWriter writer, string type, string? value)
+        if (!string.IsNullOrWhiteSpace(trivia.Example))
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return;
-            }
-
-            if (type.IndexOf('\n') == -1) { }
+            writer.AppendLine("/// <example>");
+            AppendMultilineString(writer, trivia.Example!);
+            writer.AppendLine("/// </example>");
         }
 
         static void AppendMultilineString(CodeWriter writer, string value)

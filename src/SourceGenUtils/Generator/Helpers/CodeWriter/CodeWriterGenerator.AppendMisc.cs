@@ -30,7 +30,7 @@ internal partial class CodeWriterGenerator
                 Trivia = new TriviaSource
                 {
                     Summary = "Appends <c>#nullable enable</c>. If appended, <c>#nullable restore</c> will be appended at the end of the file.",
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -66,7 +66,7 @@ internal partial class CodeWriterGenerator
                     {
                         ["symbol"] = "The namespace symbol to append."
                     },
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -111,7 +111,7 @@ internal partial class CodeWriterGenerator
                     {
                         ["value"] = "The namespace name to append."
                     },
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -135,13 +135,14 @@ internal partial class CodeWriterGenerator
                 EmptyStub = return_this,
                 Trivia = new TriviaSource
                 {
-                    Summary = "Appends a <c>[GeneratedCode]</c> attribute to the current line.",
+                    Summary =
+                        $"Appends a {GetTypeTriviaReference("global::System.CodeDom.Compiler.GeneratedCodeAttribute", "GeneratedCode", out _)} attribute to the current line, followed by a newline.",
                     Parameters = new Dictionary<string, string>
                     {
                         ["generator"] = "The name of the code generator.",
                         ["version"] = "The version of the code generator."
                     },
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -157,8 +158,9 @@ internal partial class CodeWriterGenerator
                 EmptyStub = return_this,
                 Trivia = new TriviaSource
                 {
-                    Summary = "Appends an <c>[ExcludeFromCodeCoverage]</c> attribute to the current line.",
-                    Returns = "The current code writer instance."
+                    Summary =
+                        $"Appends an {GetTypeTriviaReference("global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute", "ExcludeFromCodeCoverage", out _)} attribute to the current line, followed by a newline.",
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -173,7 +175,7 @@ internal partial class CodeWriterGenerator
                 {
                     Summary =
                         $"Appends an <c>[Embedded]</c> attribute to the current line. You should only use this if you've added <c>{MS_CODE}.EmbeddedAttribute</c>.",
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -222,7 +224,7 @@ internal partial class CodeWriterGenerator
                     {
                         ["condition"] = "The condition for the preprocessor directive."
                     },
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             },
             new MethodSource
@@ -265,7 +267,7 @@ internal partial class CodeWriterGenerator
                     {
                         ["value"] = "The preprocessor symbol to append (e.g. <c>#endif</c> or <c>endif</c>)."
                     },
-                    Returns = "The current code writer instance."
+                    Returns = APPEND_RETURN_TRIVIA
                 }
             }
         ];

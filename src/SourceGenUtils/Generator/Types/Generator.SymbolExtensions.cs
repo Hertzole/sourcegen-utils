@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Hertzole.SourceGenUtils;
 
 partial class Generator
@@ -7,6 +9,7 @@ partial class Generator
         return new TypeSource
         {
             Signature = "internal static partial class SymbolExtensions",
+            Trivia = "Extension methods for working with symbols.",
             Methods =
             [
                 new MethodSource
@@ -64,7 +67,36 @@ partial class Generator
                         // Not partial, just your average struct.
                         writer.AppendLine("return symbol.IsReadOnly ? \"readonly struct\" : \"struct\";");
                     },
-                    EmptyStub = "return string.Empty;"
+                    EmptyStub = "return string.Empty;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Gets the type declaration, without access modifiers, for the provided symbol.<br/>\n" +
+                                  "If <paramref name=\"isPartial\"/> is <see langword=\"true\"/> then the type declaration will include the <c>partial</c> keyword.",
+                        Returns = "The type declaration.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["symbol"] = "The symbol to get the declaration from.",
+                            ["isPartial"] = "Whether the type declaration should include the <c>partial</c> keyword."
+                        },
+                        Example = """
+                                  <code>
+                                  ITypeSymbol classSymbol = ... public class MyClass {}
+                                  classSymbol.GetDeclarationString(false); // class MyClass
+                                  classSymbol.GetDeclarationString(true);  // partial class MyClass
+                                  </code>
+
+                                  <code>
+                                  ITypeSymbol structSymbol = ... public struct MyStruct [}
+                                  structSymbol.GetDeclarationString(false); // struct MyStruct
+                                  </code>
+
+                                  <code>
+                                  ITypeSymbol readonlyStructSymbol = ... private readonly struct MyReadonlyStruct {}
+                                  readonlyStructSymbol.GetDeclarationString(false); // readonly struct MyReadonlyStruct
+                                  readonlyStructSymbol.GetDeclarationString(true);  // partial readonly struct MyReadonlyStruct
+                                  </code>
+                                  """
+                    }
                 }
             ]
         };

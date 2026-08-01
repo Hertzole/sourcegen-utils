@@ -11,4 +11,12 @@ internal sealed class TriviaSource
     public string? Remarks { get; init; }
     public string? Example { get; init; }
     public Dictionary<string, string>? Parameters { get; init; }
+
+    public static implicit operator TriviaSource(string value)
+    {
+        return new TriviaSource
+        {
+            Summary = value
+        };
+    }
 }

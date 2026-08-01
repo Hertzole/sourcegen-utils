@@ -16,9 +16,9 @@
         <Authors>Hertzole</Authors>
         <Company>Hertzole</Company>
         <Title>SourceGenUtils</Title>
-        <PackageProjectUrl>https://github.com/Hertzole/sourcegenutils</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/Hertzole/sourcegen-utils</PackageProjectUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <RepositoryUrl>https://github.com/Hertzole/sourcegenutils</RepositoryUrl>
+        <RepositoryUrl>https://github.com/Hertzole/sourcegen-utils</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <Description>Provides common utilities for source generation.
             Use code writer for building your code and common extensions to speed up development and get consistent results.

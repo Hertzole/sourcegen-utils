@@ -98,8 +98,8 @@ public class VariableNamesTests : GeneratorTests
     public string NicifyVariableName_ArrayBuilder(string value)
     {
         // Arrange
-        Type type = CompileVariableNames($"NicifyVariableName(string, {Generator.ARRAY_BUILDER}<char>)", $"{Generator.ARRAY_BUILDER}.ArrayBuilder()",
-            $"{Generator.ARRAY_BUILDER}.ToString()");
+        Type type = CompileVariableNames($"NicifyVariableName(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
+            $"{Constants.ARRAY_BUILDER}.ToString()");
 
         Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
         object arrayBuilderInstance = CreateInstance(arrayBuilderType);
@@ -132,8 +132,8 @@ public class VariableNamesTests : GeneratorTests
     public string RemovePrefix_ArrayBuilder(string value)
     {
         // Arrange
-        Type type = CompileVariableNames($"RemovePrefix(string, {Generator.ARRAY_BUILDER}<char>)", $"{Generator.ARRAY_BUILDER}.ArrayBuilder()",
-            $"{Generator.ARRAY_BUILDER}.ToString()");
+        Type type = CompileVariableNames($"RemovePrefix(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
+            $"{Constants.ARRAY_BUILDER}.ToString()");
 
         Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
         object arrayBuilderInstance = CreateInstance(arrayBuilderType);
@@ -164,8 +164,8 @@ public class VariableNamesTests : GeneratorTests
     public string UppercaseStart_ArrayBuilder(string value)
     {
         // Arrange
-        Type type = CompileVariableNames($"UppercaseStart(string, {Generator.ARRAY_BUILDER}<char>)", $"{Generator.ARRAY_BUILDER}.ArrayBuilder()",
-            $"{Generator.ARRAY_BUILDER}.ToString()");
+        Type type = CompileVariableNames($"UppercaseStart(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
+            $"{Constants.ARRAY_BUILDER}.ToString()");
 
         Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
         object arrayBuilderInstance = CreateInstance(arrayBuilderType);

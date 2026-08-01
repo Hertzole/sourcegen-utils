@@ -4,8 +4,6 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
-    internal const string ARRAY_BUILDER = NAMESPACE + ".ArrayBuilder";
-
     private static TypeSource CreateArrayBuilder()
     {
         const string array_builder = ARRAY_BUILDER + "<T>";
@@ -29,11 +27,6 @@ partial class Generator
             OBJECT_POOL + ".Get()"
         ];
 
-        //TODO: Add indexer
-        //TODO: Add length property
-        //TODO: Add AddRange(IEnumerable<T>)
-        //TODO: Implement IEnumerable<T>
-
         return new TypeSource
         {
             Signature = "internal readonly partial struct ArrayBuilder<T> : global::System.IDisposable",
@@ -47,6 +40,39 @@ partial class Generator
                 {
                     Signature = $"private readonly global::{array_builder}.Writer writer = null!;",
                     Dependencies = [ARRAY_BUILDER + ".ArrayBuilder"]
+                }
+            },
+            Properties = new Dictionary<string, PropertySource>
+            {
+                ["Length"] = new PropertySource
+                {
+                    Signature = "public int Length",
+                    GetImplementation = (codeWriter, in context) =>
+                    {
+                        // If has constructed, it has a writer.
+                        // Else just return 0.
+                        codeWriter.AppendLine(context.HasCalledMethod($"{ARRAY_BUILDER}.ArrayBuilder") ? "return writer.size;" : "return 0;");
+                    }
+                },
+                ["indexer"] = new PropertySource
+                {
+                    Signature = "public T this[int index]",
+                    GetImplementation = (codeWriter, in context) =>
+                    {
+                        if (!context.HasCalledMethod($"{ARRAY_BUILDER}.ArrayBuilder"))
+                        {
+                            codeWriter.AppendLine("return default!;");
+                            return;
+                        }
+
+                        codeWriter.AppendLine("if (index < 0 || index >= writer.size)");
+                        using (codeWriter.WithBlock(true))
+                        {
+                            codeWriter.AppendLine("throw new global::System.ArgumentOutOfRangeException(nameof(index));");
+                        }
+
+                        codeWriter.AppendLine("return writer.array[index];");
+                    }
                 }
             },
             Methods =
@@ -121,6 +147,21 @@ partial class Generator
                     Signature = "public partial void AddRange(global::System.ReadOnlySpan<T> items)",
                     Implementation = (codeWriter, in _) => { codeWriter.AppendLine("writer.AddRange(items);"); },
                     Dependencies = [$"{writer_no_generic}.AddRange(System.ReadOnlySpan<T>)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Adds a range of items to the builder.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["items"] = "The items to add."
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "AddRange",
+                    Signature = "public partial void AddRange(global::System.Collections.Generic.IEnumerable<T> items)",
+                    Implementation = (codeWriter, in _) => { codeWriter.AppendLine("writer.AddRange(items);"); },
+                    Dependencies = [$"{writer_no_generic}.AddRange(System.Collections.Generic.IEnumerable<T>)"],
                     Trivia = new TriviaSource
                     {
                         Summary = "Adds a range of items to the builder.",
@@ -210,6 +251,24 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "ToArray",
+                    Signature = "public partial T[] ToArray()",
+                    Implementation = (codeWriter, in _) =>
+                    {
+                        codeWriter.AppendLine("T[] result =  new T[writer.size];");
+                        codeWriter.AppendLine("global::System.Array.Copy(writer.array, result, writer.size);");
+                        codeWriter.AppendLine("return result;");
+                    },
+                    Dependencies = [writer_no_generic + $".OnReturn({writer})", OBJECT_POOL + ".Return(T)"],
+                    EmptyStub = "return default;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns a new array with the builder's contents.",
+                        Returns = "A new array with the builder's contents."
+                    }
+                },
+                new MethodSource
+                {
                     Name = "ToString",
                     Signature = "public override partial string ToString()",
                     Implementation = (codeWriter, in _) =>
@@ -282,6 +341,25 @@ partial class Generator
                                 code.AppendLine("size += items.Length;");
                             },
                             Dependencies = [$"{writer_no_generic}.EnsureCapacity(int)"]
+                        },
+                        new MethodSource
+                        {
+                            Name = "AddRange",
+                            Signature = "internal partial void AddRange(global::System.Collections.Generic.IEnumerable<T> items)",
+                            Implementation = (code, in _) =>
+                            {
+                                code.AppendLine("if (items is global::System.Collections.Generic.ICollection<T> collection)");
+                                using (code.WithBlock(true))
+                                {
+                                    code.AppendLine("EnsureCapacity(size + collection.Count);");
+                                    code.AppendLine("collection.CopyTo(array, size);");
+                                    code.AppendLine("size += collection.Count;");
+                                    code.AppendLine("return;");
+                                }
+
+                                code.AppendLine("AddRange(global::System.MemoryExtensions.AsSpan(global::System.Linq.Enumerable.ToArray(items)));");
+                            },
+                            Dependencies = [$"{writer_no_generic}.EnsureCapacity(int)", $"{writer_no_generic}.AddRange({R_SPAN}<T>)"]
                         },
                         new MethodSource
                         {

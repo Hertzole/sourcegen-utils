@@ -308,6 +308,14 @@ public abstract partial class GeneratorTests
         return field!;
     }
 
+    protected static PropertyInfo GetProperty(Type type, string name, BindingFlags flags)
+    {
+        PropertyInfo? property = type.GetProperty(name, flags);
+
+        Assert.That(property, Is.Not.Null, $"Can't find property '{name}' in type '{type.FullName}'");
+        return property!;
+    }
+
     protected static string GetTypesString(params Type[] types)
     {
         return types.Length == 0 ? string.Empty : string.Join(", ", types.Select(GetTypeString));

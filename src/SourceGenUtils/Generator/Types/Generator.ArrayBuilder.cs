@@ -280,7 +280,7 @@ partial class Generator
                             codeWriter.AppendLine($"return {GLOBAL_MEMORY_EXT}.AsSpan(writer.array, 0, writer.size).ToString();");
                         }
 
-                        codeWriter.AppendLine($"return $\"{ARRAY_BUILDER}<{{typeof(T).Name}}>[writer.size]\";");
+                        codeWriter.AppendLine($"return $\"{ARRAY_BUILDER}<{{typeof(T).Name}}>[{{writer.size}}]\";");
                     },
                     Dependencies = [writer_no_generic + $".OnReturn({writer})", OBJECT_POOL + ".Return(T)"],
                     EmptyStub = "return string.Empty;",

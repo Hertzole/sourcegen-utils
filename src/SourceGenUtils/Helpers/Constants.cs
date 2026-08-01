@@ -9,6 +9,9 @@ internal static class Constants
     public const string CODE_WRITER = $"{NAMESPACE}.CodeWriter";
     public const string GLOBAL_CODE_WRITER = $"global::{CODE_WRITER}";
 
+    public const string EQUATABLE_ARRAY = $"{NAMESPACE}.EquatableArray";
+    public const string GLOBAL_EQUATABLE_ARRAY = $"global::{EQUATABLE_ARRAY}";
+
     public const string ARRAY_BUILDER = $"{NAMESPACE}.ArrayBuilder";
     public const string GLOBAL_ARRAY_BUILDER = $"global::{ARRAY_BUILDER}";
 
@@ -52,5 +55,15 @@ internal static class Constants
         }
 
         return sb.ToString();
+    }
+
+    public static string GetTypeTriviaReference(string type, string? displayName = null)
+    {
+        return GetTypeTriviaReference(type, displayName, out _);
+    }
+
+    public static string GetTypeTriviaReference<T>(string? displayName = null)
+    {
+        return GetTypeTriviaReference($"global::{typeof(T).GetCompleteName()}", displayName, out _);
     }
 }

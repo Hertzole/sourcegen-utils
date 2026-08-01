@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -29,5 +30,24 @@ internal static class Extensions
     {
         context.AddSource(hintName, SourceText.From(writer.ToString(), Encoding.UTF8));
         writer.Clear();
+    }
+
+    public static string GetCompleteName(this Type type)
+    {
+        StringBuilder sb = new StringBuilder();
+        if (!string.IsNullOrEmpty(type.Namespace))
+        {
+            sb.Append(type.Namespace);
+            sb.Append('.');
+        }
+
+        sb.Append(type.Name);
+
+        if (type.IsGenericType)
+        {
+            sb.Append("<T>");
+        }
+
+        return sb.ToString();
     }
 }

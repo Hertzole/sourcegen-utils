@@ -9,17 +9,19 @@ partial class Generator
         EQUATABLE_ARRAY + ".EquatableArray(T[])",
         EQUATABLE_ARRAY + ".EquatableArray(System.Collections.Immutable.ImmutableArray<T>)"
     ];
-    private const string EQUATABLE_ARRAY = NAMESPACE + ".EquatableArray";
 
     private static TypeSource CreateEquatableArray()
     {
+        const string equatable = "global::System.IEquatable";
+
         return new TypeSource
         {
             Signature =
-                "internal readonly partial struct EquatableArray<T> : global::System.IEquatable<EquatableArray<T>>, global::System.Collections.Generic.IEnumerable<T> where T : global::System.IEquatable<T>",
+                $"internal readonly partial struct EquatableArray<T> : {equatable}<EquatableArray<T>>, global::System.Collections.Generic.IEnumerable<T> where T : {equatable}<T>",
             Trivia = new TriviaSource
             {
-                Summary = "A wrapper around an array that implements <see cref=\"System.IEquatable{T}\"/> for value-based equality comparison."
+                Summary =
+                    $"A wrapper around an array that implements {GetTypeTriviaReference($"{equatable}{{T}}", "IEquatable<T>")} for value-based equality comparison."
             },
             Fields = new Dictionary<string, FieldSource>
             {
@@ -66,7 +68,8 @@ partial class Generator
                     },
                     Trivia = new TriviaSource
                     {
-                        Summary = "Creates a new <see cref=\"EquatableArray{T}\"/> from the specified array. The array is copied.",
+                        Summary =
+                            $"Creates a new {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")} from the specified array. The array is copied.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["array"] = "The array to wrap."
@@ -84,7 +87,7 @@ partial class Generator
                     },
                     Trivia = new TriviaSource
                     {
-                        Summary = "Creates a new <see cref=\"EquatableArray{T}\"/> from the specified immutable array.",
+                        Summary = $"Creates a new {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")} from the specified immutable array.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["array"] = "The immutable array to wrap."
@@ -111,8 +114,10 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            "Converts this <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>.",
-                        Returns = "An <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/> containing the elements."
+                            $"Converts this {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")} to an " +
+                            $"{GetTypeTriviaReference("global::System.Collections.Immutable.ImmutableArray{T}", "ImmutableArray<T>")}.",
+                        Returns =
+                            $"An {GetTypeTriviaReference("global::System.Collections.Immutable.ImmutableArray{T}", "ImmutableArray<T>")} containing the elements."
                     }
                 },
                 new MethodSource
@@ -129,12 +134,13 @@ partial class Generator
                         }
 
                         writer.AppendLine(
-                            "return array == null ? global::System.ReadOnlySpan<T>.Empty : new global::System.ReadOnlySpan<T>(array, 0, array.Length);");
+                            $"return array == null ? {GLOBAL_R_SPAN}<T>.Empty : new {GLOBAL_R_SPAN}<T>(array, 0, array.Length);");
                     },
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns a read-only span over the elements of this <see cref=\"EquatableArray{T}\"/>.",
+                        Summary =
+                            $"Returns a read-only span over the elements of this {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")}.",
                         Returns = "A read-only span over the elements."
                     }
                 },
@@ -199,7 +205,7 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "Equals",
-                    Signature = "public partial bool Equals(global::" + EQUATABLE_ARRAY + "<T> other)",
+                    Signature = $"public partial bool Equals({GLOBAL_EQUATABLE_ARRAY}<T> other)",
                     Attributes = AggressiveInlineAttribute,
                     Implementation = (writer, in context) =>
                     {
@@ -209,17 +215,18 @@ partial class Generator
                             return;
                         }
 
-                        writer.AppendLine("return global::System.MemoryExtensions.SequenceEqual<T>(AsSpan(), other.AsSpan());");
+                        writer.AppendLine($"return {GLOBAL_MEMORY_EXT}.SequenceEqual<T>(AsSpan(), other.AsSpan());");
                     },
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Determines whether this instance is equal to another <see cref=\"EquatableArray{T}\"/>.",
+                        Summary =
+                            $"Determines whether this instance is equal to another {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")}.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["other"] = "The other instance to compare."
                         },
-                        Returns = "<c>true</c> if this instance is equal to <paramref name=\"other\"/>; otherwise <c>false</c>."
+                        Returns = "<see langword=\"true\"/> if this instance is equal to <paramref name=\"other\"/>; otherwise <see langword=\"false\"/>."
                     }
                 },
                 new MethodSource
@@ -235,7 +242,7 @@ partial class Generator
                             return;
                         }
 
-                        writer.AppendLine("return other is global::" + EQUATABLE_ARRAY + "<T> array && Equals(this, array);");
+                        writer.AppendLine($"return other is {GLOBAL_EQUATABLE_ARRAY}<T> array && Equals(this, array);");
                     },
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
@@ -245,7 +252,7 @@ partial class Generator
                         {
                             ["other"] = "The object to compare."
                         },
-                        Returns = "<c>true</c> if this instance is equal to <paramref name=\"other\"/>; otherwise <c>false</c>."
+                        Returns = "<see langword=\"true\"/> if this instance is equal to <paramref name=\"other\"/>; otherwise <see langword=\"false\"/>."
                     }
                 },
                 new MethodSource

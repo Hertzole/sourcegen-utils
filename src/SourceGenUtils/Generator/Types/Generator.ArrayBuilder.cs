@@ -178,7 +178,7 @@ partial class Generator
                     Signature = "public partial bool Remove(T item)",
                     Implementation = (code, in _) =>
                     {
-                        code.AppendLine("int index = global::System.Array.IndexOf(writer.array, item, 0, writer.index)");
+                        code.AppendLine("int index = global::System.Array.IndexOf(writer.array, item, 0, writer.size);");
                         code.AppendLine("if (index >= 0)");
                         using (code.WithBlock(true))
                         {

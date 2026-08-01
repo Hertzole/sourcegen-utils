@@ -29,6 +29,11 @@ partial class Generator
             OBJECT_POOL + ".Get()"
         ];
 
+        //TODO: Add indexer
+        //TODO: Add length property
+        //TODO: Add AddRange(IEnumerable<T>)
+        //TODO: Implement IEnumerable<T>
+
         return new TypeSource
         {
             Signature = "internal readonly partial struct ArrayBuilder<T> : global::System.IDisposable",
@@ -79,13 +84,13 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "ArrayBuilder",
-                    Signature = "public partial ArrayBuilder(global::System.ReadOnlySpan<T> items)",
+                    Signature = $"public partial ArrayBuilder({GLOBAL_R_SPAN}<T> items)",
                     Implementation = (codeWriter, in _) =>
                     {
                         codeWriter.AppendLine($"writer = {writer}.pool.Get();");
                         codeWriter.AppendLine("writer.AddRange(items);");
                     },
-                    Dependencies = [.. constructorArgs, $"{writer_no_generic}.AddRange(System.ReadOnlySpan<T>)"],
+                    Dependencies = [.. constructorArgs, $"{writer_no_generic}.AddRange({R_SPAN}<T>)"],
                     Trivia = new TriviaSource
                     {
                         Summary = "Creates a new <see cref=\"ArrayBuilder{T}\"/> initialized with the specified items.",
@@ -193,11 +198,8 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "AsSpan",
-                    Signature = "public partial global::System.ReadOnlySpan<T> AsSpan()",
-                    Implementation = (codeWriter, in _) =>
-                    {
-                        codeWriter.AppendLine("return global::System.MemoryExtensions.AsSpan(writer.array, 0, writer.size);");
-                    },
+                    Signature = $"public partial {GLOBAL_R_SPAN}<T> AsSpan()",
+                    Implementation = (codeWriter, in _) => { codeWriter.AppendLine($"return {GLOBAL_MEMORY_EXT}.AsSpan(writer.array, 0, writer.size);"); },
                     Dependencies = [writer_no_generic + $".OnReturn({writer})", OBJECT_POOL + ".Return(T)"],
                     EmptyStub = "return default;",
                     Trivia = new TriviaSource
@@ -212,14 +214,20 @@ partial class Generator
                     Signature = "public override partial string ToString()",
                     Implementation = (codeWriter, in _) =>
                     {
-                        codeWriter.AppendLine("return global::System.MemoryExtensions.AsSpan(writer.array, 0, writer.size).ToString();");
+                        codeWriter.AppendLine("if (typeof(T) == typeof(char))");
+                        using (codeWriter.WithBlock(true))
+                        {
+                            codeWriter.AppendLine($"return {GLOBAL_MEMORY_EXT}.AsSpan(writer.array, 0, writer.size).ToString();");
+                        }
+
+                        codeWriter.AppendLine($"return $\"{ARRAY_BUILDER}<{{typeof(T).Name}}>[writer.size]\";");
                     },
                     Dependencies = [writer_no_generic + $".OnReturn({writer})", OBJECT_POOL + ".Return(T)"],
                     EmptyStub = "return string.Empty;",
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns the builder's contents as a string.",
-                        Returns = "The builder's contents as a string."
+                        Summary = "For <see cref=\"ArrayBuilder{Char}\"/>, returns a new string that represents the builder's contents.\n" +
+                                  "Otherwise, returns a <see cref=\"string\"/> with the name of the type and the number of elements."
                     }
                 }
             ],

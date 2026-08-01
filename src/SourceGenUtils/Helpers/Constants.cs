@@ -16,6 +16,12 @@ internal static class Constants
     public const string MS_CODE = "Microsoft.CodeAnalysis";
     public const string GLOBAL_MS_CODE = $"global::{MS_CODE}";
 
+    public const string R_SPAN = "System.ReadOnlySpan";
+    public const string GLOBAL_R_SPAN = $"global::{R_SPAN}";
+
+    public const string MEMORY_EXT = "System.MemoryExtensions";
+    public const string GLOBAL_MEMORY_EXT = $"global::{MEMORY_EXT}";
+
     public static readonly string[] AggressiveInlineAttribute =
         ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
 }

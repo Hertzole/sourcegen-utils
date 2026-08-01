@@ -19,16 +19,14 @@ partial class Generator
         if (!string.IsNullOrWhiteSpace(trivia.Summary))
         {
             writer.AppendLine("/// <summary>");
-            writer.Append("/// ");
-            writer.AppendLine(trivia.Summary!);
+            AppendMultilineString(writer, trivia.Summary!);
             writer.AppendLine("/// </summary>");
         }
 
         if (!string.IsNullOrWhiteSpace(trivia.Remarks))
         {
             writer.AppendLine("/// <remarks>");
-            writer.Append("/// ");
-            writer.AppendLine(trivia.Remarks!);
+            AppendMultilineString(writer, trivia.Remarks!);
             writer.AppendLine("/// </remarks>");
         }
 
@@ -46,9 +44,39 @@ partial class Generator
 
         if (!string.IsNullOrWhiteSpace(trivia.Returns))
         {
-            writer.Append("/// <returns>");
-            writer.Append(trivia.Returns!);
+            if (trivia.Returns!.IndexOf('\n') != -1)
+            {
+                // Contains a new line, split onto newlines.
+                writer.AppendLine("/// <returns>");
+                AppendMultilineString(writer, trivia.Returns!);
+            }
+            else
+            {
+                // No newlines present, just put everything onto one line.
+                writer.Append("/// <returns>");
+                writer.Append(trivia.Returns);
+            }
+
             writer.AppendLine("</returns>");
+        }
+
+        static void Append(CodeWriter writer, string type, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            if (type.IndexOf('\n') == -1) { }
+        }
+
+        static void AppendMultilineString(CodeWriter writer, string value)
+        {
+            foreach (string s in value.Split('\n'))
+            {
+                writer.Append("/// ");
+                writer.AppendLine(s);
+            }
         }
     }
 

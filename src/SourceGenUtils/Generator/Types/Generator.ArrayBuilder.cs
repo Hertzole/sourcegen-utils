@@ -16,7 +16,8 @@ partial class Generator
             writer_no_generic + ".Add",
             writer_no_generic + ".AddRange",
             writer_no_generic + ".Clear",
-            writer_no_generic + ".RemoveAt"
+            writer_no_generic + ".RemoveAt",
+            writer_no_generic + ".OnReturn"
         ];
 
         string[] constructorArgs =
@@ -424,8 +425,17 @@ partial class Generator
                         {
                             Name = "OnReturn",
                             Signature = $"private static void OnReturn(global::{writer} item)",
-                            Implementation = (code, in _) => { code.AppendLine("item.Clear();"); },
-                            Dependencies = [$"{writer_no_generic}.Clear()"],
+                            Implementation = (code, in _) =>
+                            {
+                                code.AppendLine("if (item.array.Length > 0)");
+                                using (code.WithBlock(true))
+                                {
+                                    code.AppendLine("global::System.Buffers.ArrayPool<T>.Shared.Return(item.array, typeof(T) != typeof(char));");
+                                    code.AppendLine("item.array = global::System.Array.Empty<T>();");
+                                }
+
+                                code.AppendLine("item.size = 0;");
+                            },
                             SkipPartial = true
                         }
                     ]

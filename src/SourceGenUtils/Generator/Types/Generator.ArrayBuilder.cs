@@ -45,9 +45,9 @@ partial class Generator
             },
             Properties = new Dictionary<string, PropertySource>
             {
-                ["Length"] = new PropertySource
+                ["Count"] = new PropertySource
                 {
-                    Signature = "public int Length",
+                    Signature = "public int Count",
                     GetImplementation = (codeWriter, in context) =>
                     {
                         // If has constructed, it has a writer.

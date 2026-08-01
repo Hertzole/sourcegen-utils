@@ -47,7 +47,7 @@ partial class Generator
                 Dependencies = Dependencies(),
                 Trivia = new TriviaSource
                 {
-                    Summary = $"Adds source code from the provided <see cref=\"{CODE_WRITER}\" /> to the compilation.",
+                    Summary = $"Adds source code from the provided {GetTypeTriviaReference(GLOBAL_CODE_WRITER, "CodeWriter", out _)} to the compilation.",
                     Remarks = "The writer will be cleared after adding the source.",
                     Parameters = new Dictionary<string, string>
                     {
@@ -75,7 +75,8 @@ partial class Generator
                 Trivia = new TriviaSource
                 {
                     Summary =
-                        $"Adds source code from the provided <see cref=\"{CODE_WRITER}\" /> to the compilation with a specified <see cref=\"{encoding}\" />.",
+                        $"Adds source code from the provided {GetTypeTriviaReference(GLOBAL_CODE_WRITER, "CodeWriter", out _)} " +
+                        $"to the compilation with a specified {GetTypeTriviaReference("global::System.Text.Encoding", "Encoding", out _)}.",
                     Remarks = "The writer will be cleared after adding the source.",
                     Parameters = new Dictionary<string, string>
                     {

@@ -12,9 +12,6 @@ namespace Hertzole.SourceGenUtils;
 [Generator]
 public sealed partial class Generator : IIncrementalGenerator
 {
-    private static readonly string[] AggressiveInlineAttribute =
-        ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
-
     internal static readonly Dictionary<string, TypeSource> TypesToGenerate;
 
     private static readonly HashSet<string> AllMethodNames;

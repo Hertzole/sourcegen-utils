@@ -4,8 +4,6 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
-    private const string STRING_BUILDER_POOL = $"{NAMESPACE}.StringBuilderPool";
-
     private static TypeSource CreateStringBuilderPool()
     {
         const string builder = "System.Text.StringBuilder";

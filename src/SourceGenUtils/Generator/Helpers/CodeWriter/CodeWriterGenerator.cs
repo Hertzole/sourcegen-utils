@@ -103,6 +103,11 @@ internal static partial class CodeWriterGenerator
                         {
                             Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
                             Dependencies = [CODE_WRITER + ".BlockScope.BlockScope"]
+                        },
+                        ["newLineOnDispose"] = new FieldSource
+                        {
+                            Signature = "private readonly bool newLineOnDispose;",
+                            Dependencies = [CODE_WRITER + ".BlockScope.BlockScope"]
                         }
                     },
                     Methods =
@@ -110,10 +115,11 @@ internal static partial class CodeWriterGenerator
                         new MethodSource
                         {
                             Name = "BlockScope",
-                            Signature = $"public partial BlockScope(global::{NAMESPACE}.CodeWriter writer)",
+                            Signature = $"public partial BlockScope(global::{NAMESPACE}.CodeWriter writer, bool newLineOnDispose = false)",
                             Implementation = (writer, in _) =>
                             {
                                 writer.AppendLine("this.writer = writer;");
+                                writer.AppendLine("this.newLineOnDispose = newLineOnDispose;");
                                 writer.AppendLine("writer.AppendLine('{');");
                                 writer.AppendLine("writer.Indent++;");
                             },
@@ -123,7 +129,8 @@ internal static partial class CodeWriterGenerator
                                 Summary = "Creates a new block scope that opens a code block and increments the indentation.",
                                 Parameters = new Dictionary<string, string>
                                 {
-                                    ["writer"] = "The code writer to write to."
+                                    ["writer"] = "The code writer to write to.",
+                                    ["newLineOnDispose"] = $"If {TRIVIA_TRUE}, a newline will be inserted when the block scope is disposed."
                                 }
                             }
                         },
@@ -135,8 +142,14 @@ internal static partial class CodeWriterGenerator
                             {
                                 writer.AppendLine("writer.Indent--;");
                                 writer.AppendLine("writer.AppendLine('}');");
+
+                                writer.AppendLine("if (newLineOnDispose)");
+                                using (writer.WithBlock())
+                                {
+                                    writer.AppendLine("writer.AppendLine();");
+                                }
                             },
-                            Dependencies = [CODE_WRITER + ".AppendLine(char)"],
+                            Dependencies = [CODE_WRITER + ".AppendLine(char)", CODE_WRITER + ".AppendLine()"],
                             Trivia = new TriviaSource
                             {
                                 Summary = "Closes the code block and decrements the indentation."
@@ -453,14 +466,14 @@ internal static partial class CodeWriterGenerator
             new MethodSource
             {
                 Name = "WithBlock",
-                Signature = "public partial global::" + NAMESPACE + ".CodeWriter.BlockScope WithBlock()",
+                Signature = "public partial global::" + NAMESPACE + ".CodeWriter.BlockScope WithBlock(bool newLineOnDispose = false)",
                 EmptyStub = "return default;",
                 Implementation = (writer, in _) =>
                 {
                     writer.AppendLine(disposed_call);
-                    writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.BlockScope(this);");
+                    writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.BlockScope(this, newLineOnDispose);");
                 },
-                Dependencies = [CODE_WRITER + ".BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter)", throw_if_disposed],
+                Dependencies = [CODE_WRITER + ".BlockScope.BlockScope(Hertzole.SourceGen.CodeWriter, bool)", throw_if_disposed],
                 Trivia = new TriviaSource
                 {
                     Summary = "Opens a new code block. Returns a disposable scope that closes the block and restores indentation when disposed.",
@@ -485,7 +498,11 @@ internal static partial class CodeWriterGenerator
                                   public int myField;
                               }
                               </code>
-                              """
+                              """,
+                    Parameters = new Dictionary<string, string>
+                    {
+                        ["newLineOnDispose"] = $"If {TRIVIA_TRUE}, a newline will be inserted when the block scope is disposed."
+                    }
                 }
             },
             new MethodSource

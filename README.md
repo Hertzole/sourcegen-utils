@@ -145,6 +145,7 @@ and detect event handler patterns. All, of course, support spans along with simp
 VariableNames.NicifyVariableName("m_playerName"); // "PlayerName"
 VariableNames.RemovePrefix("kConstant");          // "Constant"
 VariableNames.UppercaseStart("playerPoints");     // "PlayerPoints"
+VariableNames.AppendGlobalPrefix("MyType");       // "global::MyType"
 ```
 
 ### SyntaxExtensions

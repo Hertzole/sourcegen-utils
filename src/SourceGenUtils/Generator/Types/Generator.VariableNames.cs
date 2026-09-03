@@ -11,6 +11,11 @@ partial class Generator
         const string nicify_trivia_builder =
             "Removes common prefixes (e.g. <c>m_</c>, <c>_</c>, <c>k</c>) and uppercases the first character and appends it to the specified builder.";
 
+        const string destination_trivia = "The destination span to copy the result into.";
+        const string builder_destination_trivia = "The builder to write the result to.";
+        const string written_trivia = "The number of characters written to the destination.";
+        const string written_builder_trivia = "The number of characters written to the builder.";
+
         TriviaSource getNiceNameLengthTrivia = new TriviaSource
         {
             Summary = "Calculates the required length needed for a buffer to support the new nice name.",
@@ -18,6 +23,27 @@ partial class Generator
             Parameters = new Dictionary<string, string>
             {
                 ["value"] = "The string to get the length for."
+            }
+        };
+
+        TriviaSource startsWithOnTrivia = new TriviaSource
+        {
+            Summary =
+                "Determines whether the value starts with <c>on</c> or <c>On</c> followed by an uppercase character (e.g. <c>OnValueChanged</c>).",
+            Parameters = new Dictionary<string, string>
+            {
+                ["value"] = "The value to check."
+            },
+            Returns = $"{TRIVIA_TRUE} if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise {TRIVIA_FALSE}."
+        };
+
+        TriviaSource getNameWithGlobalPrefixTrivia = new TriviaSource
+        {
+            Summary = "Calculates the required length needed for a buffer to support appending <c>global::</c> at the start of the provided string.",
+            Returns = "The length required for the buffer.",
+            Parameters = new Dictionary<string, string>
+            {
+                { "value", "The string to get the length for." }
             }
         };
 
@@ -52,9 +78,9 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to transform.",
-                            ["destination"] = "The buffer to write the result to."
+                            ["destination"] = destination_trivia
                         },
-                        Returns = "The number of characters written to the destination."
+                        Returns = written_trivia
                     }
                 },
                 new MethodSource
@@ -86,9 +112,9 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to transform.",
-                            ["builder"] = "The builder to write the result to."
+                            ["builder"] = builder_destination_trivia
                         },
-                        Returns = "The number of characters written to the destination."
+                        Returns = written_builder_trivia
                     }
                 },
                 new MethodSource
@@ -139,9 +165,9 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to transform.",
-                            ["builder"] = "The builder to write the result to."
+                            ["builder"] = builder_destination_trivia
                         },
-                        Returns = "The number of characters written to the destination."
+                        Returns = written_builder_trivia
                     }
                 },
                 new MethodSource
@@ -181,9 +207,9 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to process.",
-                            ["destination"] = "The buffer to write the result to."
+                            ["destination"] = destination_trivia
                         },
-                        Returns = "The number of characters written to the destination."
+                        Returns = written_trivia
                     }
                 },
                 new MethodSource
@@ -212,9 +238,9 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to process.",
-                            ["builder"] = "The builder to write the result to."
+                            ["builder"] = builder_destination_trivia
                         },
-                        Returns = "The number of characters written to the destination."
+                        Returns = written_builder_trivia
                     }
                 },
                 new MethodSource
@@ -265,9 +291,9 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The variable name to process.",
-                            ["builder"] = "The builder to write the result to."
+                            ["builder"] = builder_destination_trivia
                         },
-                        Returns = "The number of characters written to the destination."
+                        Returns = written_builder_trivia
                     }
                 },
                 new MethodSource
@@ -301,7 +327,7 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The input value.",
-                            ["destination"] = "The buffer to write the result to."
+                            ["destination"] = builder_destination_trivia
                         }
                     }
                 },
@@ -342,7 +368,7 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The input string.",
-                            ["builder"] = "The builder to write the result to."
+                            ["builder"] = builder_destination_trivia
                         }
                     }
                 },
@@ -399,7 +425,7 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The input string.",
-                            ["builder"] = "The builder to write the result to."
+                            ["builder"] = builder_destination_trivia
                         }
                     }
                 },
@@ -414,16 +440,7 @@ partial class Generator
                         writer.AppendLine("return value.Length >= 3 && (value[0] == 'o' || value[0] == 'O') && value[1] == 'n' && char.IsUpper(value[2]);");
                     },
                     EmptyStub = "return false;",
-                    Trivia = new TriviaSource
-                    {
-                        Summary =
-                            "Determines whether the value starts with <c>on</c> or <c>On</c> followed by an uppercase character (e.g. <c>OnValueChanged</c>).",
-                        Parameters = new Dictionary<string, string>
-                        {
-                            ["value"] = "The value to check."
-                        },
-                        Returns = $"{TRIVIA_TRUE} if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise {TRIVIA_FALSE}."
-                    }
+                    Trivia = startsWithOnTrivia
                 },
                 new MethodSource
                 {
@@ -435,16 +452,7 @@ partial class Generator
                         variable_names + ".StartsWithOn(System.ReadOnlySpan<char>)"
                     ],
                     EmptyStub = "return false;",
-                    Trivia = new TriviaSource
-                    {
-                        Summary =
-                            "Determines whether the value starts with <c>on</c> or <c>On</c> followed by an uppercase character (e.g. <c>OnValueChanged</c>).",
-                        Parameters = new Dictionary<string, string>
-                        {
-                            ["value"] = "The value to check."
-                        },
-                        Returns = $"{TRIVIA_TRUE} if the value starts with <c>on</c> or <c>On</c> followed by an uppercase character; otherwise {TRIVIA_FALSE}."
-                    }
+                    Trivia = startsWithOnTrivia
                 },
                 new MethodSource
                 {
@@ -524,6 +532,173 @@ partial class Generator
                     },
                     SkipPartial = true,
                     EmptyStub = "return false;"
+                },
+                new MethodSource
+                {
+                    Name = "AppendGlobalPrefix",
+                    Signature = $"public static partial int AppendGlobalPrefix({GLOBAL_R_SPAN}<char> value, {GLOBAL_SPAN}<char> destination)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("if (value.Length == 0)");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("return 0;");
+                        }
+
+                        writer.AppendLine($"if ({GLOBAL_MEMORY_EXT}.StartsWith(value, \"global::\"))");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("value.CopyTo(destination);");
+                            writer.AppendLine("return value.Length;");
+                        }
+
+                        writer.AppendLine("destination[0] = 'g';");
+                        writer.AppendLine("destination[1] = 'l';");
+                        writer.AppendLine("destination[2] = 'o';");
+                        writer.AppendLine("destination[3] = 'b';");
+                        writer.AppendLine("destination[4] = 'a';");
+                        writer.AppendLine("destination[5] = 'l';");
+                        writer.AppendLine("destination[6] = ':';");
+                        writer.AppendLine("destination[7] = ':';");
+                        writer.AppendLine("value.CopyTo(destination.Slice(8));");
+                        writer.AppendLine("return value.Length + 8;");
+                    },
+                    EmptyStub = "return 0;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary =
+                            "Appends <c>global::</c> at the start of the provided value span and copies the result into the provided <paramref name=\"destination\"/> span.",
+                        Remarks =
+                            "If the provided value already starts with <c>global::</c> this method does nothing.\n<br/>\nYou can use <see cref=\"GetNameWithGlobalPrefixLength(System.ReadOnlySpan{char})\"/> to get the length of the resulting span.",
+                        Returns = written_trivia,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { "value", "The value to append the prefix to." },
+                            { "destination", destination_trivia }
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "AppendGlobalPrefix",
+                    Signature = $"public static partial int AppendGlobalPrefix({GLOBAL_R_SPAN}<char> value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine(
+                            "char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNameWithGlobalPrefixLength(value));");
+
+                        writer.AppendLine(
+                            $"int written = AppendGlobalPrefix(value, {GLOBAL_MEMORY_EXT}.AsSpan(destination));");
+
+                        writer.AppendLine($"builder.AddRange({GLOBAL_MEMORY_EXT}.AsSpan(destination, 0, written));");
+                        writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
+                        writer.AppendLine("return written;");
+                    },
+                    EmptyStub = "return 0;",
+                    Dependencies =
+                    [
+                        $"{variable_names}.AppendGlobalPrefix({R_SPAN}<char>, {SPAN}<char>)",
+                        $"{variable_names}.GetNameWithGlobalPrefixLength({R_SPAN}<char>)",
+                        $"{ARRAY_BUILDER}.AddRange({R_SPAN}<T>)"
+                    ],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends <c>global::</c> at the start of the provided value span and appends it to the specified builder.",
+                        Remarks = "If the provided value already starts with <c>global::</c> this method does nothing.",
+                        Returns = written_builder_trivia,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { "value", "The value to append the prefix to." },
+                            { "builder", builder_destination_trivia }
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "AppendGlobalPrefix",
+                    Signature = "public static partial string AppendGlobalPrefix(string value)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine(
+                            $"char[] destination = global::System.Buffers.ArrayPool<char>.Shared.Rent(GetNameWithGlobalPrefixLength({GLOBAL_MEMORY_EXT}.AsSpan(value)));");
+
+                        writer.AppendLine(
+                            $"int written = AppendGlobalPrefix({GLOBAL_MEMORY_EXT}.AsSpan(value), {GLOBAL_MEMORY_EXT}.AsSpan(destination));");
+
+                        writer.AppendLine("string result = global::System.MemoryExtensions.AsSpan(destination, 0, written).ToString();");
+                        writer.AppendLine("global::System.Buffers.ArrayPool<char>.Shared.Return(destination);");
+                        writer.AppendLine("return result;");
+                    },
+                    EmptyStub = "return value;",
+                    Dependencies =
+                    [
+                        $"{variable_names}.AppendGlobalPrefix({R_SPAN}<char>, {SPAN}<char>)",
+                        $"{variable_names}.GetNameWithGlobalPrefixLength({R_SPAN}<char>)"
+                    ],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends <c>global::</c> at the start of the provided string.",
+                        Remarks = "If the provided value already starts with <c>global::</c> this method does nothing.",
+                        Returns = "The value with the prefix appended.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { "value", "The value to append the prefix to." }
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "AppendGlobalPrefix",
+                    Signature = $"public static partial int AppendGlobalPrefix(string value, {GLOBAL_ARRAY_BUILDER}<char> builder)",
+                    Implementation = (writer, in _) => { writer.AppendLine($"return AppendGlobalPrefix({GLOBAL_MEMORY_EXT}.AsSpan(value), builder);"); },
+                    EmptyStub = "return 0;",
+                    Dependencies =
+                    [
+                        $"{variable_names}.AppendGlobalPrefix({R_SPAN}<char>, {ARRAY_BUILDER}<char>)"
+                    ],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Appends <c>global::</c> at the start of the provided string and appends it to the specified builder.",
+                        Remarks = "If the provided value already starts with <c>global::</c> this method does nothing.",
+                        Returns = written_builder_trivia,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { "value", "The value to append the prefix to." },
+                            { "builder", builder_destination_trivia }
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "GetNameWithGlobalPrefixLength",
+                    Signature = "public static partial int GetNameWithGlobalPrefixLength(string value)",
+                    Implementation = (writer, in _) => { writer.AppendLine($"return GetNameWithGlobalPrefixLength({GLOBAL_MEMORY_EXT}.AsSpan(value));"); },
+                    EmptyStub = "return 0;",
+                    Dependencies = [$"{variable_names}.GetNameWithGlobalPrefixLength({R_SPAN}<char>)"],
+                    Trivia = getNameWithGlobalPrefixTrivia
+                },
+                new MethodSource
+                {
+                    Name = "GetNameWithGlobalPrefixLength",
+                    Signature = $"public static partial int GetNameWithGlobalPrefixLength({GLOBAL_R_SPAN}<char> value)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine("if (value.Length == 0)");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("return 0;");
+                        }
+
+                        writer.AppendLine($"if ({GLOBAL_MEMORY_EXT}.StartsWith(value, \"global::\"))");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("return value.Length;");
+                        }
+
+                        writer.AppendLine("return value.Length + 8;");
+                    },
+                    EmptyStub = "return 0;",
+                    Trivia = getNameWithGlobalPrefixTrivia
                 }
             ]
         };

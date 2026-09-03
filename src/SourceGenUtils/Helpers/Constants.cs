@@ -21,6 +21,9 @@ internal static class Constants
     public const string MS_CODE = "Microsoft.CodeAnalysis";
     public const string GLOBAL_MS_CODE = $"global::{MS_CODE}";
 
+    public const string SPAN = "System.Span";
+    public const string GLOBAL_SPAN = $"global::{SPAN}";
+
     public const string R_SPAN = "System.ReadOnlySpan";
     public const string GLOBAL_R_SPAN = $"global::{R_SPAN}";
 

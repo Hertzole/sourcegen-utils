@@ -59,6 +59,18 @@ public class VariableNamesTests : GeneratorTests
         }
     }
 
+    public static IEnumerable AppendGlobalPrefixCases
+    {
+        get
+        {
+            yield return new TestCaseData("global::MyType").Returns("global::MyType");
+            yield return new TestCaseData("MyType").Returns("global::MyType");
+            yield return new TestCaseData("GLOBAL::MyType").Returns("global::GLOBAL::MyType");
+            yield return new TestCaseData("global::__MyType").Returns("global::__MyType");
+            yield return new TestCaseData("__MyType").Returns("global::__MyType");
+        }
+    }
+
     private static readonly int niceNameLength = "PlayerHealth".Length;
     public static IEnumerable GetNiceNameLengthCases
     {
@@ -72,6 +84,18 @@ public class VariableNamesTests : GeneratorTests
             yield return new TestCaseData("_PlayerHealth").Returns(niceNameLength);
             yield return new TestCaseData("kPlayerHealth").Returns(niceNameLength);
             yield return new TestCaseData("KPlayerHealth").Returns(niceNameLength);
+        }
+    }
+
+    public static IEnumerable GetNameWithGlobalPrefixLengthCases
+    {
+        get
+        {
+            yield return new TestCaseData("global::MyType").Returns("global::MyType".Length);
+            yield return new TestCaseData("MyType").Returns("global::MyType".Length);
+            yield return new TestCaseData("GLOBAL::MyType").Returns("global::GLOBAL::MyType".Length);
+            yield return new TestCaseData("global::__MyType").Returns("global::__MyType".Length);
+            yield return new TestCaseData("__MyType").Returns("global::__MyType".Length);
         }
     }
 
@@ -203,6 +227,52 @@ public class VariableNamesTests : GeneratorTests
         // Arrange
         Type type = CompileVariableNames("GetNiceNameLength(string)");
         MethodInfo method = GetMethod(type, "GetNiceNameLength", BindingFlags.Public | BindingFlags.Static, typeof(string));
+
+        // Act
+        return method.InvokeStatic<int>(value);
+    }
+
+    [Test]
+    [TestCaseSource(nameof(AppendGlobalPrefixCases))]
+    public string AppendGlobalPrefix_String(string value)
+    {
+        // Arrange
+        Type type = CompileVariableNames("AppendGlobalPrefix(string)");
+        MethodInfo method = GetMethod(type, "AppendGlobalPrefix", BindingFlags.Public | BindingFlags.Static, typeof(string));
+
+        // Act
+        return method.InvokeStatic<string>(value);
+    }
+
+    [Test]
+    [TestCaseSource(nameof(AppendGlobalPrefixCases))]
+    public string AppendGlobalPrefix_ArrayBuilder(string value)
+    {
+        // Arrange
+        Type type = CompileVariableNames($"AppendGlobalPrefix(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
+            $"{Constants.ARRAY_BUILDER}.ToString()");
+
+        Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
+        object arrayBuilderInstance = CreateInstance(arrayBuilderType);
+        MethodInfo method = GetMethod(type, "AppendGlobalPrefix", BindingFlags.Public | BindingFlags.Static, typeof(string), arrayBuilderType);
+        MethodInfo arrayBuilderToString = GetMethod(arrayBuilderType, "ToString", BindingFlags.Public | BindingFlags.Instance);
+        int expectedWritten = value.StartsWith("global::") ? value.Length : value.Length + "global::".Length;
+
+        // Act
+        int written = method.InvokeStatic<int>(value, arrayBuilderInstance);
+
+        // Assert
+        Assert.That(written, Is.EqualTo(expectedWritten));
+        return arrayBuilderToString.InvokeInstance<string>(arrayBuilderInstance);
+    }
+
+    [Test]
+    [TestCaseSource(typeof(VariableNamesTests), nameof(GetNameWithGlobalPrefixLengthCases))]
+    public int GetNameWithGlobalPrefixLength_String(string value)
+    {
+        // Arrange
+        Type type = CompileVariableNames("GetNameWithGlobalPrefixLength(string)");
+        MethodInfo method = GetMethod(type, "GetNameWithGlobalPrefixLength", BindingFlags.Public | BindingFlags.Static, typeof(string));
 
         // Act
         return method.InvokeStatic<int>(value);

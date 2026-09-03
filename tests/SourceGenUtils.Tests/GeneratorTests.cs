@@ -228,9 +228,17 @@ public abstract partial class GeneratorTests
         // Strip EmbeddedAttribute — Roslyn generates this, not a real type
         shell = EmbeddedAttributeRegex().Replace(shell, string.Empty);
 
+        const string preprocessor_symbol =
+#if DEBUG
+                "DEBUG"
+#else
+                "RELEASE"
+#endif
+            ;
+
         // Compile
         string fullSource = impl + "\n" + shell;
-        SyntaxTree tree = CSharpSyntaxTree.ParseText(fullSource, CSharpParseOptions.Default.WithPreprocessorSymbols("DEBUG"));
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(fullSource, CSharpParseOptions.Default.WithPreprocessorSymbols(preprocessor_symbol));
 
         MetadataReference[] refs = AppDomain.CurrentDomain.GetAssemblies()
                                             .Where(a => !a.IsDynamic && !string.IsNullOrWhiteSpace(a.Location))

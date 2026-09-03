@@ -1,3 +1,4 @@
+#if DEBUG
 using System;
 using System.IO;
 using System.Reflection;
@@ -110,3 +111,4 @@ internal class LogTests : GeneratorTests
         Assert.That(withoutTimestamp, Does.Contain(message));
     }
 }
+#endif

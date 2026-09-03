@@ -154,7 +154,7 @@ partial class Generator
                             }
 
                             writer.AppendLine(
-                                $"{GLOBAL_R_SPAN}<char> className = {GLOBAL_MEMORY_EXT}.AsSpan(attributeClass.ToDisplayString({GLOBAL_MS_CODE}.NullableFlowState.NotNull, {GLOBAL_MS_CODE}.SymbolDisplayFormat.FullyQualifiedFormat);");
+                                $"{GLOBAL_R_SPAN}<char> className = {GLOBAL_MEMORY_EXT}.AsSpan(attributeClass.ToDisplayString({GLOBAL_MS_CODE}.NullableFlowState.NotNull, {GLOBAL_MS_CODE}.SymbolDisplayFormat.FullyQualifiedFormat));");
 
                             writer.AppendLine($"if ({GLOBAL_MEMORY_EXT}.SequenceEqual(attributeName, className))");
                             using (writer.WithBlock())

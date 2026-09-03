@@ -308,11 +308,26 @@ partial class Generator
                         codeWriter.AppendLine("return result;");
                     },
                     Dependencies = [writer_no_generic + $".OnReturn({writer})", OBJECT_POOL + ".Return(T)"],
-                    EmptyStub = "return default;",
+                    EmptyStub = "return default!;",
                     Trivia = new TriviaSource
                     {
                         Summary = "Returns a new array with the builder's contents.",
                         Returns = "A new array with the builder's contents."
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "ToImmutableArray",
+                    Signature = "public partial global::System.Collections.Immutable.ImmutableArray<T> ToImmutableArray()",
+                    Implementation = (codeWriter, in _) =>
+                    {
+                        codeWriter.AppendLine("return global::System.Collections.Immutable.ImmutableArray.Create(writer.array, 0, writer.size);");
+                    },
+                    EmptyStub = "return default;",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Returns a new immutable array with the builder's contents.",
+                        Returns = "A new immutable array with the builder's contents."
                     }
                 },
                 new MethodSource

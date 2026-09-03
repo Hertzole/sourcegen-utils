@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using Hertzole.SourceGenUtils;
@@ -201,6 +202,26 @@ public class ArrayBuilderTests : GeneratorTests
     }
 
     [Test]
+    [TestCase(1)]
+    [TestCase(10)]
+    [TestCase(32)]
+    [TestCase(69)]
+    [TestCase(322)]
+    public void ToImmutableArray(int count)
+    {
+        // Arrange
+        using ArrayBuilderWrapper<char> builder = CompileWrapper<char>("ToImmutableArray()", "AddRange(System.Collections.Generic.IEnumerable<T>)");
+        char[] values = Fake.Random.Chars(count: count);
+        builder.AddRange(values);
+
+        // Act
+        ImmutableArray<char> actual = builder.ToImmutableArray();
+
+        // Assert
+        Assert.That(actual, Is.EqualTo(values));
+    }
+
+    [Test]
     public void ToString_Chars()
     {
         // Arrange
@@ -344,6 +365,7 @@ public class ArrayBuilderTests : GeneratorTests
         private readonly MethodInfo clearMethod;
         private readonly MethodInfo disposeMethod;
         private readonly MethodInfo toArrayMethod;
+        private readonly MethodInfo toImmutableArrayMethod;
         private readonly MethodInfo toString;
         private readonly FieldInfo internalArray;
         private readonly FieldInfo writerField;
@@ -374,6 +396,7 @@ public class ArrayBuilderTests : GeneratorTests
             clearMethod = GetMethod(type, "Clear", BindingFlags.Public | BindingFlags.Instance);
             disposeMethod = GetMethod(type, "Dispose", BindingFlags.Public | BindingFlags.Instance);
             toArrayMethod = GetMethod(type, "ToArray", BindingFlags.Public | BindingFlags.Instance);
+            toImmutableArrayMethod = GetMethod(type, "ToImmutableArray", BindingFlags.Public | BindingFlags.Instance);
             toString = GetMethod(type, "ToString", BindingFlags.Public | BindingFlags.Instance);
             writerField = GetField(type, "writer", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -425,6 +448,11 @@ public class ArrayBuilderTests : GeneratorTests
         public T[] ToArray()
         {
             return (T[]) toArrayMethod.InvokeInstance(Instance)!;
+        }
+
+        public ImmutableArray<T> ToImmutableArray()
+        {
+            return (ImmutableArray<T>) toImmutableArrayMethod.InvokeInstance(Instance)!;
         }
 
         /// <inheritdoc />

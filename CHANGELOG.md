@@ -3,6 +3,7 @@
 ### Added
 - `EnableRecordSupportAttribute` - assembly level attribute for injecting support for records
 - `EnableRequiredSupportAttribute` - assembly level attribute for injecting support for required members
+- `ArrayBuilder<T>.ToImmutableArray()` for converting the builder contents to an immutable array
 
 ## 1.1.0 - 2026-08-01
 

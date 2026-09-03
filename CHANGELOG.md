@@ -1,3 +1,9 @@
+## 1.2.0 - Unreleased
+
+### Added
+- `EnableRecordSupportAttribute` - assembly level attribute for injecting support for records
+- `EnableRequiredSupportAttribute` - assembly level attribute for injecting support for required members
+
 ## 1.1.0 - 2026-08-01
 
 ### Added

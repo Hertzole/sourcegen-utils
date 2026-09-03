@@ -5,6 +5,9 @@ using Hertzole.SourceGen;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
+[assembly: EnableRecordSupport]
+[assembly: EnableRequiredSupport]
+
 namespace SourceGenUtils.Sample;
 
 [Generator]
@@ -79,7 +82,6 @@ internal sealed class SampleGeneratorAttribute : global::System.Attribute { }
 
             Log.Info("Added source");
         }
-
         catch (Exception e)
         {
             Log.Error(e);

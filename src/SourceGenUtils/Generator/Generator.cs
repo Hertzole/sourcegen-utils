@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using System.Threading;
+using Hertzole.SourceGenUtils.Data;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Hertzole.SourceGenUtils;
 
@@ -58,6 +61,60 @@ public sealed partial class Generator : IIncrementalGenerator
         AllMethodNames.TrimExcess();
         typesPerName.Clear();
     }
+
+    private const string ENABLE_RECORD_ATTRIBUTE_NAME = "EnableRecordSupportAttribute";
+    private const string ENABLE_RECORD_ATTRIBUTE_FULL_NAME = $"{NAMESPACE}.{ENABLE_RECORD_ATTRIBUTE_NAME}";
+    private const string ENABLE_RECORD_ATTRIBUTE_SOURCE =
+        $$"""
+          namespace {{NAMESPACE}}
+          {
+              [global::System.AttributeUsage(global::System.AttributeTargets.Assembly, AllowMultiple = false)]
+              internal sealed class {{ENABLE_RECORD_ATTRIBUTE_NAME}} : global::System.Attribute { }
+          }
+          """;
+
+    private const string ENABLE_REQUIRED_ATTRIBUTE_NAME = "EnableRequiredSupportAttribute";
+    private const string ENABLE_REQUIRED_ATTRIBUTE_FULL_NAME = $"{NAMESPACE}.{ENABLE_REQUIRED_ATTRIBUTE_NAME}";
+    private const string ENABLE_REQUIRED_ATTRIBUTE_SOURCE =
+        $$"""
+          namespace {{NAMESPACE}}
+          {
+              [global::System.AttributeUsage(global::System.AttributeTargets.Assembly, AllowMultiple = false)]
+              internal sealed class {{ENABLE_REQUIRED_ATTRIBUTE_NAME}} : global::System.Attribute { }
+          }
+          """;
+
+    private const string RECORD_SUPPORT_SOURCE =
+        """
+        namespace System.Runtime.CompilerServices
+        {
+            internal static class IsExternalInit { }
+        }
+        """;
+
+    private const string REQUIRED_SUPPORT_SOURCE =
+        """
+        namespace System.Runtime.CompilerServices
+        {
+            [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
+            internal sealed class RequiredMemberAttribute : Attribute { }
+
+            [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+            internal sealed class CompilerFeatureRequiredAttribute : Attribute
+            {
+                public string FeatureName { get; }
+                public bool IsOptional { get; init; }
+
+                public CompilerFeatureRequiredAttribute(string featureName)
+                {
+                    FeatureName = featureName;
+                }
+
+                public const string RefStructs = nameof(RefStructs);
+                public const string RequiredMembers = nameof(RequiredMembers);
+            }
+        }
+        """;
 
     private static void CollectType(string typeName,
         TypeSource type,
@@ -158,7 +215,58 @@ public sealed partial class Generator : IIncrementalGenerator
 
         IncrementalValueProvider<(bool Left, ImmutableArray<string?> Right)> combined = allowUnsafeProvider.Combine(calledMethods);
 
+        IncrementalValueProvider<AssemblyFeatures> assemblyFeatures =
+            context.CompilationProvider.Select(static (compilation, cancellationToken) =>
+                HasEnableRecordSupportAttribute(compilation, cancellationToken));
+
         context.RegisterImplementationSourceOutput(combined, Execute);
+        context.RegisterImplementationSourceOutput(assemblyFeatures, static (productionContext, features) =>
+        {
+            if ((features & AssemblyFeatures.RecordSupport) != 0)
+            {
+                productionContext.AddSource("RecordSupport.g.cs", SourceText.From(RECORD_SUPPORT_SOURCE, Encoding.UTF8));
+            }
+
+            if ((features & AssemblyFeatures.RequiredSupport) != 0)
+            {
+                productionContext.AddSource("RequiredSupport.g.cs", SourceText.From(REQUIRED_SUPPORT_SOURCE, Encoding.UTF8));
+            }
+        });
+    }
+
+    private static AssemblyFeatures HasEnableRecordSupportAttribute(Compilation compilation, CancellationToken cancellationToken)
+    {
+        AssemblyFeatures features = AssemblyFeatures.None;
+
+        foreach (AttributeData attribute in compilation.Assembly.GetAttributes())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            INamedTypeSymbol? attributeClass = attribute.AttributeClass;
+            if (attributeClass == null)
+            {
+                continue;
+            }
+
+            string displayString = attributeClass.ToDisplayString();
+
+            // Only check the display for each feature if it is not already set, to save time.
+            if ((features & AssemblyFeatures.RecordSupport) == 0 && displayString == ENABLE_RECORD_ATTRIBUTE_FULL_NAME)
+            {
+                features |= AssemblyFeatures.RecordSupport;
+            }
+            else if ((features & AssemblyFeatures.RequiredSupport) == 0 && displayString == ENABLE_REQUIRED_ATTRIBUTE_FULL_NAME)
+            {
+                features |= AssemblyFeatures.RequiredSupport;
+            }
+
+            if (features == AssemblyFeatures.All)
+            {
+                break;
+            }
+        }
+
+        return features;
     }
 
     private static bool IsValidSyntaxNode(SyntaxNode s, CancellationToken cancellationToken)
@@ -290,6 +398,9 @@ public sealed partial class Generator : IIncrementalGenerator
 
             ctx.AddSource($"{source.Key}.Shell.g.cs", writer);
         }
+
+        ctx.AddSource($"{ENABLE_RECORD_ATTRIBUTE_NAME}.g.cs", SourceText.From(ENABLE_RECORD_ATTRIBUTE_SOURCE, Encoding.UTF8));
+        ctx.AddSource($"{ENABLE_REQUIRED_ATTRIBUTE_NAME}.g.cs", SourceText.From(ENABLE_REQUIRED_ATTRIBUTE_SOURCE, Encoding.UTF8));
     }
 
     private static void Execute(SourceProductionContext ctx, (bool allowUnsafe, ImmutableArray<string?> calledMethods) values)

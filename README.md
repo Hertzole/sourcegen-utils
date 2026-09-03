@@ -163,6 +163,19 @@ Log.Warning("Unsupported syntax node");
 Log.Error("Failed to resolve symbol");
 ```
 
+### Assembly attributes
+
+There are two attributes to spare you the hassle of manually injecting support for records and required members.
+
+```csharp
+using Hertzole.SourceGen;
+
+// For enabling support for C# records
+[assembly: EnableRecordSupport]
+// For enabling support for the 'required' keyword
+[assembly: EnableRequiredSupport]
+```
+
 ## How It Works
 
 The generator operates in two phases:

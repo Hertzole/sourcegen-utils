@@ -40,7 +40,12 @@ internal sealed class SampleGeneratorAttribute : global::System.Attribute { }
 
     private static INamedTypeSymbol? Transform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
     {
-        return context.TargetSymbol as INamedTypeSymbol;
+        if (context.TargetSymbol.HasAttribute("SampleGeneratorAttribute") && context.TargetSymbol is INamedTypeSymbol namedSymbol)
+        {
+            return namedSymbol;
+        }
+
+        return null;
     }
 
     private static void Execute(SourceProductionContext context, INamedTypeSymbol symbol)

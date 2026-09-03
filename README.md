@@ -148,6 +148,21 @@ VariableNames.UppercaseStart("playerPoints");     // "PlayerPoints"
 VariableNames.AppendGlobalPrefix("MyType");       // "global::MyType"
 ```
 
+### SymbolExtensions
+
+Symbol helper methods for various tasks.
+
+```csharp
+ITypeSymbol structSymbol = ...; // for struct
+ITypeSymbol staticClassSymbol = ...; // for static class
+bool isPartial = false;
+structSymbol.GetDeclarationString(isPartial);      // struct 
+staticClassSymbol.GetDeclarationString(isPartial); // static class
+
+ISymbol symbol ...;
+symbol.HasAttribute("My.Namespace.MyAttribute");   // true or false
+```
+
 ### SyntaxExtensions
 
 Roslyn syntax helpers to resolve attribute symbols and find field declarations from nested syntax nodes.

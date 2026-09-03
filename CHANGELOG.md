@@ -5,6 +5,7 @@
 - `EnableRequiredSupportAttribute` - assembly level attribute for injecting support for required members
 - `ArrayBuilder<T>.ToImmutableArray()` for converting the builder contents to an immutable array
 - `VariableNames.AppendGlobalPrefix` for appending `global::` to a span or string
+- `SyntaxExtensions.HasAttribute(string)` for checking if a symbol has a specific attribute
 
 ## 1.1.0 - 2026-08-01
 

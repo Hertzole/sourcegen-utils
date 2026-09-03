@@ -6,6 +6,20 @@ partial class Generator
 {
     private static TypeSource CreateSymbolExtensions()
     {
+        TriviaSource hasAttributeTrivia = new TriviaSource
+        {
+            Summary = "Determines whether the given symbol has the specified attribute.",
+            Returns = $"{TRIVIA_TRUE} if the symbol has the specified attribute; otherwise {TRIVIA_FALSE}.",
+            Parameters = new Dictionary<string, string>
+            {
+                { "symbol", "The symbol to check." },
+                {
+                    "fullAttributeTypeName",
+                    "The name of the attribute to check for. It needs to include the full namespace and type name. E.g <c>My.Namespace.MyAttribute</c>. It may also include the <c>global::</c> prefix."
+                }
+            }
+        };
+
         return new TypeSource
         {
             Signature = "internal static partial class SymbolExtensions",
@@ -97,6 +111,67 @@ partial class Generator
                                   </code>
                                   """
                     }
+                },
+                new MethodSource
+                {
+                    Name = "HasAttribute",
+                    Signature = $"public static partial bool HasAttribute(this {MS_CODE}.ISymbol symbol, string fullAttributeTypeName)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine($"return HasAttribute(symbol, {GLOBAL_MEMORY_EXT}.AsSpan(fullAttributeTypeName));");
+                    },
+                    Dependencies = [$"{SYMBOL_EXTENSIONS}.HasAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>)"],
+                    Trivia = hasAttributeTrivia,
+                    EmptyStub = "return false;"
+                },
+                new MethodSource
+                {
+                    Name = "HasAttribute",
+                    Signature = $"public static partial bool HasAttribute(this {GLOBAL_MS_CODE}.ISymbol symbol, {GLOBAL_R_SPAN}<char> fullAttributeTypeName)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendLine($"{GLOBAL_IMMUTABLE}.ImmutableArray<{GLOBAL_MS_CODE}.AttributeData> attributes = symbol.GetAttributes();");
+                        writer.AppendLine("if (attributes.Length == 0)");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine("return false;");
+                        }
+
+                        writer.AppendLine(
+                            $"{GLOBAL_SPAN}<char> attributeName = stackalloc char[{GLOBAL_VARIABLE_NAMES}.GetNameWithGlobalPrefixLength(fullAttributeTypeName)];");
+
+                        writer.AppendLine($"{GLOBAL_VARIABLE_NAMES}.AppendGlobalPrefix(fullAttributeTypeName, attributeName);");
+
+                        writer.AppendLine("for (int i = 0; i < attributes.Length; i++)");
+                        using (writer.WithBlock(true))
+                        {
+                            writer.AppendLine($"{GLOBAL_MS_CODE}.INamedTypeSymbol? attributeClass = attributes[i].AttributeClass;");
+
+                            writer.AppendLine("if (attributeClass == null)");
+                            using (writer.WithBlock(true))
+                            {
+                                writer.AppendLine("continue;");
+                            }
+
+                            writer.AppendLine(
+                                $"{GLOBAL_R_SPAN}<char> className = {GLOBAL_MEMORY_EXT}.AsSpan(attributeClass.ToDisplayString({GLOBAL_MS_CODE}.NullableFlowState.NotNull, {GLOBAL_MS_CODE}.SymbolDisplayFormat.FullyQualifiedFormat);");
+
+                            writer.AppendLine($"if ({GLOBAL_MEMORY_EXT}.SequenceEqual(attributeName, className))");
+                            using (writer.WithBlock())
+                            {
+                                writer.AppendLine("return true;");
+                            }
+                        }
+
+                        writer.AppendLine("return false;");
+                    },
+                    EmptyStub = "return false;",
+                    Dependencies =
+                    [
+                        $"{VARIABLE_NAMES}.GetNameWithGlobalPrefixLength({R_SPAN}<char>)",
+                        $"{VARIABLE_NAMES}.AppendGlobalPrefix({R_SPAN}<char>, {SPAN}<char>)"
+                    ],
+                    Trivia = hasAttributeTrivia
                 }
             ]
         };

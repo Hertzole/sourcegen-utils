@@ -18,6 +18,12 @@ internal static class Constants
     public const string STRING_BUILDER_POOL = $"{NAMESPACE}.StringBuilderPool";
     public const string GLOBAL_STRING_BUILDER_POOL = $"global::{STRING_BUILDER_POOL}";
 
+    public const string VARIABLE_NAMES = $"{NAMESPACE}.VariableNames";
+    public const string GLOBAL_VARIABLE_NAMES = $"global::{VARIABLE_NAMES}";
+
+    public const string SYMBOL_EXTENSIONS = $"{NAMESPACE}.SymbolExtensions";
+    public const string GLOBAL_SYMBOL_EXTENSIONS = $"global::{SYMBOL_EXTENSIONS}";
+
     public const string MS_CODE = "Microsoft.CodeAnalysis";
     public const string GLOBAL_MS_CODE = $"global::{MS_CODE}";
 
@@ -36,6 +42,9 @@ internal static class Constants
     public const string TRIVIA_NULL = "<see langword=\"null\" />";
     public const string TRIVIA_TRUE = "<see langword=\"true\" />";
     public const string TRIVIA_FALSE = "<see langword=\"false\" />";
+
+    public const string IMMUTABLE = "System.Collections.Immutable";
+    public const string GLOBAL_IMMUTABLE = $"global::{IMMUTABLE}";
 
     public static readonly string[] AggressiveInlineAttribute =
         ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];

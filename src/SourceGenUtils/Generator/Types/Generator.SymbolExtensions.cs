@@ -20,6 +20,19 @@ partial class Generator
             }
         };
 
+        TriviaSource tryGetAttributeTrivia = new TriviaSource
+        {
+            Summary = "Determines whether the given symbol has the specified attribute, and returns the attribute if it does.",
+            Returns = hasAttributeTrivia.Returns,
+            Parameters = new Dictionary<string, string>(hasAttributeTrivia.Parameters)
+            {
+                {
+                    "attribute",
+                    $"When this method returns, contains the attribute with the specified name, if the attribute was found; otherwise, {TRIVIA_NULL}. This parameter is passed uninitialized."
+                }
+            }
+        };
+
         return new TypeSource
         {
             Signature = "internal static partial class SymbolExtensions",
@@ -128,50 +141,70 @@ partial class Generator
                 {
                     Name = "HasAttribute",
                     Signature = $"public static partial bool HasAttribute(this {GLOBAL_MS_CODE}.ISymbol symbol, {GLOBAL_R_SPAN}<char> fullAttributeTypeName)",
+                    Implementation = (writer, in _) => { writer.AppendLine("return TryGetAttribute(symbol, fullAttributeTypeName, out _);"); },
+                    EmptyStub = "return false;",
+                    Dependencies = [$"{SYMBOL_EXTENSIONS}.TryGetAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>, {MS_CODE}.AttributeData)"],
+                    Trivia = hasAttributeTrivia
+                },
+                new MethodSource
+                {
+                    Name = "TryGetAttribute",
+                    Signature =
+                        $"public static partial bool TryGetAttribute(this {GLOBAL_MS_CODE}.ISymbol symbol, string fullAttributeTypeName, out {GLOBAL_MS_CODE}.AttributeData? attribute)",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine($"{GLOBAL_IMMUTABLE}.ImmutableArray<{GLOBAL_MS_CODE}.AttributeData> attributes = symbol.GetAttributes();");
-                        writer.AppendLine("if (attributes.Length == 0)");
-                        using (writer.WithBlock(true))
-                        {
-                            writer.AppendLine("return false;");
-                        }
-
-                        writer.AppendLine(
-                            $"{GLOBAL_SPAN}<char> attributeName = stackalloc char[{GLOBAL_VARIABLE_NAMES}.GetNameWithGlobalPrefixLength(fullAttributeTypeName)];");
-
-                        writer.AppendLine($"{GLOBAL_VARIABLE_NAMES}.AppendGlobalPrefix(fullAttributeTypeName, attributeName);");
-
-                        writer.AppendLine("for (int i = 0; i < attributes.Length; i++)");
-                        using (writer.WithBlock(true))
-                        {
-                            writer.AppendLine($"{GLOBAL_MS_CODE}.INamedTypeSymbol? attributeClass = attributes[i].AttributeClass;");
-
-                            writer.AppendLine("if (attributeClass == null)");
-                            using (writer.WithBlock(true))
-                            {
-                                writer.AppendLine("continue;");
-                            }
-
-                            writer.AppendLine(
-                                $"{GLOBAL_R_SPAN}<char> className = {GLOBAL_MEMORY_EXT}.AsSpan(attributeClass.ToDisplayString({GLOBAL_MS_CODE}.NullableFlowState.NotNull, {GLOBAL_MS_CODE}.SymbolDisplayFormat.FullyQualifiedFormat));");
-
-                            writer.AppendLine($"if ({GLOBAL_MEMORY_EXT}.SequenceEqual(attributeName, className))");
-                            using (writer.WithBlock())
-                            {
-                                writer.AppendLine("return true;");
-                            }
-                        }
-
-                        writer.AppendLine("return false;");
+                        writer.AppendLine($"return TryGetAttribute(symbol, {GLOBAL_MEMORY_EXT}.AsSpan(fullAttributeTypeName), out attribute);");
                     },
-                    EmptyStub = "return false;",
+                    EmptyStub = "attribute = null; return false;",
+                    Dependencies = [$"{SYMBOL_EXTENSIONS}.TryGetAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>, {MS_CODE}.AttributeData)"],
+                    Trivia = tryGetAttributeTrivia
+                },
+                new MethodSource
+                {
+                    Name = "TryGetAttribute",
+                    Signature =
+                        $"public static partial bool TryGetAttribute(this {GLOBAL_MS_CODE}.ISymbol symbol, {GLOBAL_R_SPAN}<char> fullAttributeTypeName, out {GLOBAL_MS_CODE}.AttributeData? attribute)",
+                    Implementation = (writer, in _) =>
+                    {
+                        writer.AppendIndentedSource(
+                            $$"""
+                              {{GLOBAL_IMMUTABLE}}.ImmutableArray<{{GLOBAL_MS_CODE}}.AttributeData> attributes = symbol.GetAttributes();
+                              if (attributes.Length == 0)
+                              {
+                                  attribute = null;
+                                  return false;
+                              }
+
+                              {{GLOBAL_SPAN}}<char> attributeName = stackalloc char[{{GLOBAL_VARIABLE_NAMES}}.GetNameWithGlobalPrefixLength(fullAttributeTypeName)];
+                              {{GLOBAL_VARIABLE_NAMES}}.AppendGlobalPrefix(fullAttributeTypeName, attributeName);
+
+                              for (int i = 0; i < attributes.Length; i++)
+                              {
+                                  {{GLOBAL_MS_CODE}}.INamedTypeSymbol? attributeClass = attributes[i].AttributeClass;
+                                  if (attributeClass == null)
+                                  {
+                                      continue;
+                                  }
+                                  
+                                  {{GLOBAL_R_SPAN}}<char> className = {{GLOBAL_MEMORY_EXT}}.AsSpan(attributeClass.ToDisplayString({{GLOBAL_MS_CODE}}.NullableFlowState.NotNull, {{GLOBAL_MS_CODE}}.SymbolDisplayFormat.FullyQualifiedFormat));
+                                  if ({{GLOBAL_MEMORY_EXT}}.Equals(attributeName, className, global::System.StringComparison.Ordinal))
+                                  {
+                                      attribute = attributes[i];
+                                      return true;
+                                  }
+                              }
+
+                              attribute = null;
+                              return false;
+                              """);
+                    },
+                    EmptyStub = "attribute = null; return false;",
                     Dependencies =
                     [
                         $"{VARIABLE_NAMES}.GetNameWithGlobalPrefixLength({R_SPAN}<char>)",
                         $"{VARIABLE_NAMES}.AppendGlobalPrefix({R_SPAN}<char>, {SPAN}<char>)"
                     ],
-                    Trivia = hasAttributeTrivia
+                    Trivia = tryGetAttributeTrivia
                 }
             ]
         };

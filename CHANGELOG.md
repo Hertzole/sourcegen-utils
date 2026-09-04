@@ -6,12 +6,13 @@
 - `ArrayBuilder<T>.ToImmutableArray()` for converting the builder contents to an immutable array
 - `VariableNames.AppendGlobalPrefix` for appending `global::` to a span or string
 - `SyntaxExtensions.HasAttribute(string)` for checking if a symbol has a specific attribute
+- `SyntaxExtensions.TryGetAttribute(string, out AttributeData)` for checking if a symbol has a specific attribute and retrieving the attribute data
 - `StringBuilderExtensions.Append(ReadOnlySpan<char>)` for appending a read-only character span to a StringBuilder instance
 - `StringBuilderExtensions.AppendLine(ReadOnlySpan<char>)` for appending a read-only character span with a new-line
 - `CodeWriter.AppendIndentedSource(string)` for appending an entire block of code with the proper indentation
 
 ### Fixed
-- CodeWirter.AppendLine(ITypeSymbol, bool, bool) not generating CodeWriter.Append(ITypeSymbol, bool, bool)
+- `CodeWriter.AppendLine(ITypeSymbol, bool, bool)` not generating `CodeWriter.Append(ITypeSymbol, bool, bool)`
 
 ## 1.1.0 - 2026-08-01
 

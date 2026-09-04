@@ -97,6 +97,63 @@ public class SymbolExtensionsTests : GeneratorTests
         Assert.That(result, Is.False);
     }
 
+    [Test]
+    public void TryGetAttribute_IsAttribute()
+    {
+        // Arrange
+        SymbolExtensionsWrapper wrapper = CompileWrapper($"TryGetAttribute({MS_CODE}.ISymbol, string, {MS_CODE}.AttributeData)");
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool result = wrapper.TryGetAttribute(symbol, "global::System.SerializableAttribute", out AttributeData? attribute);
+
+        // Assert
+        Assert.That(result, Is.True);
+        Assert.That(attribute, Is.Not.Null);
+        Assert.That(attribute!.AttributeClass, Is.Not.Null);
+        Assert.That(attribute.AttributeClass!.Name, Is.EqualTo("SerializableAttribute"));
+        Assert.That(attribute.AttributeClass!.ContainingNamespace!.Name, Is.EqualTo("System"));
+    }
+
+    [Test]
+    [TestCase("SerializableAttribute", ExpectedResult = false)]
+    [TestCase("NonSerializableAttribute", ExpectedResult = false)]
+    [TestCase("System.NonSerializableAttribute", ExpectedResult = false)]
+    [TestCase("global::System.NonSerializableAttribute", ExpectedResult = false)]
+    public bool TryGetAttribute_InvalidAttribute(string attributeName)
+    {
+        // Arrange
+        SymbolExtensionsWrapper wrapper = CompileWrapper($"TryGetAttribute({MS_CODE}.ISymbol, string, {MS_CODE}.AttributeData)");
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool result = wrapper.TryGetAttribute(symbol, attributeName, out AttributeData? attribute);
+
+        // Assert
+        Assert.That(attribute, Is.Null);
+        return result;
+    }
+
     private static SymbolExtensionsWrapper CompileWrapper(params string[] calledMethods)
     {
         return new SymbolExtensionsWrapper(CompileGeneratedType("SymbolExtensions", calledMethods));
@@ -106,11 +163,14 @@ public class SymbolExtensionsTests : GeneratorTests
     {
         private readonly MethodInfo getDeclarationString;
         private readonly MethodInfo hasAttribute;
+        private readonly MethodInfo tryGetAttribute;
 
         public SymbolExtensionsWrapper(Type type)
         {
             getDeclarationString = GetMethod(type, "GetDeclarationString", BindingFlags.Public | BindingFlags.Static, typeof(ITypeSymbol), typeof(bool));
             hasAttribute = GetMethod(type, "HasAttribute", BindingFlags.Public | BindingFlags.Static, typeof(ISymbol), typeof(string));
+            tryGetAttribute = GetMethod(type, "TryGetAttribute", BindingFlags.Public | BindingFlags.Static, typeof(ISymbol), typeof(string),
+                typeof(AttributeData).MakeByRefType());
         }
 
         public string GetDeclarationString(ITypeSymbol symbol, bool isPartial)
@@ -121,6 +181,14 @@ public class SymbolExtensionsTests : GeneratorTests
         public bool HasAttribute(ISymbol symbol, string attributeName)
         {
             return hasAttribute.InvokeStatic<bool>(symbol, attributeName);
+        }
+
+        public bool TryGetAttribute(ISymbol symbol, string attributeName, out AttributeData? attribute)
+        {
+            object?[] invokeParams = new object?[] { symbol, attributeName, null };
+            object? result = tryGetAttribute.Invoke(null, invokeParams);
+            attribute = (AttributeData?) invokeParams[2];
+            return (bool) result!;
         }
     }
 }

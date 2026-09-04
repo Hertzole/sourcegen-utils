@@ -142,6 +142,11 @@ using var builder = new ArrayBuilder<int>();
 builder.Add(1);
 builder.Add(2);
 builder.AddRange(stackalloc[] { 3, 4 });
+
+int[] array = builder.ToArray();
+ImmutableArray<int> immutable = builder.ToImmutable();
+ReadOnlySpan<char> span = builder.AsSpan();
+
 // buffer returned to pool on dispose
 ```
 

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Reflection;
 using System.Text;
 using Hertzole.SourceGenUtils;
+using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -170,6 +171,23 @@ internal partial class CodeWriterTests
         // Assert
         Assert.That(EXPECTED_INDENTED_SOURCE, Is.EqualTo(writer.ToString()));
         Assert.That(returned, Is.SameAs(writer));
+    }
+
+    [Test]
+    [TestCaseSource(nameof(AppendSymbolCases))]
+    public string AppendSymbol(string source, bool isPartial, bool includeNamespace)
+    {
+        // Arrange
+        INamedTypeSymbol symbol = RoslynHelper.CompileTypeToSymbol(source);
+        object writer = CompileCodeWriter(false, "Append(Microsoft.CodeAnalysis.ITypeSymbol, bool, bool)", "ToString()");
+        MethodInfo appendMethod = GetMethod(writer.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(ITypeSymbol), typeof(bool),
+            typeof(bool));
+
+        MethodInfo toStringMethod = GetMethod(writer.GetType(), "ToString", BindingFlags.Public | BindingFlags.Instance);
+
+        // Act
+        appendMethod.InvokeInstance(writer, symbol, isPartial, includeNamespace);
+        return toStringMethod.InvokeInstance<string>(writer);
     }
 
     private static string MessUpSource(string value, bool replaceNewLines, bool replaceTabs)

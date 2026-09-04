@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -73,6 +74,62 @@ internal partial class CodeWriterTests : GeneratorTests
             yield return new TestCaseData(1.1d, true).SetName("double (Unsafe)");
             yield return new TestCaseData(1.1m, false).SetName("decimal");
             yield return new TestCaseData(1.1m, true).SetName("decimal (Unsafe)");
+        }
+    }
+
+    private const string TEST_NAMESPACE = "My.Testing.Namespace";
+
+    public static IEnumerable AppendSymbolCases
+    {
+        get
+        {
+            yield return new TestCaseData(BuildTypeSource("class A"), true, true)
+                         .SetName("Class without namespace (Partial, Include namespace)")
+                         .Returns(BuildSymbolDeclaration("partial class A"));
+
+            yield return new TestCaseData(BuildTypeSource("class A"), false, true)
+                         .SetName("Class without namespace (Include namespace)")
+                         .Returns(BuildSymbolDeclaration("class A"));
+
+            yield return new TestCaseData(BuildTypeSource("class A"), false, false)
+                         .SetName("Class without namespace ()")
+                         .Returns(BuildSymbolDeclaration("class A"));
+
+            yield return new TestCaseData(BuildTypeSource("class A", TEST_NAMESPACE), true, true)
+                         .SetName("Class with namespace (Partial, Include namespace)")
+                         .Returns(BuildSymbolDeclaration("partial class A", TEST_NAMESPACE));
+
+            yield return new TestCaseData(BuildTypeSource("class A", TEST_NAMESPACE), false, true)
+                         .SetName("Class with namespace (Include namespace)")
+                         .Returns(BuildSymbolDeclaration("class A", TEST_NAMESPACE));
+
+            yield return new TestCaseData(BuildTypeSource("class A", TEST_NAMESPACE), false, false)
+                         .SetName("Class with namespace ()")
+                         .Returns(BuildSymbolDeclaration("class A"));
+
+            yield return new TestCaseData(BuildTypeSource("struct A"), true, true)
+                         .SetName("Struct without namespace (Partial, Include namespace)")
+                         .Returns(BuildSymbolDeclaration("partial struct A"));
+
+            yield return new TestCaseData(BuildTypeSource("struct A"), false, true)
+                         .SetName("Struct without namespace (Include namespace)")
+                         .Returns(BuildSymbolDeclaration("struct A"));
+
+            yield return new TestCaseData(BuildTypeSource("struct A"), false, false)
+                         .SetName("Struct without namespace ()")
+                         .Returns(BuildSymbolDeclaration("struct A"));
+
+            yield return new TestCaseData(BuildTypeSource("struct A", TEST_NAMESPACE), true, true)
+                         .SetName("Struct with namespace (Partial, Include namespace)")
+                         .Returns(BuildSymbolDeclaration("partial struct A", TEST_NAMESPACE));
+
+            yield return new TestCaseData(BuildTypeSource("struct A", TEST_NAMESPACE), false, true)
+                         .SetName("Struct with namespace (Include namespace)")
+                         .Returns(BuildSymbolDeclaration("struct A", TEST_NAMESPACE));
+
+            yield return new TestCaseData(BuildTypeSource("struct A", TEST_NAMESPACE), false, false)
+                         .SetName("Struct with namespace ()")
+                         .Returns(BuildSymbolDeclaration("struct A"));
         }
     }
 
@@ -209,5 +266,67 @@ internal partial class CodeWriterTests : GeneratorTests
         Assert.That(writer, Is.Not.Null, $"Couldn't create writer from type {type.FullName}");
 
         return writer!;
+    }
+
+    private static string BuildTypeSource(string signature, string? typeNamespace = null)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.AppendLine("using System;");
+        sb.AppendLine();
+
+        int indent = 0;
+
+        if (!string.IsNullOrWhiteSpace(typeNamespace))
+        {
+            sb.Append("namespace ");
+            sb.AppendLine(typeNamespace);
+            sb.AppendLine("{");
+            indent++;
+        }
+
+        sb.Append(' ', indent * 4);
+        sb.AppendLine(signature);
+
+        sb.Append(' ', indent * 4);
+        sb.AppendLine("{ }");
+
+        if (!string.IsNullOrWhiteSpace(typeNamespace))
+        {
+            indent--;
+
+            sb.Append(' ', indent * 4);
+            sb.AppendLine("}");
+        }
+
+        return sb.ToString().Trim();
+    }
+
+    private static string BuildSymbolDeclaration(string signature, string? typeNamespace = null)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        int indent = 0;
+
+        if (!string.IsNullOrWhiteSpace(typeNamespace))
+        {
+            sb.Append("namespace ");
+            sb.AppendLine(typeNamespace);
+            sb.AppendLine("{");
+            indent++;
+        }
+
+        sb.Append(' ', indent * 4);
+        sb.AppendLine(signature);
+
+        if (!string.IsNullOrWhiteSpace(typeNamespace))
+        {
+            indent--;
+
+            sb.Append(' ', indent * 4);
+            sb.AppendLine("}");
+        }
+
+        return sb.ToString().Trim();
     }
 }

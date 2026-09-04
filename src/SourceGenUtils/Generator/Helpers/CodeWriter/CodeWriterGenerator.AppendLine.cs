@@ -426,7 +426,7 @@ internal partial class CodeWriterGenerator
             {
                 Name = "AppendLine",
                 Signature =
-                    $"public partial {GLOBAL_CODE_WRITER} AppendLine({GLOBAL_MS_CODE}.INamedTypeSymbol value, bool isPartial = true, bool appendNamespace = true)",
+                    $"public partial {GLOBAL_CODE_WRITER} AppendLine({GLOBAL_MS_CODE}.ITypeSymbol value, bool isPartial = true, bool appendNamespace = true)",
                 Attributes = AggressiveInlineAttribute,
                 Implementation = (writer, in _) =>
                 {
@@ -434,7 +434,7 @@ internal partial class CodeWriterGenerator
                     writer.AppendLine("AppendLine();");
                     writer.AppendLine(return_this);
                 },
-                Dependencies = [$"{CODE_WRITER}.Append({MS_CODE}.INamedTypeSymbol, bool, bool)", CODE_WRITER + ".AppendLine()"],
+                Dependencies = [$"{CODE_WRITER}.Append({MS_CODE}.ITypeSymbol, bool, bool)", CODE_WRITER + ".AppendLine()"],
                 EmptyStub = return_this,
                 Trivia = new TriviaSource
                 {

@@ -10,6 +10,9 @@
 - `StringBuilderExtensions.AppendLine(ReadOnlySpan<char>)` for appending a read-only character span with a new-line
 - `CodeWriter.AppendIndentedSource(string)` for appending an entire block of code with the proper indentation
 
+### Fixed
+- CodeWirter.AppendLine(ITypeSymbol, bool, bool) not generating CodeWriter.Append(ITypeSymbol, bool, bool)
+
 ## 1.1.0 - 2026-08-01
 
 ### Added

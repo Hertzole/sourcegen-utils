@@ -38,41 +38,20 @@ internal partial class CodeWriterGenerator
                 Name = "Append",
                 Signature = $"public partial {GLOBAL_CODE_WRITER} Append({GLOBAL_R_SPAN}<char> value)",
                 Attributes = AggressiveInlineAttribute,
-                Implementation = (writer, in context) =>
+                Implementation = (writer, in _) =>
                 {
-                    writer.AppendLine(disposed_call);
-                    writer.AppendLine("if (value.Length > 0)");
-                    using (writer.WithBlock(true))
-                    {
-                        writer.AppendLine("WriteIndentIfNeeded();");
+                    writer.AppendIndented($$"""
+                                            {{disposed_call}}
+                                            if (value.Length > 0)
+                                            {
+                                                WriteIndentIfNeeded();
+                                                {{GLOBAL_STRING_BUILDER_EXTENSIONS}}.Append(builder, value);
+                                            }
 
-                        if (context.AllowUnsafe)
-                        {
-                            writer.AppendLine("unsafe");
-                            using (writer.WithBlock())
-                            {
-                                writer.AppendLine("fixed (char* buffer = value)");
-                                using (writer.WithBlock())
-                                {
-                                    writer.AppendLine("builder.Append(buffer, value.Length);");
-                                }
-                            }
-                        }
-                        else
-                        {
-                            writer.AppendLine("// Consider allowing unsafe code in your project to use pointers here instead.");
-                            writer.AppendLine("builder.EnsureCapacity(builder.Length + value.Length);");
-                            writer.AppendLine("for (int i = 0; i < value.Length; i++)");
-                            using (writer.WithBlock())
-                            {
-                                writer.AppendLine("builder.Append(value[i]);");
-                            }
-                        }
-                    }
-
-                    writer.AppendLine(return_this);
+                                            {{return_this}}
+                                            """);
                 },
-                Dependencies = appendDependencies,
+                Dependencies = [.. appendDependencies, $"{STRING_BUILDER_EXTENSIONS}.Append(System.Text.StringBuilder, {R_SPAN}<char>)"],
                 EmptyStub = return_this,
                 Trivia = CreateAppendTrivia($"{GLOBAL_R_SPAN}{{Char}}", "ReadOnlySpan<char>")
             },

@@ -101,7 +101,7 @@ internal sealed class CodeWriter : IDisposable
         }
     }
 
-    public void AppendIndented(ReadOnlySpan<char> value)
+    public void AppendIndentedSource(ReadOnlySpan<char> value)
     {
         WriteIndentIfNeeded();
 

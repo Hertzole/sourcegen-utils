@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Reflection;
+using System.Text;
 using Hertzole.SourceGenUtils;
 using NUnit.Framework;
 
@@ -7,6 +9,17 @@ namespace SourceGenUtils.Tests;
 
 internal partial class CodeWriterTests
 {
+    public static IEnumerable AppendIndentedSourceCases
+    {
+        get
+        {
+            yield return new TestCaseData(INDENTED_SOURCE).SetName("Normal");
+            yield return new TestCaseData(MessUpSource(INDENTED_SOURCE, true, false)).SetName("Windows new-line");
+            yield return new TestCaseData(MessUpSource(INDENTED_SOURCE, false, true)).SetName("With tab");
+            yield return new TestCaseData(MessUpSource(INDENTED_SOURCE, true, true)).SetName("Windows new-line with tab");
+        }
+    }
+
     [Test]
     [TestCaseSource(nameof(AppendCases))]
     public void Append<T>(T value, bool isUnsafe)
@@ -97,5 +110,82 @@ internal partial class CodeWriterTests
 
         // Assert
         AssertWriter(expected, writer, returnedValue);
+    }
+
+    private const string EXPECTED_INDENTED_SOURCE = """
+                                                    public void Method(bool value)
+                                                    {
+                                                        // This is a comment
+                                                        if (value)
+                                                        {
+                                                            // Do thing
+                                                        }
+
+                                                        int amount = 69;
+                                                        for (int i = 0; i < amount; i++)
+                                                        {
+                                                            if (amount % 2 == 0)
+                                                            {
+                                                                // Do other thing
+                                                            }
+                                                        }
+                                                    }
+                                                    """;
+
+    private const string INDENTED_SOURCE = """
+                                           // This is a comment
+                                           if (value)
+                                           {
+                                               // Do thing
+                                           }
+
+                                           int amount = 69;
+                                           for (int i = 0; i < amount; i++)
+                                           {
+                                               if (amount % 2 == 0)
+                                               {
+                                                   // Do other thing
+                                               }
+                                           }
+                                           """;
+
+    [Test]
+    [TestCaseSource(nameof(AppendIndentedSourceCases))]
+    public void AppendIndentedSource(string value)
+    {
+        // Arrange
+        object writer = CompileCodeWriter(false, "AppendIndentedSource(string)", "AppendLine(string)", "ToString()");
+        MethodInfo appendLine = GetMethod(writer.GetType(), "AppendLine", BindingFlags.Public | BindingFlags.Instance, typeof(string));
+        MethodInfo appendMethod = GetMethod(writer.GetType(), "AppendIndentedSource", BindingFlags.Public | BindingFlags.Instance, typeof(string));
+        PropertyInfo indent = GetProperty(writer.GetType(), "Indent", BindingFlags.Public | BindingFlags.Instance);
+
+        // Act
+        appendLine.InvokeInstance(writer, "public void Method(bool value)");
+        appendLine.InvokeInstance(writer, "{");
+        indent.SetValue(writer, 1);
+        object? returned = appendMethod.InvokeInstance(writer, value);
+        indent.SetValue(writer, 0);
+        appendLine.InvokeInstance(writer, "}");
+
+        // Assert
+        Assert.That(EXPECTED_INDENTED_SOURCE, Is.EqualTo(writer.ToString()));
+        Assert.That(returned, Is.SameAs(writer));
+    }
+
+    private static string MessUpSource(string value, bool replaceNewLines, bool replaceTabs)
+    {
+        StringBuilder sb = new StringBuilder(value);
+
+        if (replaceNewLines)
+        {
+            sb.Replace("\n", "\r\n");
+        }
+
+        if (replaceTabs)
+        {
+            sb.Replace("    ", "\t");
+        }
+
+        return sb.ToString();
     }
 }

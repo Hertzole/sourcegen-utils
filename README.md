@@ -58,6 +58,15 @@ using (writer.WithBlock())
         writer.Indent--;
         writer.AppendLine("return Name");
     }
+
+    // Append complete source blocks
+    // All indents are handled automatically
+    writer.AppendIndentedSource("""
+                                public void CompleteCode()
+                                {
+                                    // Proper indents!
+                                }
+                                """)
 }
 
 // Use ToString() to get the final result

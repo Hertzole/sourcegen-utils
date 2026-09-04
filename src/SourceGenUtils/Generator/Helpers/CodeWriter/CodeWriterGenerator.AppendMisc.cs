@@ -6,8 +6,127 @@ internal partial class CodeWriterGenerator
 {
     public static MethodSource[] GetAppendMiscMethods()
     {
+        TriviaSource appendIndentedSourceTrivia = new TriviaSource
+        {
+            Summary = "Appends an entire multi-line string to the writer and handles the indentation.",
+            Remarks =
+                "This method automatically indents each line of the string according to the current indentation level. It handles replacing newlines with the current line ending and tabs with spaces.",
+            Example = """"
+                      <code>
+                      using CodeWriter writer = new CodeWriter();
+                      string value = """
+                                     if (true == false)
+                                     {
+                                         // Do thing
+                                     }
+                                     """
+
+                      writer.AppendLine("public void MyMethod()");
+                      using (writer.WithBlock())
+                      {
+                          // Appended within an indented block
+                          writer.AppendIndentedSource(value);
+                      }
+
+                      writer.ToString();
+                      </code>
+
+                      The result of calling <c>ToString()</c>:
+                      <code>
+                      public void MyMethod()
+                      {
+                          if (true == false)
+                          {
+                              // Do thing
+                          }
+                      }
+                      </code>
+                      """",
+            Returns = APPEND_RETURN_TRIVIA,
+            Parameters = new Dictionary<string, string>
+            {
+                { "value", "The value to append." }
+            }
+        };
+
         return
         [
+            new MethodSource
+            {
+                Name = "AppendIndentedSource",
+                Signature = $"public partial {GLOBAL_CODE_WRITER} AppendIndentedSource(string value)",
+                Implementation = (writer, in _) => { writer.AppendLine($"return AppendIndentedSource({GLOBAL_MEMORY_EXT}.AsSpan(value));"); },
+                EmptyStub = return_this,
+                Dependencies = [$"{CODE_WRITER}.AppendIndentedSource({R_SPAN}<char>)"],
+                Attributes = AggressiveInlineAttribute,
+                Trivia = appendIndentedSourceTrivia
+            },
+            new MethodSource
+            {
+                Name = "AppendIndentedSource",
+                Signature = $"public partial {GLOBAL_CODE_WRITER} AppendIndentedSource({GLOBAL_R_SPAN}<char> value)",
+                Implementation = (writer, in _) =>
+                {
+                    writer.AppendIndentedSource($$"""
+                                                  {{disposed_call}}
+                                                  WriteIndentIfNeeded();
+
+                                                  using ({{GLOBAL_STRING_BUILDER_POOL}}.Get(out global::System.Text.StringBuilder tempBuilder))
+                                                  {
+                                                      {{GLOBAL_STRING_BUILDER_EXTENSIONS}}.Append(tempBuilder, value);
+                                                      if ({{GLOBAL_MEMORY_EXT}}.Contains(value, {{GLOBAL_MEMORY_EXT}}.AsSpan("\t"), global::System.StringComparison.Ordinal))
+                                                      {
+                                                          tempBuilder.Replace("\t", new string(' ', Indent * 4));
+                                                      }
+                                                      
+                                                      if ({{GLOBAL_MEMORY_EXT}}.Contains(value, {{GLOBAL_MEMORY_EXT}}.AsSpan("\r\n"), global::System.StringComparison.Ordinal))
+                                                      {
+                                                          tempBuilder.Replace("\r\n", "\n");
+                                                      }
+                                                      
+                                                      char[] buffer = {{GLOBAL_ARRAY_POOL}}<char>.Shared.Rent(value.Length);
+                                                      tempBuilder.CopyTo(0, buffer, 0, tempBuilder.Length);
+                                                      
+                                                      value = {{GLOBAL_MEMORY_EXT}}.Trim({{GLOBAL_MEMORY_EXT}}.AsSpan(buffer, 0, tempBuilder.Length));
+
+                                                      builder.EnsureCapacity(builder.Length + value.Length);
+                                                      
+                                                      int offset = 0;
+                                                      int index;
+                                                      while ((index = {{GLOBAL_MEMORY_EXT}}.IndexOf(value.Slice(offset), '\n')) != -1)
+                                                      {
+                                                          if (offset != 0 && !{{GLOBAL_MEMORY_EXT}}.IsWhiteSpace(value.Slice(offset, index)))
+                                                          {
+                                                              builder.Append(' ', Indent * 4);
+                                                          }
+                                                      
+                                                          Append(value.Slice(offset, index));
+                                                          Append('\n');
+                                                          
+                                                          offset += index + 1;
+                                                      }
+                                                      
+                                                      builder.Append(' ', Indent * 4);
+                                                      Append(value.Slice(offset));
+                                                      AppendLine();
+                                                      
+                                                      shouldWriteIndent = true;
+                                                      
+                                                      {{return_this}}
+                                                  }
+                                                  """);
+                },
+                Dependencies =
+                [
+                    write_indent,
+                    $"{CODE_WRITER}.Append({R_SPAN}<char>)",
+                    $"{CODE_WRITER}.Append(char)",
+                    $"{CODE_WRITER}.AppendLine()",
+                    $"{STRING_BUILDER_POOL}.Get(System.Text.StringBuilder)"
+                ],
+                Trivia = appendIndentedSourceTrivia,
+                EmptyStub = return_this
+            },
             new MethodSource
             {
                 Name = "AppendNullable",

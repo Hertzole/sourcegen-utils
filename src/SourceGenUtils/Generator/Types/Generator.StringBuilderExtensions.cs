@@ -22,32 +22,32 @@ partial class Generator
                     {
                         if (context.AllowUnsafe)
                         {
-                            writer.AppendIndented("""
-                                                  if (value.Length > 0)
-                                                  {
-                                                      unsafe
-                                                      {
-                                                          fixed (char* buffer = value)
-                                                          {
-                                                              builder.Append(buffer, value.Length);
-                                                          }
-                                                      }
-                                                  }
-                                                  """);
+                            writer.AppendIndentedSource("""
+                                                        if (value.Length > 0)
+                                                        {
+                                                            unsafe
+                                                            {
+                                                                fixed (char* buffer = value)
+                                                                {
+                                                                    builder.Append(buffer, value.Length);
+                                                                }
+                                                            }
+                                                        }
+                                                        """);
                         }
                         else
                         {
-                            writer.AppendIndented("""
-                                                  if (value.Length > 0)
-                                                  {
-                                                      // Consider allowing unsafe code in your project to use pointers here instead.
-                                                      builder.EnsureCapacity(builder.Length + value.Length);
-                                                      for (int i = 0; i < value.Length; i++)
-                                                      {
-                                                          builder.Append(value[i]);
-                                                      }
-                                                  }
-                                                  """);
+                            writer.AppendIndentedSource("""
+                                                        if (value.Length > 0)
+                                                        {
+                                                            // Consider allowing unsafe code in your project to use pointers here instead.
+                                                            builder.EnsureCapacity(builder.Length + value.Length);
+                                                            for (int i = 0; i < value.Length; i++)
+                                                            {
+                                                                builder.Append(value[i]);
+                                                            }
+                                                        }
+                                                        """);
                         }
 
                         writer.AppendLine();
@@ -71,11 +71,11 @@ partial class Generator
                     Signature = $"public static partial {g_sb} AppendLine(this {g_sb} builder, {GLOBAL_R_SPAN}<char> value)",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendIndented("""
-                                              Append(builder, value);
-                                              builder.AppendLine();
-                                              return builder;
-                                              """);
+                        writer.AppendIndentedSource("""
+                                                    Append(builder, value);
+                                                    builder.AppendLine();
+                                                    return builder;
+                                                    """);
                     },
                     Dependencies = [STRING_BUILDER_EXTENSIONS + $".Append({sb}, {R_SPAN}<char>)"],
                     EmptyStub = "return builder;",

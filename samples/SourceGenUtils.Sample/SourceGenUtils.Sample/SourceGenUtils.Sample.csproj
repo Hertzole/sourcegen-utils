@@ -11,6 +11,7 @@
 
         <RootNamespace>SourceGenUtils.Sample</RootNamespace>
         <PackageId>SourceGenUtils.Sample</PackageId>
+        <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>

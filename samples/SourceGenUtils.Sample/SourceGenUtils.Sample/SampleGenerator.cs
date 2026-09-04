@@ -76,10 +76,17 @@ internal sealed class SampleGeneratorAttribute : global::System.Attribute { }
                 using (writer.WithBlock())
                 {
                     writer.AppendLine("public static void DoThing()");
-                    using (writer.WithBlock())
+                    using (writer.WithBlock(true))
                     {
                         writer.AppendLine("// Does the thing you've always wanted...");
                     }
+
+                    writer.AppendIndentedSource("""
+                                                public static int AddedWithIndentedSource()
+                                                {
+                                                    return 69;
+                                                }
+                                                """);
                 }
             }
 

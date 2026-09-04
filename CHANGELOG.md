@@ -8,6 +8,7 @@
 - `SyntaxExtensions.HasAttribute(string)` for checking if a symbol has a specific attribute
 - `StringBuilderExtensions.Append(ReadOnlySpan<char>)` for appending a read-only character span to a StringBuilder instance
 - `StringBuilderExtensions.AppendLine(ReadOnlySpan<char>)` for appending a read-only character span with a new-line
+- `CodeWriter.AppendIndentedSource(string)` for appending an entire block of code with the proper indentation
 
 ## 1.1.0 - 2026-08-01
 

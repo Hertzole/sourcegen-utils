@@ -49,6 +49,9 @@ internal static class Constants
     public const string IMMUTABLE = "System.Collections.Immutable";
     public const string GLOBAL_IMMUTABLE = $"global::{IMMUTABLE}";
 
+    public const string ARRAY_POOL = "System.Buffers.ArrayPool";
+    public const string GLOBAL_ARRAY_POOL = $"global::{ARRAY_POOL}";
+
     public static readonly string[] AggressiveInlineAttribute =
         ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
 

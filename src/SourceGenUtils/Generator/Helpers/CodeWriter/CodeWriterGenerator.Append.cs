@@ -40,16 +40,16 @@ internal partial class CodeWriterGenerator
                 Attributes = AggressiveInlineAttribute,
                 Implementation = (writer, in _) =>
                 {
-                    writer.AppendIndented($$"""
-                                            {{disposed_call}}
-                                            if (value.Length > 0)
-                                            {
-                                                WriteIndentIfNeeded();
-                                                {{GLOBAL_STRING_BUILDER_EXTENSIONS}}.Append(builder, value);
-                                            }
+                    writer.AppendIndentedSource($$"""
+                                                  {{disposed_call}}
+                                                  if (value.Length > 0)
+                                                  {
+                                                      WriteIndentIfNeeded();
+                                                      {{GLOBAL_STRING_BUILDER_EXTENSIONS}}.Append(builder, value);
+                                                  }
 
-                                            {{return_this}}
-                                            """);
+                                                  {{return_this}}
+                                                  """);
                 },
                 Dependencies = [.. appendDependencies, $"{STRING_BUILDER_EXTENSIONS}.Append(System.Text.StringBuilder, {R_SPAN}<char>)"],
                 EmptyStub = return_this,

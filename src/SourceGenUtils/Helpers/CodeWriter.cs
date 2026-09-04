@@ -86,6 +86,51 @@ internal sealed class CodeWriter : IDisposable
         shouldWriteIndent = true;
     }
 
+    public void Append(ReadOnlySpan<char> value)
+    {
+        if (value.Length > 0)
+        {
+            WriteIndentIfNeeded();
+            unsafe
+            {
+                fixed (char* buffer = value)
+                {
+                    builder.Append(buffer, value.Length);
+                }
+            }
+        }
+    }
+
+    public void AppendIndented(ReadOnlySpan<char> value)
+    {
+        WriteIndentIfNeeded();
+
+        value = value.Trim();
+
+        int offset = 0;
+        int index;
+        while ((index = value.Slice(offset).IndexOf('\n')) != -1)
+        {
+            ReadOnlySpan<char> slice = value.Slice(offset, index);
+
+            if (offset != 0 && !slice.IsWhiteSpace())
+            {
+                builder.Append(' ', Indent * 4);
+            }
+
+            Append(value.Slice(offset, index));
+            Append('\n');
+
+            offset += index + 1;
+        }
+
+        builder.Append(' ', Indent * 4);
+        Append(value.Slice(offset));
+        AppendLine();
+
+        shouldWriteIndent = true;
+    }
+
     public void Append(string value)
     {
         WriteIndentIfNeeded();

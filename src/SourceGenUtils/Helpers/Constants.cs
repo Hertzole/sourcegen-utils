@@ -24,6 +24,9 @@ internal static class Constants
     public const string SYMBOL_EXTENSIONS = $"{NAMESPACE}.SymbolExtensions";
     public const string GLOBAL_SYMBOL_EXTENSIONS = $"global::{SYMBOL_EXTENSIONS}";
 
+    public const string STRING_BUILDER_EXTENSIONS = $"{NAMESPACE}.StringBuilderExtensions";
+    public const string GLOBAL_STRING_BUILDER_EXTENSIONS = $"global::{STRING_BUILDER_EXTENSIONS}";
+
     public const string MS_CODE = "Microsoft.CodeAnalysis";
     public const string GLOBAL_MS_CODE = $"global::{MS_CODE}";
 

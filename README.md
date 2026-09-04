@@ -148,6 +148,17 @@ VariableNames.UppercaseStart("playerPoints");     // "PlayerPoints"
 VariableNames.AppendGlobalPrefix("MyType");       // "global::MyType"
 ```
 
+### StringBuilderExtensions
+
+Extensions for `StringBuilder` to append read-only character spans.
+
+```csharp
+ReadOnlySpan<char> span = "Hello world! Secret message".AsSpan().Slice(0, 12);
+StringBuilder builder = new StringBuilder();
+builder.Append(span);
+builder.AppendLine(span);
+```
+
 ### SymbolExtensions
 
 Symbol helper methods for various tasks.

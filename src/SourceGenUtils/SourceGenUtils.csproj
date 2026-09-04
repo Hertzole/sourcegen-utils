@@ -25,6 +25,7 @@
         </Description>
         <PackageTags>sourcegen, source, generator, sourcegenerator, incremental, incrementalgenerator, util, utility, utils, string, stringbuilder, builder, code, writer, codewriter</PackageTags>
         <NeutralLanguage>en-US</NeutralLanguage>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

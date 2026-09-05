@@ -1,4 +1,4 @@
-## 1.2.0 - Unreleased
+## 1.2.0 - 2026-09-05
 
 ### Added
 - `EnableRecordSupportAttribute` - assembly level attribute for injecting support for records

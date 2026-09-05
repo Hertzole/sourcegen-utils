@@ -186,6 +186,11 @@ staticClassSymbol.GetDeclarationString(isPartial); // static class
 
 ISymbol symbol ...;
 symbol.HasAttribute("My.Namespace.MyAttribute");   // true or false
+
+if (symbol.TryGetAttribute("My.Attribute", out AttributeData? attribute))
+{
+    // Found attribute, do something with it.
+}
 ```
 
 ### SyntaxExtensions

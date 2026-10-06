@@ -77,8 +77,6 @@ internal partial class CodeWriterTests : GeneratorTests
         }
     }
 
-    private const string TEST_NAMESPACE = "My.Testing.Namespace";
-
     public static IEnumerable AppendSymbolCases
     {
         get
@@ -132,6 +130,8 @@ internal partial class CodeWriterTests : GeneratorTests
                          .Returns(BuildSymbolDeclaration("struct A"));
         }
     }
+
+    private const string TEST_NAMESPACE = "My.Testing.Namespace";
 
     private class TestObj
     {

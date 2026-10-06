@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using Hertzole.SourceGenUtils;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -9,6 +10,126 @@ namespace SourceGenUtils.Tests;
 [NonParallelizable]
 internal class LogTests : GeneratorTests
 {
+    private class LogWrapper
+    {
+        private readonly Type type;
+
+        private MethodInfo InfoMethod
+        {
+            get
+            {
+                if (field == null)
+                {
+                    field = type.GetMethod("Info", BindingFlags.Public | BindingFlags.Static);
+                }
+
+                if (field == null)
+                {
+                    throw new Exception("Could not find Info method.");
+                }
+
+                return field;
+            }
+        }
+
+        private MethodInfo WarningMethod
+        {
+            get
+            {
+                if (field == null)
+                {
+                    field = type.GetMethod("Warning", BindingFlags.Public | BindingFlags.Static);
+                }
+
+                if (field == null)
+                {
+                    throw new Exception("Could not find Warning method.");
+                }
+
+                return field;
+            }
+        }
+
+        private MethodInfo ErrorMethod
+        {
+            get
+            {
+                if (field == null)
+                {
+                    field = type.GetMethod("Error", BindingFlags.Public | BindingFlags.Static);
+                }
+
+                if (field == null)
+                {
+                    throw new Exception("Could not find Error method.");
+                }
+
+                return field;
+            }
+        }
+
+        private MethodInfo ClearLogsMethod
+        {
+            get
+            {
+                if (field == null)
+                {
+                    field = type.GetMethod("ClearLogs", BindingFlags.Static | BindingFlags.Public);
+                }
+
+                if (field == null)
+                {
+                    throw new Exception("Could not find ClearLogs method.");
+                }
+
+                return field;
+            }
+        }
+
+        public FieldInfo Path
+        {
+            get
+            {
+                if (field == null)
+                {
+                    field = type.GetField("path", BindingFlags.NonPublic | BindingFlags.Static);
+                }
+
+                if (field == null)
+                {
+                    throw new Exception("Could not find path field.");
+                }
+
+                return field;
+            }
+        }
+
+        public LogWrapper(Type type)
+        {
+            this.type = type;
+        }
+
+        public void Info(object message)
+        {
+            InfoMethod.InvokeStatic(message);
+        }
+
+        public void Warning(object message)
+        {
+            WarningMethod.InvokeStatic(message);
+        }
+
+        public void Error(object message)
+        {
+            ErrorMethod.InvokeStatic(message);
+        }
+
+        public void ClearLogs()
+        {
+            ClearLogsMethod.InvokeStatic();
+        }
+    }
+
     /// <inheritdoc />
     protected override string GetTypeName()
     {
@@ -16,19 +137,31 @@ internal class LogTests : GeneratorTests
     }
 
     [Test]
-    [TestCase("Info(object)", "INFO")]
-    [TestCase("Warning(object)", "WARNING")]
-    [TestCase("Error(object)", "ERROR")]
+    [TestCase("Info", "INFO")]
+    [TestCase("Warning", "WARNING")]
+    [TestCase("Error", "ERROR")]
     public void WriteTest(string methodName, string prefix)
     {
         // Arrange
-        Type type = CompileGeneratedType("Log", $"Log.{methodName}");
-        MethodInfo method = GetMethod(type, GetMethodNameWithoutArgs(methodName).ToString(), BindingFlags.Static | BindingFlags.Public);
-        string logsPath = GetField(type, "path", BindingFlags.NonPublic | BindingFlags.Static).GetValue<string>();
         string message = Fake.Lorem.Sentence();
+        LogWrapper log = new LogWrapper(CompileGeneratedTypeByUsing("Log", $"{Generator.NAMESPACE}.Log.{methodName}(new object());"));
+        string logsPath = log.Path.GetValue<string>();
 
         // Act
-        method.InvokeStatic(message);
+        switch (methodName)
+        {
+            case "Info":
+                log.Info(message);
+                break;
+            case "Warning":
+                log.Warning(message);
+                break;
+            case "Error":
+                log.Error(message);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(methodName), methodName, null);
+        }
 
         // Assert
         AssertLogMessage(logsPath, message, prefix);
@@ -39,20 +172,18 @@ internal class LogTests : GeneratorTests
     {
         // Arrange
         string[] messages = Fake.Lorem.Paragraphs().Split("\n\n");
-        Type type = CompileGeneratedType("Log", "Log.ClearLogs()", "Log.Info(object)");
-        MethodInfo clearMethod = GetMethod(type, "ClearLogs", BindingFlags.Static | BindingFlags.Public);
-        string logsPath = GetField(type, "path", BindingFlags.NonPublic | BindingFlags.Static).GetValue<string>();
-        MethodInfo writeMethod = GetMethod(type, "Info", BindingFlags.Public | BindingFlags.Static);
+        LogWrapper log = new LogWrapper(CompileGeneratedTypeByUsing("Log", $"{NAMESPACE}.Log.ClearLogs(); {NAMESPACE}.Log.Info(new object());"));
+        string logsPath = log.Path.GetValue<string>();
 
         // Act
         for (int i = 0; i < messages.Length; i++)
         {
-            writeMethod.InvokeStatic(messages[i]);
+            log.Info(messages[i]);
         }
 
         bool emptyAfterWrite = string.IsNullOrWhiteSpace(File.ReadAllText(logsPath));
 
-        clearMethod.InvokeStatic();
+        log.ClearLogs();
 
         // Assert
         Assert.That(emptyAfterWrite, Is.False, "No logs were written.");
@@ -64,14 +195,13 @@ internal class LogTests : GeneratorTests
     {
         // Arrange
         string[] messages = Fake.Lorem.Paragraphs().Split("\n\n");
-        Type type = CompileGeneratedType("Log", "Log.Info(object)");
-        string logsPath = GetField(type, "path", BindingFlags.NonPublic | BindingFlags.Static).GetValue<string>();
-        MethodInfo writeMethod = GetMethod(type, "Info", BindingFlags.Public | BindingFlags.Static);
+        LogWrapper log = new LogWrapper(CompileGeneratedTypeByUsing("Log", $"{NAMESPACE}.Log.Info(new object());"));
+        string logsPath = log.Path.GetValue<string>();
 
         // Act
         for (int i = 0; i < messages.Length; i++)
         {
-            writeMethod.InvokeStatic(messages[i]);
+            log.Info(messages[i]);
         }
 
         // Assert

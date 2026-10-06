@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using NUnit.Framework;
+using SourceGenUtils.Trimmer;
 
 namespace SourceGenUtils.Tests;
 
@@ -21,6 +22,8 @@ namespace SourceGenUtils.Tests;
 public abstract partial class GeneratorTests
 {
     protected static readonly Faker Fake = new Faker();
+
+    protected const string NAMESPACE = Generator.NAMESPACE;
 
     [Test]
     public void Exists()
@@ -171,15 +174,20 @@ public abstract partial class GeneratorTests
 
     protected static Assembly CompileAssembly(params string[] calledMethods)
     {
-        return CompileAssembly(null, false, calledMethods);
+        return CompileAssembly(null, false, calledMethods, null);
+    }
+
+    protected static Assembly CompileAssembly(string useMethods)
+    {
+        return CompileAssembly(null, false, Array.Empty<string>(), useMethods);
     }
 
     protected static Assembly CompileUnsafeAssembly(params string[] calledMethods)
     {
-        return CompileAssembly(null, true, calledMethods);
+        return CompileAssembly(null, true, calledMethods, null);
     }
 
-    private static Assembly CompileAssembly(string? typeName, bool allowUnsafe, string[] calledMethods)
+    private static Assembly CompileAssembly(string? typeName, bool allowUnsafe, string[] calledMethods, string? useMethods)
     {
         CancellationToken ct = CancellationToken.None;
 
@@ -225,6 +233,26 @@ public abstract partial class GeneratorTests
 
         string shell = writer.ToString();
 
+        string usings = string.Empty;
+        // Generate using
+        if (!string.IsNullOrEmpty(useMethods))
+        {
+            writer.Clear();
+            writer.AppendNullable();
+            writer.AppendNamespace("TestNamespace");
+            writer.AppendLine("public class TestClass");
+            using (writer.WithBlock())
+            {
+                writer.AppendLine("public static void TestMethod()");
+                using (writer.WithBlock())
+                {
+                    writer.AppendLine(useMethods);
+                }
+            }
+
+            usings = writer.ToString();
+        }
+
         // Strip EmbeddedAttribute — Roslyn generates this, not a real type
         shell = EmbeddedAttributeRegex().Replace(shell, string.Empty);
 
@@ -237,7 +265,10 @@ public abstract partial class GeneratorTests
             ;
 
         // Compile
-        string fullSource = impl + "\n" + shell;
+        string fullSource = $"{impl}\n{shell}\n{usings}";
+
+        Console.WriteLine(fullSource);
+
         SyntaxTree tree = CSharpSyntaxTree.ParseText(fullSource, CSharpParseOptions.Default.WithPreprocessorSymbols(preprocessor_symbol));
 
         MetadataReference[] refs = AppDomain.CurrentDomain.GetAssemblies()
@@ -260,12 +291,22 @@ public abstract partial class GeneratorTests
         }
 
         ms.Position = 0;
-        return Assembly.Load(ms.ToArray());
+
+        string tmp = Path.GetTempFileName();
+        File.WriteAllBytes(tmp, ms.ToArray());
+
+        if (!string.IsNullOrEmpty(useMethods))
+        {
+            AssemblyTrimmer trimmer = new AssemblyTrimmer();
+            trimmer.Trim(tmp);
+        }
+
+        return Assembly.Load(File.ReadAllBytes(tmp));
     }
 
-    private static Type CompileGeneratedType(string typeName, bool allowUnsafe, string[] calledMethods)
+    private static Type CompileGeneratedType(string typeName, bool allowUnsafe, string[] calledMethods, string? useMethods)
     {
-        Assembly asm = CompileAssembly(typeName, allowUnsafe, calledMethods);
+        Assembly asm = CompileAssembly(typeName, allowUnsafe, calledMethods, useMethods);
         Type? foundType = asm.GetType($"{Generator.NAMESPACE}.{typeName}");
 
         Assert.That(foundType, Is.Not.Null, $"Can't find type {Generator.NAMESPACE}.{typeName}");
@@ -273,14 +314,26 @@ public abstract partial class GeneratorTests
         return foundType!;
     }
 
+    [Obsolete("Use CompileGeneratedTypeByUsing instead.")]
     protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
     {
-        return CompileGeneratedType(typeName, false, calledMethods);
+        return CompileGeneratedType(typeName, false, calledMethods, null);
+    }
+
+    protected static Type CompileGeneratedTypeByUsing(string typeName, string useMethod)
+    {
+        return AssemblyBuilder.CompileGeneratedTypeByUsing(typeName, useMethod);
     }
 
     protected static Type CompileUnsafeGeneratedType(string typeName, params string[] calledMethods)
     {
-        return CompileGeneratedType(typeName, true, calledMethods);
+        return CompileGeneratedType(typeName, true, calledMethods, null);
+    }
+
+    public static object CompileInstanceByUsing(string typeName, string useMethod)
+    {
+        Type type = CompileGeneratedTypeByUsing(typeName, useMethod);
+        return CreateInstance(type);
     }
 
     public static object CreateInstance(Type type, params object?[] args)

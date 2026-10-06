@@ -16,11 +16,19 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0"/>
+        <ProjectReference Include="../../../src/SourceGenUtils.Trimmer/SourceGenUtils.Trimmer.csproj" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\..\src\SourceGenUtils\SourceGenUtils.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
+
+    <UsingTask TaskName="SourceGenUtils.Trimmer.AssemblyTrimmerTask"
+               AssemblyFile="$(MSBuildThisFileDirectory)../../../src/SourceGenUtils.Trimmer/bin/$(Configuration)/netstandard2.0/SourceGenUtils.Trimmer.dll"/>
+
+    <Target Name="RunTrimmerAfterCompile" AfterTargets="CoreCompile">
+        <SourceGenUtils.Trimmer.AssemblyTrimmerTask AssemblyPath="@(IntermediateAssembly->'%(FullPath)')" RemoveGeneratedCodeAttribute="true" RemoveCodeCoverageAttribute="true"/>
+    </Target>
 
 
 </Project>

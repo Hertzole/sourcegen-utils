@@ -20,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\src\SourceGenUtils.Trimmer\SourceGenUtils.Trimmer.csproj" PrivateAssets="all"/>
         <ProjectReference Include="..\..\src\SourceGenUtils\SourceGenUtils.csproj"/>
     </ItemGroup>
 

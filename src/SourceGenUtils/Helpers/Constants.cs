@@ -4,6 +4,8 @@ namespace Hertzole.SourceGenUtils;
 
 internal static class Constants
 {
+    public static readonly string[] AggressiveInlineAttribute =
+        ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
     public const string NAMESPACE = Generator.NAMESPACE;
 
     public const string CODE_WRITER = $"{NAMESPACE}.CodeWriter";
@@ -51,9 +53,6 @@ internal static class Constants
 
     public const string ARRAY_POOL = "System.Buffers.ArrayPool";
     public const string GLOBAL_ARRAY_POOL = $"global::{ARRAY_POOL}";
-
-    public static readonly string[] AggressiveInlineAttribute =
-        ["global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)"];
 
     public static string GetTypeTriviaReference(string type, string? displayName, out string newDisplayName)
     {

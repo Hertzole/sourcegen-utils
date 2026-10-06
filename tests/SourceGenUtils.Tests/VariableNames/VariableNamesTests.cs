@@ -8,6 +8,7 @@ namespace SourceGenUtils.Tests;
 
 public class VariableNamesTests : GeneratorTests
 {
+    private static readonly int niceNameLength = "PlayerHealth".Length;
     public static IEnumerable NicifyVariableNamesCases
     {
         get
@@ -70,8 +71,6 @@ public class VariableNamesTests : GeneratorTests
             yield return new TestCaseData("__MyType").Returns("global::__MyType");
         }
     }
-
-    private static readonly int niceNameLength = "PlayerHealth".Length;
     public static IEnumerable GetNiceNameLengthCases
     {
         get

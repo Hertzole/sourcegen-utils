@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <Nullable>enable</Nullable>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.2"/>
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.10.1"/>
+        <PackageReference Include="Mono.Cecil" Version="0.11.6"/>
+    </ItemGroup>
+
+</Project>

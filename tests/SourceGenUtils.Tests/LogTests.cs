@@ -24,7 +24,7 @@ internal class LogTests : GeneratorTests
         // Arrange
         string message = Fake.Lorem.Sentence();
         Log log = GetWrapper($"{NAMESPACE}.Log.{methodName}(new object());");
-        string logsPath = log.Field_path;
+        string logsPath = log.path;
 
         // Act
         switch (methodName)
@@ -52,7 +52,7 @@ internal class LogTests : GeneratorTests
         // Arrange
         string[] messages = Fake.Lorem.Paragraphs().Split("\n\n");
         Log log = GetWrapper($"{NAMESPACE}.Log.ClearLogs(); {NAMESPACE}.Log.Info(new object());");
-        string logsPath = log.Field_path;
+        string logsPath = log.path;
 
         // Act
         for (int i = 0; i < messages.Length; i++)
@@ -75,7 +75,7 @@ internal class LogTests : GeneratorTests
         // Arrange
         string[] messages = Fake.Lorem.Paragraphs().Split("\n\n");
         Log log = GetWrapper($"{NAMESPACE}.Log.Info(new object());");
-        string logsPath = log.Field_path;
+        string logsPath = log.path;
 
         // Act
         for (int i = 0; i < messages.Length; i++)

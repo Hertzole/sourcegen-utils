@@ -67,6 +67,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 }
 
                 WriteFields(writer, pair.Value);
+                WriteProperties(writer, pair.Value, isStatic);
 
                 WriteMethodsProperties(writer, pair.Value, pair.Key);
 
@@ -162,8 +163,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     using (writer.WithBlock())
                     {
                         writer.Append("field = Type.GetField(\"").Append(signature.Name).Append("\", ");
-                        writer.Append("global::System.Reflection.BindingFlags.").Append(signature.IsPublic ? "Public" : "NonPublic").Append(" | ");
-                        writer.Append("global::System.Reflection.BindingFlags.").Append(signature.IsStatic ? "Static" : "Instance");
+                        signature.AppendFlags(writer);
                         writer.AppendLine(");");
 
                         writer.AppendLine("if (field == null)");
@@ -177,7 +177,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 }
             }
 
-            writer.Append("public ").Append(WrapType(signature.Type.ToString())).Append(" Field_").AppendLine(signature.Name);
+            writer.Append("public ").Append(WrapType(signature.Type.ToString())).Append(' ').AppendLine(signature.Name);
             using (writer.WithBlock(true))
             {
                 writer.AppendLine("get");
@@ -203,6 +203,82 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     }
 
                     writer.AppendLine(";");
+                }
+            }
+        }
+    }
+
+    private static void WriteProperties(CodeWriter writer, TypeSource type, bool isStatic)
+    {
+        if (type.Properties == null || type.Properties.Count == 0)
+        {
+            return;
+        }
+
+        foreach (PropertySource prop in type.Properties.Values)
+        {
+            SourcePropertySignature signature = SourcePropertySignature.FromSignature(prop.Signature);
+
+            writer.AppendLine($"// {signature.ToString()}");
+            writer.Append("private global::System.Reflection.PropertyInfo ").Append(signature.Name).AppendLine("_PropertyImpl");
+            using (writer.WithBlock())
+            {
+                writer.AppendLine("get");
+                using (writer.WithBlock())
+                {
+                    writer.AppendLine("if (field == null)");
+                    using (writer.WithBlock(true))
+                    {
+                        writer.Append("field = Type.GetProperty(\"").Append(signature.IsIndexer ? "Item" : signature.Name).Append("\", ");
+                        signature.AppendFlags(writer);
+                        writer.AppendLine(");");
+                        writer.AppendLine("if (field == null)");
+                        using (writer.WithBlock())
+                        {
+                            writer.AppendLine($"throw new global::System.MissingMemberException(\"Could not find property {signature.Name.ToString()}\");");
+                        }
+                    }
+
+                    writer.AppendLine("return field;");
+                }
+            }
+
+            writer.Append("public ").Append(signature.Type).Append(' ').Append(signature.Name);
+            if (signature.IsIndexer)
+            {
+                writer.Append("[int index]");
+            }
+
+            writer.AppendLine();
+            using (writer.WithBlock())
+            {
+                bool autoImplement = !signature.HasImplicitGetter && !signature.HasImplicitSetter;
+
+                if (prop.GetImplementation != null || signature.HasImplicitGetter || autoImplement)
+                {
+                    writer.Append("get { ");
+                    writer.Append("return (").Append(WrapType(signature.Type.ToString())).Append(") ");
+                    writer.Append(signature.Name).Append("_PropertyImpl.GetValue(");
+                    writer.Append(isStatic ? "null" : "Instance");
+                    if (signature.IsIndexer)
+                    {
+                        writer.Append(", [index]");
+                    }
+
+                    writer.AppendLine("); }");
+                }
+
+                if (prop.SetImplementation != null || signature.HasImplicitSetter || autoImplement)
+                {
+                    writer.Append("set { ");
+                    writer.Append(signature.Name).Append("_PropertyImpl.SetValue(");
+                    writer.Append(isStatic ? "null" : "Instance").Append(", value");
+                    if (signature.IsIndexer)
+                    {
+                        writer.Append(", [index]");
+                    }
+
+                    writer.AppendLine("); }");
                 }
             }
         }

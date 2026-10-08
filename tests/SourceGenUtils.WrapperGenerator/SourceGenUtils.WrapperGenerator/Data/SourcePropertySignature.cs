@@ -4,7 +4,7 @@ using Hertzole.SourceGen;
 
 namespace SourceGenUtils.WrapperGenerator;
 
-internal readonly ref struct SourceFieldSignature
+internal readonly ref struct SourcePropertySignature
 {
     private readonly BindingFlags flags;
 
@@ -21,14 +21,27 @@ internal readonly ref struct SourceFieldSignature
         get { return (flags & BindingFlags.Static) != 0; }
     }
 
-    private SourceFieldSignature(BindingFlags flags, ReadOnlySpan<char> name, ReadOnlySpan<char> type)
+    public bool IsIndexer { get; }
+
+    public bool HasImplicitGetter { get; }
+    public bool HasImplicitSetter { get; }
+
+    private SourcePropertySignature(BindingFlags flags,
+        ReadOnlySpan<char> name,
+        ReadOnlySpan<char> type,
+        bool isIndexer,
+        bool hasImplicitGetter = false,
+        bool hasImplicitSetter = false)
     {
         this.flags = flags;
         Name = name;
         Type = type;
+        IsIndexer = isIndexer;
+        HasImplicitGetter = hasImplicitGetter;
+        HasImplicitSetter = hasImplicitSetter;
     }
 
-    public static SourceFieldSignature FromSignature(ReadOnlySpan<char> signature)
+    public static SourcePropertySignature FromSignature(ReadOnlySpan<char> signature)
     {
         BindingFlags flags = BindingFlags.Default;
 
@@ -50,14 +63,16 @@ internal readonly ref struct SourceFieldSignature
             flags |= BindingFlags.Instance;
         }
 
-        int endOfName = signature.IndexOf('=');
-        if (endOfName == -1)
+        bool hasImplicitGetter = signature.Contains("get;", StringComparison.Ordinal);
+        bool hasImplicitSetter = signature.Contains("set;", StringComparison.Ordinal);
+
+        int endOfName = signature.Length;
+
+        int indexerStart = signature.IndexOf('[');
+        bool isIndexer = indexerStart != -1;
+        if (isIndexer)
         {
-            endOfName = signature.IndexOf(';');
-            if (endOfName == -1)
-            {
-                throw new ArgumentException("Invalid signature");
-            }
+            endOfName = indexerStart;
         }
 
         ReadOnlySpan<char> toNameSlice = signature.Slice(0, endOfName).Trim();
@@ -76,13 +91,14 @@ internal readonly ref struct SourceFieldSignature
 
         ReadOnlySpan<char> nameSlice = signature.Slice(endOfType, endOfName - endOfType).Trim();
 
-        return new SourceFieldSignature(flags, nameSlice, toTypeSlice);
+        return new SourcePropertySignature(flags, nameSlice, toTypeSlice, isIndexer, hasImplicitGetter, hasImplicitSetter);
     }
 
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"{nameof(Name)}: {Name.ToString()}, {nameof(Type)}: {Type.ToString()}, Flags: {flags}";
+        return
+            $"{nameof(Name)}: {Name.ToString()}, {nameof(Type)}: {Type.ToString()}, {nameof(IsIndexer)}: {IsIndexer}, Flags: {flags}, {nameof(HasImplicitGetter)}: {HasImplicitGetter}, {nameof(HasImplicitSetter)}: {HasImplicitSetter}";
     }
 
     public void AppendFlags(CodeWriter writer)

@@ -84,6 +84,9 @@ public static class AssemblyBuilder
         using CodeWriter writer = new CodeWriter();
 
         writer.AppendLine("using Hertzole.SourceGen;");
+        writer.AppendLine("using System;");
+        writer.AppendLine("using System.Collections;");
+        writer.AppendLine("using System.Collections.Generic;");
         writer.AppendNamespace("TestNamespace");
         writer.AppendLine("public class TestClass");
         using (writer.WithBlock())

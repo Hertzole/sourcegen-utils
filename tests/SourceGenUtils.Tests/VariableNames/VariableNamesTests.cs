@@ -123,7 +123,7 @@ public class VariableNamesTests : GeneratorTests
             "var builder = new ArrayBuilder<char>(); VariableNames.NicifyVariableName(\"test\", builder); builder.ToString();");
 
         VariableNames wrapper = new VariableNames(type);
-        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
+        using ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
         int expectedWritten = "PlayerHealth".Length;
 
         // Act
@@ -183,7 +183,7 @@ public class VariableNamesTests : GeneratorTests
             "var builder = new ArrayBuilder<char>(); VariableNames.UppercaseStart(\"\", builder); builder.ToString();");
 
         VariableNames wrapper = new VariableNames(type);
-        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
+        using ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
 
         // Act
         wrapper.UppercaseStart(value, arrayBuilder);
@@ -239,7 +239,7 @@ public class VariableNamesTests : GeneratorTests
             "var builder = new ArrayBuilder<char>(); VariableNames.AppendGlobalPrefix(\"\", builder); builder.ToString();");
 
         VariableNames wrapper = new VariableNames(type);
-        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
+        using ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
         int expectedWritten = value.StartsWith("global::") ? value.Length : value.Length + "global::".Length;
 
         // Act

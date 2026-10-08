@@ -67,7 +67,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 }
 
                 WriteFields(writer, pair.Value);
-                WriteProperties(writer, pair.Value, isStatic);
+                WriteProperties(writer, pair.Value, in signature);
 
                 WriteMethodsProperties(writer, pair.Value, pair.Key);
 
@@ -208,7 +208,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
         }
     }
 
-    private static void WriteProperties(CodeWriter writer, TypeSource type, bool isStatic)
+    private static void WriteProperties(CodeWriter writer, TypeSource type, in SourceTypeSignature typeSignature)
     {
         if (type.Properties == null || type.Properties.Count == 0)
         {
@@ -243,7 +243,14 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 }
             }
 
-            writer.Append("public ").Append(signature.Type).Append(' ').Append(signature.Name);
+            writer.Append("public ");
+
+            if (typeSignature.IsStruct && typeSignature.IsReadOnly)
+            {
+                writer.Append("readonly ");
+            }
+
+            writer.Append(signature.Type).Append(' ').Append(signature.Name);
             if (signature.IsIndexer)
             {
                 writer.Append("[int index]");
@@ -259,7 +266,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     writer.Append("get { ");
                     writer.Append("return (").Append(WrapType(signature.Type.ToString())).Append(") ");
                     writer.Append(signature.Name).Append("_PropertyImpl.GetValue(");
-                    writer.Append(isStatic ? "null" : "Instance");
+                    writer.Append(signature.IsStatic ? "null" : "Instance");
                     if (signature.IsIndexer)
                     {
                         writer.Append(", [index]");
@@ -272,7 +279,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 {
                     writer.Append("set { ");
                     writer.Append(signature.Name).Append("_PropertyImpl.SetValue(");
-                    writer.Append(isStatic ? "null" : "Instance").Append(", value");
+                    writer.Append(signature.IsStatic ? "null" : "Instance").Append(", value");
                     if (signature.IsIndexer)
                     {
                         writer.Append(", [index]");

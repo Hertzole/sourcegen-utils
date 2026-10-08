@@ -24,7 +24,15 @@ public sealed class AssemblyTrimmer
         }
     }
 
-    public bool Trim(string assemblyPath)
+    private static MethodDefinition LockedResolve(MethodReference reference)
+    {
+        lock (resolveLock)
+        {
+            return reference.Resolve();
+        }
+    }
+
+    public bool Trim(string assemblyPath, bool log = false)
     {
         if (!File.Exists(assemblyPath))
         {
@@ -45,10 +53,14 @@ public sealed class AssemblyTrimmer
                 int count = 0;
                 while (dirtyMethods || dirtyTypes)
                 {
-                    Console.WriteLine($"=== ITERATION {count} ===");
+                    if (log)
+                    {
+                        Console.WriteLine($"=== ITERATION {count} ===");
+                    }
+
                     GetSourceGenTypes(assembly, sourceGenTypes);
-                    dirtyMethods = RemoveUnusedMethodUsages(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute);
-                    dirtyTypes = RemoveUnusedTypes(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute);
+                    dirtyMethods = RemoveUnusedMethodUsages(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
+                    dirtyTypes = RemoveUnusedTypes(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
                     count++;
 
                     if (count >= 512)
@@ -101,10 +113,11 @@ public sealed class AssemblyTrimmer
     private static bool RemoveUnusedMethodUsages(IReadOnlyList<TypeDefinition> sourceGenTypes,
         AssemblyDefinition assembly,
         bool removeGeneratedCodeAttribute,
-        bool removeCodeCoverageAttribute)
+        bool removeCodeCoverageAttribute,
+        bool log)
     {
         MethodUsage[] methodUsages = sourceGenTypes.SelectMany(x => x.Methods).Select(x => new MethodUsage(true, x)).ToArray();
-        FindMethodUsageJob methodJob = new FindMethodUsageJob(assembly);
+        FindMethodUsageJob methodJob = new FindMethodUsageJob(assembly, log);
         ParallelHelper.ForEach<MethodUsage, FindMethodUsageJob>(methodUsages, in methodJob);
 
         bool dirty = false;
@@ -115,10 +128,20 @@ public sealed class AssemblyTrimmer
             {
                 if (RemoveOptionalAttributes(methodUsages[i].Method, removeGeneratedCodeAttribute, removeCodeCoverageAttribute))
                 {
+                    if (log)
+                    {
+                        Console.WriteLine($"REMOVE METHODS :: {methodUsages[i].Method.FullName} is used, but removed optional attributes.");
+                    }
+
                     dirty = true;
                 }
 
                 continue;
+            }
+
+            if (log)
+            {
+                Console.WriteLine($"REMOVE METHODS :: {methodUsages[i].Method.DeclaringType.FullName}.{methodUsages[i].Method.Name} is unused.");
             }
 
             methodUsages[i].Method.DeclaringType.Methods.Remove(methodUsages[i].Method);
@@ -131,10 +154,11 @@ public sealed class AssemblyTrimmer
     private static bool RemoveUnusedTypes(IReadOnlyList<TypeDefinition> sourceGenTypes,
         AssemblyDefinition assembly,
         bool removeGeneratedCodeAttribute,
-        bool removeCodeCoverageAttribute)
+        bool removeCodeCoverageAttribute,
+        bool log)
     {
         TypeUsage[] usages = sourceGenTypes.Select(static x => new TypeUsage(true, x)).ToArray();
-        FindTypeUsageJob typeJob = new FindTypeUsageJob(assembly);
+        FindTypeUsageJob typeJob = new FindTypeUsageJob(assembly, log);
         ParallelHelper.ForEach<TypeUsage, FindTypeUsageJob>(usages, in typeJob);
 
         bool dirty = false;
@@ -146,6 +170,10 @@ public sealed class AssemblyTrimmer
                 if (RemoveOptionalAttributes(usages[i].Type, removeGeneratedCodeAttribute, removeCodeCoverageAttribute))
                 {
                     dirty = true;
+                    if (log)
+                    {
+                        Console.WriteLine($"REMOVE TYPES :: {usages[i].Type.FullName} is used, but removed optional attributes.");
+                    }
                 }
 
                 continue;
@@ -159,6 +187,11 @@ public sealed class AssemblyTrimmer
             else
             {
                 assembly.MainModule.Types.Remove(usages[i].Type);
+            }
+
+            if (log)
+            {
+                Console.WriteLine($"REMOVE TYPES :: {usages[i].Type.FullName} is unused.");
             }
 
             dirty = true;
@@ -235,9 +268,12 @@ public sealed class AssemblyTrimmer
         private readonly AssemblyDefinition assembly;
         private readonly TypeReference? attributeType;
 
-        public FindMethodUsageJob(AssemblyDefinition assembly)
+        private readonly bool log;
+
+        public FindMethodUsageJob(AssemblyDefinition assembly, bool log = false)
         {
             this.assembly = assembly;
+            this.log = log;
 
             this.assembly.MainModule.TryGetTypeReference("System.Attribute", out attributeType);
         }
@@ -245,7 +281,26 @@ public sealed class AssemblyTrimmer
         /// <inheritdoc />
         public void Invoke(ref MethodUsage item)
         {
+            if (log)
+            {
+                Console.WriteLine($"FIND METHOD :: {item.Method.FullName} ({item.Method.DeclaringType.FullName}.{item.Method.Name})");
+            }
+
             if (item.Method.Name == ".cctor")
+            {
+                item.IsUsed = true;
+                return;
+            }
+
+            // Accessors are referenced by Property/Event rows, not IL. Removing them
+            // leaves those rows with dangling tokens, which breaks reflection over kept types.
+            if (IsPropertyOrEventAccessor(item.Method))
+            {
+                item.IsUsed = true;
+                return;
+            }
+
+            if (IsInterfaceImplementation(item.Method))
             {
                 item.IsUsed = true;
                 return;
@@ -257,12 +312,96 @@ public sealed class AssemblyTrimmer
                 if (FindUsageInType(types[i], item.Method))
                 {
                     item.IsUsed = true;
-                    Console.WriteLine($"METHOD :: {item.Method.FullName} | {types[i].FullName}");
                     return;
                 }
             }
 
             item.IsUsed = false;
+        }
+
+        private static bool IsPropertyOrEventAccessor(MethodDefinition method)
+        {
+            TypeDefinition type = method.DeclaringType;
+
+            if (type.HasProperties)
+            {
+                Collection<PropertyDefinition> properties = type.Properties;
+                for (int i = 0; i < properties.Count; i++)
+                {
+                    if (properties[i].GetMethod == method || properties[i].SetMethod == method)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (type.HasEvents)
+            {
+                Collection<EventDefinition> events = type.Events;
+                for (int i = 0; i < events.Count; i++)
+                {
+                    EventDefinition evt = events[i];
+                    if (evt.AddMethod == method || evt.RemoveMethod == method)
+                    {
+                        return true;
+                    }
+
+                    if (evt.HasOtherMethods)
+                    {
+                        Collection<MethodDefinition> otherMethods = evt.OtherMethods;
+                        for (int j = 0; j < otherMethods.Count; j++)
+                        {
+                            if (otherMethods[j] == method)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsInterfaceImplementation(MethodDefinition method)
+        {
+            if (!method.IsNewSlot || !method.IsVirtual)
+            {
+                return false;
+            }
+
+            if (!method.DeclaringType.HasInterfaces)
+            {
+                return false;
+            }
+
+            Collection<InterfaceImplementation> interfaces = method.DeclaringType.Interfaces;
+            for (int i = 0; i < interfaces.Count; i++)
+            {
+                TypeDefinition resolved = LockedResolve(interfaces[i].InterfaceType);
+                if (!resolved.HasMethods)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < resolved.Methods.Count; j++)
+                {
+                    MethodDefinition interfaceMethod = resolved.Methods[j];
+
+                    if (interfaceMethod.Name == method.Name && interfaceMethod.Parameters.Count == method.Parameters.Count)
+                    {
+                        if (log)
+                        {
+                            Console.WriteLine(
+                                $"FIND METHOD :: Implemented | '{method.FullName}' found as an implementation of '{resolved.FullName}' in type '{method.DeclaringType.FullName}'");
+                        }
+
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private bool FindUsageInType(TypeDefinition type, MethodDefinition methodToFind)
@@ -307,6 +446,12 @@ public sealed class AssemblyTrimmer
             {
                 if (attributes[i].Constructor == methodToFind)
                 {
+                    if (log)
+                    {
+                        Console.WriteLine(
+                            $"FOUND METHOD :: Assembly | '{methodToFind.FullName}' found on assembly attribute '{attributes[i].AttributeType.FullName}'");
+                    }
+
                     return true;
                 }
             }
@@ -314,7 +459,7 @@ public sealed class AssemblyTrimmer
             return false;
         }
 
-        private static bool FindUsageInMethods(TypeDefinition type, MethodDefinition methodToFind)
+        private bool FindUsageInMethods(TypeDefinition type, MethodDefinition methodToFind)
         {
             if (!type.HasMethods)
             {
@@ -333,7 +478,7 @@ public sealed class AssemblyTrimmer
             return false;
         }
 
-        private static bool FindUsageInMethod(MethodDefinition targetMethod, MethodDefinition methodToFind)
+        private bool FindUsageInMethod(MethodDefinition targetMethod, MethodDefinition methodToFind)
         {
             Collection<Instruction> il = targetMethod.Body.Instructions;
             for (int j = 0; j < il.Count; j++)
@@ -344,14 +489,25 @@ public sealed class AssemblyTrimmer
                 {
                     case MethodReference mr when mr == methodToFind:
                     case MethodDefinition md when md == methodToFind:
+                        LogFound(log, i);
                         return true;
-                    case MethodReference mr when mr.DeclaringType.IsGenericInstance && LockedResolve(mr.DeclaringType) == methodToFind.DeclaringType:
-                    case MethodDefinition md when md.DeclaringType.IsGenericInstance && LockedResolve(md.DeclaringType) == methodToFind.DeclaringType:
+                    case MethodReference mr when mr.DeclaringType.IsGenericInstance && LockedResolve(mr) == methodToFind:
+                    case MethodDefinition md when md.DeclaringType.IsGenericInstance && LockedResolve(md) == methodToFind:
+                        LogFound(log, i);
                         return true;
                 }
             }
 
             return false;
+
+            void LogFound(bool shouldLog, Instruction instruction)
+            {
+                if (shouldLog)
+                {
+                    Console.WriteLine(
+                        $"FIND METHOD :: Method | '{methodToFind.FullName}' found in method '{targetMethod.FullName}' in type '{targetMethod.DeclaringType.FullName}' | Instruction: {instruction}");
+                }
+            }
         }
     }
 
@@ -360,9 +516,12 @@ public sealed class AssemblyTrimmer
         private readonly AssemblyDefinition assembly;
         private readonly TypeReference? attributeType;
 
-        public FindTypeUsageJob(AssemblyDefinition assembly)
+        private readonly bool log;
+
+        public FindTypeUsageJob(AssemblyDefinition assembly, bool log = false)
         {
             this.assembly = assembly;
+            this.log = log;
 
             this.assembly.MainModule.TryGetTypeReference("System.Attribute", out attributeType);
         }
@@ -375,7 +534,6 @@ public sealed class AssemblyTrimmer
             {
                 if (FindUsageInType(types[i], item.Type))
                 {
-                    Console.WriteLine($"TYPE :: {item.Type.FullName} | {types[i].FullName}");
                     item.IsUsed = true;
                     return;
                 }
@@ -432,6 +590,12 @@ public sealed class AssemblyTrimmer
             {
                 if (attributes[i].AttributeType == typeToFind)
                 {
+                    if (log)
+                    {
+                        Console.WriteLine(
+                            $"FOUND TYPE :: Assembly | '{typeToFind.FullName}' found on assembly attribute '{attributes[i].AttributeType.FullName}'");
+                    }
+
                     return true;
                 }
             }
@@ -439,7 +603,7 @@ public sealed class AssemblyTrimmer
             return false;
         }
 
-        private static bool FindUsageInMethods(TypeDefinition type, TypeDefinition typeToFind)
+        private bool FindUsageInMethods(TypeDefinition type, TypeDefinition typeToFind)
         {
             if (!type.HasMethods)
             {
@@ -459,10 +623,16 @@ public sealed class AssemblyTrimmer
             return false;
         }
 
-        private static bool FindUsageInMethod(MethodDefinition method, TypeDefinition typeToFind)
+        private bool FindUsageInMethod(MethodDefinition method, TypeDefinition typeToFind)
         {
             if (method.ReturnType == typeToFind || LockedResolve(method.ReturnType) == typeToFind)
             {
+                if (log)
+                {
+                    Console.WriteLine(
+                        $"FIND TYPE :: Method | '{typeToFind.FullName}' found in method return type '{method.FullName}' in type '{method.DeclaringType.FullName}'");
+                }
+
                 return true;
             }
 
@@ -471,6 +641,12 @@ public sealed class AssemblyTrimmer
             {
                 if (variables[i].VariableType == typeToFind)
                 {
+                    if (log)
+                    {
+                        Console.WriteLine(
+                            $"FIND TYPE :: Method | '{typeToFind.FullName}' found in method '{method.FullName}' variable in type '{method.DeclaringType.FullName}'");
+                    }
+
                     return true;
                 }
             }
@@ -480,11 +656,6 @@ public sealed class AssemblyTrimmer
             {
                 Instruction i = il[j];
 
-                if (i.OpCode == OpCodes.Stsfld)
-                {
-                    Console.WriteLine($"SET STATIC: {i.Operand} | {i.Operand.GetType()}");
-                }
-
                 switch (i.Operand)
                 {
                     case MethodReference mr when mr.DeclaringType == typeToFind:
@@ -492,15 +663,26 @@ public sealed class AssemblyTrimmer
                     case TypeDefinition td when td == typeToFind:
                     case TypeReference tr when tr == typeToFind:
                     case FieldDefinition fd when fd.FieldType == typeToFind:
+                        LogFoundInReference(log);
                         return true;
                     case MethodReference mr when mr.DeclaringType.IsGenericInstance && LockedResolve(mr.DeclaringType) == typeToFind:
                     case TypeReference tr when tr.IsGenericInstance && LockedResolve(tr) == typeToFind:
                     case FieldDefinition fd when fd.FieldType.IsGenericInstance && LockedResolve(fd.FieldType) == typeToFind:
+                        LogFoundInReference(log);
                         return true;
                 }
             }
 
             return false;
+
+            void LogFoundInReference(bool shouldLog)
+            {
+                if (shouldLog)
+                {
+                    Console.WriteLine(
+                        $"FIND TYPE :: Method | '{typeToFind.FullName}' found in method '{method.FullName}' in type '{method.DeclaringType.FullName}'");
+                }
+            }
         }
     }
 }

@@ -52,10 +52,12 @@ public sealed class WrapperGenerator : IIncrementalGenerator
 
         static void WriteType(CodeWriter writer, KeyValuePair<string, TypeSource> pair)
         {
+            SourceTypeSignature signature = SourceTypeSignature.FromSignature(pair.Value.Signature);
+
             writer.AppendLine(GetSignature(pair.Value));
             using (writer.WithBlock())
             {
-                writer.AppendLine("private readonly global::System.Type _type;");
+                writer.AppendLine("public global::System.Type Type { get; private set; }");
                 bool isStatic = pair.Value.Signature.Contains("static");
 
                 // Only non-static types can have instances.
@@ -74,16 +76,36 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     writer.AppendLine("public " + pair.Key + "(global::System.Type type)");
                     using (writer.WithBlock(true))
                     {
-                        writer.AppendLine("_type = type;");
+                        writer.AppendLine("Type = type;");
                     }
                 }
+
+                writer.Append("public ").Append(pair.Key).Append("(global::System.Reflection.Assembly assembly) : this(assembly.GetType(\"")
+                      .Append(Generator.NAMESPACE).Append('.').Append(pair.Key);
+
+                if (signature.IsGeneric)
+                {
+                    writer.Append('`').Append(signature.GenericArgsCount);
+                }
+
+                writer.Append("\", true)!");
+
+                if (signature.IsGeneric)
+                {
+                    // Close the generic type with the wrapper's own generic arguments so constructors can create an instance.
+                    writer.Append(".MakeGenericType(");
+                    AppendGenericArgumentTypes(writer, signature.GenericParameters);
+                    writer.Append(')');
+                }
+
+                writer.AppendLine(") { }");
 
                 if (!isStatic)
                 {
                     writer.Append("public ").Append(pair.Key).AppendLine("(object instance)");
                     using (writer.WithBlock(true))
                     {
-                        writer.AppendLine("_type = instance.GetType();").AppendLine("Instance = instance;");
+                        writer.AppendLine("Type = instance.GetType();").AppendLine("Instance = instance;");
                     }
                 }
 
@@ -139,7 +161,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     writer.AppendLine("if (field == null)");
                     using (writer.WithBlock())
                     {
-                        writer.Append("field = _type.GetField(\"").Append(signature.Name).Append("\", ");
+                        writer.Append("field = Type.GetField(\"").Append(signature.Name).Append("\", ");
                         writer.Append("global::System.Reflection.BindingFlags.").Append(signature.IsPublic ? "Public" : "NonPublic").Append(" | ");
                         writer.Append("global::System.Reflection.BindingFlags.").Append(signature.IsStatic ? "Static" : "Instance");
                         writer.AppendLine(");");
@@ -243,7 +265,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     using (writer.WithBlock(true))
                     {
                         GetCustomTypes(writer, method);
-                        writer.Append("field = _type.GetMethod(\"");
+                        writer.Append("field = Type.GetMethod(\"");
                         writer.Append(actualName);
                         writer.Append("\", ");
                         writer.Append(GetBindingFlags(method));
@@ -418,11 +440,11 @@ public sealed class WrapperGenerator : IIncrementalGenerator
             {
                 if (signature.IsConstructor)
                 {
-                    writer.AppendLine("_type = type;");
+                    writer.AppendLine("Type = type;");
 
                     if (!signature.IsStatic)
                     {
-                        writer.Append("Instance = global::System.Activator.CreateInstance(_type");
+                        writer.Append("Instance = global::System.Activator.CreateInstance(Type");
 
                         if (method.ParameterCount > 0)
                         {
@@ -725,20 +747,48 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     end = span.Length - index;
                 }
 
-                ReadOnlySpan<char> slice = span.Slice(index, end);
+                ReadOnlySpan<char> fullSlice = span.Slice(index, end);
+                ReadOnlySpan<char> methodNameSlice = fullSlice;
+
+                int genericIndex = fullSlice.IndexOf('<');
+                bool isGeneric = genericIndex != -1;
+                int genericCount = 0;
+                if (isGeneric)
+                {
+                    ReadOnlySpan<char> genericSlice = fullSlice.Slice(genericIndex);
+                    writer.AppendLine($"// {genericSlice.ToString()} | {fullSlice.ToString()}");
+                    methodNameSlice = fullSlice.Slice(0, genericIndex);
+                    // Very ugly hack, only gets all args in one slice. Should get each one individually.
+
+                    do
+                    {
+                        genericCount++;
+                        genericIndex = genericSlice.IndexOf(',');
+                        if (genericIndex != -1)
+                        {
+                            genericSlice = genericSlice.Slice(genericIndex + 1);
+                        }
+                    } while (genericIndex != -1);
+                }
 
                 writer.Append("// ");
-                writer.AppendLine(slice);
+                writer.AppendLine(fullSlice);
                 writer.Append("global::System.Type __customType");
                 writer.Append(i);
-                writer.Append(" = _type.Assembly.GetType(\"");
-                writer.Append(slice.Trim());
+                writer.Append(" = Type.Assembly.GetType(\"");
+                writer.Append(methodNameSlice.Trim());
+
+                if (isGeneric && genericCount > 0)
+                {
+                    writer.Append('`').Append(genericCount);
+                }
+
                 writer.Append("\", true)");
 
-                if (slice.IndexOf('<') != -1)
+                if (isGeneric)
                 {
                     writer.Append("!.MakeGenericType(");
-                    AppendGenericArgs(writer, slice);
+                    AppendGenericArgs(writer, fullSlice);
                     writer.Append(")");
                 }
 
@@ -790,6 +840,26 @@ public sealed class WrapperGenerator : IIncrementalGenerator
             writer.Append(")");
 
             span = span.Slice(end + 1);
+        }
+    }
+
+    private static void AppendGenericArgumentTypes(CodeWriter writer, ReadOnlySpan<char> genericParameters)
+    {
+        while (true)
+        {
+            writer.Append("typeof(");
+
+            int comma = genericParameters.IndexOf(',');
+            if (comma == -1)
+            {
+                writer.Append(genericParameters.Trim());
+                writer.Append(')');
+                return;
+            }
+
+            writer.Append(genericParameters.Slice(0, comma).Trim());
+            writer.Append("), ");
+            genericParameters = genericParameters.Slice(comma + 1);
         }
     }
 }

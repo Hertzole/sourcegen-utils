@@ -79,9 +79,11 @@ public static class AssemblyBuilder
         return Assembly.Load(File.ReadAllBytes(tmp));
     }
 
-    public static Type CompileGeneratedTypeByUsing(string typeName, string usage)
+    public static Assembly CompileAssemblyByUsing(string usage)
     {
         using CodeWriter writer = new CodeWriter();
+
+        writer.AppendLine("using Hertzole.SourceGen;");
         writer.AppendNamespace("TestNamespace");
         writer.AppendLine("public class TestClass");
         using (writer.WithBlock())
@@ -93,7 +95,12 @@ public static class AssemblyBuilder
             }
         }
 
-        Assembly assembly = BuildAssemblyWithGenerator([writer.ToString()], false, true);
+        return BuildAssemblyWithGenerator([writer.ToString()], false, true);
+    }
+
+    public static Type CompileGeneratedTypeByUsing(string typeName, string usage)
+    {
+        var assembly = CompileAssemblyByUsing(usage);
 
         return assembly.GetType($"{Generator.NAMESPACE}.{typeName}", true)!;
     }

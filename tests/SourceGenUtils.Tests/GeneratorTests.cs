@@ -325,6 +325,11 @@ public abstract partial class GeneratorTests
         return AssemblyBuilder.CompileGeneratedTypeByUsing(typeName, useMethod);
     }
 
+    protected static Assembly CompileAssemblyByUsing(string useMethods)
+    {
+        return AssemblyBuilder.CompileAssemblyByUsing(useMethods);
+    }
+
     protected static Type CompileUnsafeGeneratedType(string typeName, params string[] calledMethods)
     {
         return CompileGeneratedType(typeName, true, calledMethods, null);

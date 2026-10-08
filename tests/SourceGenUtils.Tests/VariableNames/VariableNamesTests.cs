@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
-using System.Reflection;
-using Hertzole.SourceGenUtils;
+using Hertzole.SourceGen.Wrappers;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -109,11 +108,10 @@ public class VariableNamesTests : GeneratorTests
     public string NicifyVariableName_String(string value)
     {
         // Arrange
-        Type type = CompileVariableNames("NicifyVariableName(string)");
-        MethodInfo method = GetMethod(type, "NicifyVariableName", BindingFlags.Public | BindingFlags.Static, typeof(string));
+        VariableNames wrapper = GetWrapper("VariableNames.NicifyVariableName(\"test\");");
 
         // Act
-        return method.InvokeStatic<string>(value);
+        return wrapper.NicifyVariableName(value);
     }
 
     [Test]
@@ -121,21 +119,19 @@ public class VariableNamesTests : GeneratorTests
     public string NicifyVariableName_ArrayBuilder(string value)
     {
         // Arrange
-        Type type = CompileVariableNames($"NicifyVariableName(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
-            $"{Constants.ARRAY_BUILDER}.ToString()");
+        Type type = CompileGeneratedTypeByUsing("VariableNames",
+            "var builder = new ArrayBuilder<char>(); VariableNames.NicifyVariableName(\"test\", builder); builder.ToString();");
 
-        Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
-        object arrayBuilderInstance = CreateInstance(arrayBuilderType);
-        MethodInfo method = GetMethod(type, "NicifyVariableName", BindingFlags.Public | BindingFlags.Static, typeof(string), arrayBuilderType);
-        MethodInfo arrayBuilderToString = GetMethod(arrayBuilderType, "ToString", BindingFlags.Public | BindingFlags.Instance);
+        VariableNames wrapper = new VariableNames(type);
+        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
         int expectedWritten = "PlayerHealth".Length;
 
         // Act
-        int written = method.InvokeStatic<int>(value, arrayBuilderInstance);
+        int written = wrapper.NicifyVariableName(value, arrayBuilder);
 
         // Assert
         Assert.That(written, Is.EqualTo(expectedWritten));
-        return arrayBuilderToString.InvokeInstance<string>(arrayBuilderInstance);
+        return arrayBuilder.ToString();
     }
 
     [Test]
@@ -143,11 +139,10 @@ public class VariableNamesTests : GeneratorTests
     public string RemovePrefix_String(string value)
     {
         // Arrange
-        Type type = CompileVariableNames("RemovePrefix(string)");
-        MethodInfo method = GetMethod(type, "RemovePrefix", BindingFlags.Public | BindingFlags.Static, typeof(string));
+        VariableNames wrapper = GetWrapper("VariableNames.RemovePrefix(\"test\");");
 
         // Act
-        return method.InvokeStatic<string>(value);
+        return wrapper.RemovePrefix(value);
     }
 
     [Test]
@@ -155,19 +150,17 @@ public class VariableNamesTests : GeneratorTests
     public string RemovePrefix_ArrayBuilder(string value)
     {
         // Arrange
-        Type type = CompileVariableNames($"RemovePrefix(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
-            $"{Constants.ARRAY_BUILDER}.ToString()");
+        Type type = CompileGeneratedTypeByUsing("VariableNames",
+            "var builder = new ArrayBuilder<char>(); VariableNames.RemovePrefix(\"test\", builder); builder.ToString();");
 
-        Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
-        object arrayBuilderInstance = CreateInstance(arrayBuilderType);
-        MethodInfo method = GetMethod(type, "RemovePrefix", BindingFlags.Public | BindingFlags.Static, typeof(string), arrayBuilderType);
-        MethodInfo arrayBuilderToString = GetMethod(arrayBuilderType, "ToString", BindingFlags.Public | BindingFlags.Instance);
+        VariableNames wrapper = new VariableNames(type);
+        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
 
         // Act
-        method.InvokeStatic<int>(value, arrayBuilderInstance);
+        wrapper.RemovePrefix(value, arrayBuilder);
 
         // Assert
-        return arrayBuilderToString.InvokeInstance<string>(arrayBuilderInstance);
+        return arrayBuilder.ToString();
     }
 
     [Test]
@@ -175,11 +168,10 @@ public class VariableNamesTests : GeneratorTests
     public string UppercaseStart_String(string value)
     {
         // Arrange
-        Type type = CompileVariableNames("UppercaseStart(string)");
-        MethodInfo method = GetMethod(type, "UppercaseStart", BindingFlags.Public | BindingFlags.Static, typeof(string));
+        VariableNames wrapper = GetWrapper("VariableNames.UppercaseStart(\"\");");
 
         // Act
-        return method.InvokeStatic<string>(value);
+        return wrapper.UppercaseStart(value);
     }
 
     [Test]
@@ -187,19 +179,17 @@ public class VariableNamesTests : GeneratorTests
     public string UppercaseStart_ArrayBuilder(string value)
     {
         // Arrange
-        Type type = CompileVariableNames($"UppercaseStart(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
-            $"{Constants.ARRAY_BUILDER}.ToString()");
+        Type type = CompileGeneratedTypeByUsing("VariableNames",
+            "var builder = new ArrayBuilder<char>(); VariableNames.UppercaseStart(\"\", builder); builder.ToString();");
 
-        Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
-        object arrayBuilderInstance = CreateInstance(arrayBuilderType);
-        MethodInfo method = GetMethod(type, "UppercaseStart", BindingFlags.Public | BindingFlags.Static, typeof(string), arrayBuilderType);
-        MethodInfo arrayBuilderToString = GetMethod(arrayBuilderType, "ToString", BindingFlags.Public | BindingFlags.Instance);
+        VariableNames wrapper = new VariableNames(type);
+        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
 
         // Act
-        method.InvokeStatic(value, arrayBuilderInstance);
+        wrapper.UppercaseStart(value, arrayBuilder);
 
         // Assert
-        return arrayBuilderToString.InvokeInstance<string>(arrayBuilderInstance);
+        return arrayBuilder.ToString();
     }
 
     [Test]
@@ -212,11 +202,10 @@ public class VariableNamesTests : GeneratorTests
     public bool StartsWithOn(string value)
     {
         // Arrange
-        Type type = CompileVariableNames("StartsWithOn(string)");
-        MethodInfo method = GetMethod(type, "StartsWithOn", BindingFlags.Public | BindingFlags.Static, typeof(string));
+        VariableNames wrapper = GetWrapper("VariableNames.StartsWithOn(\"\");");
 
         // Act
-        return method.InvokeStatic<bool>(value);
+        return wrapper.StartsWithOn(value);
     }
 
     [Test]
@@ -224,11 +213,10 @@ public class VariableNamesTests : GeneratorTests
     public int GetNiceNameLength_String(string value)
     {
         // Arrange
-        Type type = CompileVariableNames("GetNiceNameLength(string)");
-        MethodInfo method = GetMethod(type, "GetNiceNameLength", BindingFlags.Public | BindingFlags.Static, typeof(string));
+        VariableNames wrapper = GetWrapper("VariableNames.GetNiceNameLength(\"\");");
 
         // Act
-        return method.InvokeStatic<int>(value);
+        return wrapper.GetNiceNameLength(value);
     }
 
     [Test]
@@ -236,11 +224,10 @@ public class VariableNamesTests : GeneratorTests
     public string AppendGlobalPrefix_String(string value)
     {
         // Arrange
-        Type type = CompileVariableNames("AppendGlobalPrefix(string)");
-        MethodInfo method = GetMethod(type, "AppendGlobalPrefix", BindingFlags.Public | BindingFlags.Static, typeof(string));
+        VariableNames wrapper = GetWrapper("VariableNames.AppendGlobalPrefix(\"\");");
 
         // Act
-        return method.InvokeStatic<string>(value);
+        return wrapper.AppendGlobalPrefix(value);
     }
 
     [Test]
@@ -248,21 +235,19 @@ public class VariableNamesTests : GeneratorTests
     public string AppendGlobalPrefix_ArrayBuilder(string value)
     {
         // Arrange
-        Type type = CompileVariableNames($"AppendGlobalPrefix(string, {Constants.ARRAY_BUILDER}<char>)", $"{Constants.ARRAY_BUILDER}.ArrayBuilder()",
-            $"{Constants.ARRAY_BUILDER}.ToString()");
+        Type type = CompileGeneratedTypeByUsing("VariableNames",
+            "var builder = new ArrayBuilder<char>(); VariableNames.AppendGlobalPrefix(\"\", builder); builder.ToString();");
 
-        Type arrayBuilderType = type.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
-        object arrayBuilderInstance = CreateInstance(arrayBuilderType);
-        MethodInfo method = GetMethod(type, "AppendGlobalPrefix", BindingFlags.Public | BindingFlags.Static, typeof(string), arrayBuilderType);
-        MethodInfo arrayBuilderToString = GetMethod(arrayBuilderType, "ToString", BindingFlags.Public | BindingFlags.Instance);
+        VariableNames wrapper = new VariableNames(type);
+        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(type.Assembly);
         int expectedWritten = value.StartsWith("global::") ? value.Length : value.Length + "global::".Length;
 
         // Act
-        int written = method.InvokeStatic<int>(value, arrayBuilderInstance);
+        int written = wrapper.AppendGlobalPrefix(value, arrayBuilder);
 
         // Assert
         Assert.That(written, Is.EqualTo(expectedWritten));
-        return arrayBuilderToString.InvokeInstance<string>(arrayBuilderInstance);
+        return arrayBuilder.ToString();
     }
 
     [Test]
@@ -270,15 +255,14 @@ public class VariableNamesTests : GeneratorTests
     public int GetNameWithGlobalPrefixLength_String(string value)
     {
         // Arrange
-        Type type = CompileVariableNames("GetNameWithGlobalPrefixLength(string)");
-        MethodInfo method = GetMethod(type, "GetNameWithGlobalPrefixLength", BindingFlags.Public | BindingFlags.Static, typeof(string));
+        VariableNames wrapper = GetWrapper("VariableNames.GetNameWithGlobalPrefixLength(\"\");");
 
         // Act
-        return method.InvokeStatic<int>(value);
+        return wrapper.GetNameWithGlobalPrefixLength(value);
     }
 
-    private static Type CompileVariableNames(params string[] calledMethods)
+    private static VariableNames GetWrapper(string useMethods)
     {
-        return CompileGeneratedType("VariableNames", calledMethods);
+        return new VariableNames(CompileGeneratedTypeByUsing("VariableNames", useMethods));
     }
 }

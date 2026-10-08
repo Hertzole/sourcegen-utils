@@ -5,6 +5,7 @@ using System.Linq;
 using CommunityToolkit.HighPerformance.Helpers;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Cecil.Rocks;
 using Mono.Collections.Generic;
 
 namespace SourceGenUtils.Trimmer;
@@ -487,8 +488,9 @@ public sealed class AssemblyTrimmer
 
                 switch (i.Operand)
                 {
-                    case MethodReference mr when mr == methodToFind:
-                    case MethodDefinition md when md == methodToFind:
+                    case MethodReference mr when mr == methodToFind || mr == methodToFind.GetOriginalBaseMethod():
+                    case MethodDefinition md when md == methodToFind || md == methodToFind.GetOriginalBaseMethod():
+                    case MethodReference mr2 when LockedResolve(mr2) == methodToFind || LockedResolve(mr2) == methodToFind.GetOriginalBaseMethod():
                         LogFound(log, i);
                         return true;
                     case MethodReference mr when mr.DeclaringType.IsGenericInstance && LockedResolve(mr) == methodToFind:

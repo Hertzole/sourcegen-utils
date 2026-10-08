@@ -461,6 +461,11 @@ public sealed class AssemblyTrimmer
 
         private static bool FindUsageInMethod(MethodDefinition method, TypeDefinition typeToFind)
         {
+            if (method.ReturnType == typeToFind || LockedResolve(method.ReturnType) == typeToFind)
+            {
+                return true;
+            }
+
             Collection<VariableDefinition> variables = method.Body.Variables;
             for (int i = 0; i < variables.Count; i++)
             {

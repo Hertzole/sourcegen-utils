@@ -366,6 +366,21 @@ public sealed class AssemblyTrimmer
 
         private bool IsInterfaceImplementation(MethodDefinition method)
         {
+            for (int i = 0; i < method.Overrides.Count; i++)
+            {
+                MethodReference overridden = method.Overrides[i];
+                if (overridden.DeclaringType != null && LockedResolve(overridden.DeclaringType) is { IsInterface: true })
+                {
+                    if (log)
+                    {
+                        Console.WriteLine(
+                            $"FIND METHOD :: Implemented | '{method.FullName}' found as an implementation of '{overridden.DeclaringType.FullName}' in type '{method.DeclaringType.FullName}'");
+                    }
+
+                    return true;
+                }
+            }
+
             if (!method.IsNewSlot || !method.IsVirtual)
             {
                 return false;

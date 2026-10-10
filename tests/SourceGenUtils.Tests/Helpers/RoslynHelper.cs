@@ -57,7 +57,7 @@ public static class RoslynHelper
         return tree.GetRoot().DescendantNodes().OfType<TypeDeclarationSyntax>().Single();
     }
 
-    private static CSharpCompilation GetCompilation(params string[] sources)
+    public static CSharpCompilation GetCompilation(params string[] sources)
     {
         SyntaxTree[] trees = sources.Select(static x => CSharpSyntaxTree.ParseText(x)).ToArray();
 

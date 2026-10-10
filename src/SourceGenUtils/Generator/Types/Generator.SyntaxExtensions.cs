@@ -25,7 +25,7 @@ partial class Generator
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine(
-                            $"if ({GLOBAL_MS_CODE}CSharpExtensions.GetSymbolInfo(semanticModel, syntax).Symbol is not {GLOBAL_MS_CODE}.IMethodSymbol methodSymbol)");
+                            $"if ({GLOBAL_MS_CODE}.CSharp.CSharpExtensions.GetSymbolInfo(semanticModel, syntax).Symbol is not {GLOBAL_MS_CODE}.IMethodSymbol methodSymbol)");
 
                         using (writer.WithBlock())
                         {

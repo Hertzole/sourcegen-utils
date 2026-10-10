@@ -242,7 +242,7 @@ partial class Generator
                             return;
                         }
 
-                        writer.AppendLine($"return other is {GLOBAL_EQUATABLE_ARRAY}<T> array && Equals(this, array);");
+                        writer.AppendLine($"return other is {GLOBAL_EQUATABLE_ARRAY}<T> array && array.Equals(this);");
                     },
                     AlwaysWrite = true,
                     Trivia = new TriviaSource

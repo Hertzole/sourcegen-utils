@@ -367,6 +367,82 @@ public class ArrayBuilderTests : GeneratorTests
         Assert.That(exception!.InnerException, Is.TypeOf<ArgumentOutOfRangeException>());
     }
 
+    [Test]
+    public void Constructor_Default()
+    {
+        // Arrange & Act
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.ToArray();");
+
+        // Assert
+        Assert.That(builder.Count, Is.EqualTo(0));
+        Assert.That(builder.ToArray(), Is.Empty);
+    }
+
+    [Test]
+    [TestCase(1)]
+    [TestCase(10)]
+    [TestCase(100)]
+    public void Constructor_Capacity(int capacity)
+    {
+        // Arrange & Act
+        using ArrayBuilder<char> builder = GetWrapperWithCapacity<char>(capacity);
+
+        // Assert
+        Assert.That(builder.Count, Is.EqualTo(0));
+        Assert.That(builder.writer.array.Length, Is.GreaterThanOrEqualTo(capacity));
+    }
+
+    [Test]
+    public void AsSpan()
+    {
+        // Arrange
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.AsSpan();");
+
+        char[] values = Fake.Random.Chars(count: 32);
+        builder.AddRange(values.AsSpan());
+
+        // Act
+        ReadOnlySpan<char> span = builder.AsSpan();
+
+        // Assert
+        Assert.That(span.ToArray(), Is.EqualTo(values));
+    }
+
+    [Test]
+    public void AddRange_Span()
+    {
+        // Arrange
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.ToArray();");
+
+        char[] values = Fake.Random.Chars(count: 32);
+
+        // Act
+        builder.AddRange(values.AsSpan());
+
+        // Assert
+        Assert.That(builder.ToArray(), Is.EqualTo(values));
+    }
+
+    [Test]
+    public void Remove_NotFound()
+    {
+        // Arrange
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.Remove('a');");
+
+        builder.AddRange("abcdefg".AsSpan());
+
+        // Act
+        bool result = builder.Remove('z');
+
+        // Assert
+        Assert.That(result, Is.False);
+        Assert.That(builder.Count, Is.EqualTo(7));
+    }
+
     /// <inheritdoc />
     protected override string GetTypeName()
     {
@@ -377,5 +453,13 @@ public class ArrayBuilderTests : GeneratorTests
     {
         Type type = CompileGeneratedTypeByUsing("ArrayBuilder`1", useMethods).MakeGenericType(typeof(T));
         return new ArrayBuilder<T>(type);
+    }
+
+    private static ArrayBuilder<T> GetWrapperWithCapacity<T>(int capacity)
+    {
+        Type type = CompileGeneratedTypeByUsing("ArrayBuilder`1", $"new ArrayBuilder<{GetTypesString(typeof(T))}>(0);")
+            .MakeGenericType(typeof(T));
+
+        return new ArrayBuilder<T>(type, capacity);
     }
 }

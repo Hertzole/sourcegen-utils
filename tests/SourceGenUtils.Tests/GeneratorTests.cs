@@ -1,25 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using Bogus;
 using Hertzole.SourceGenUtils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using NUnit.Framework;
-using SourceGenUtils.Trimmer;
 
 namespace SourceGenUtils.Tests;
 
 [TestFixture]
 [Parallelizable(ParallelScope.All)]
-public abstract partial class GeneratorTests
+public abstract class GeneratorTests
 {
     protected static readonly Faker Fake = new Faker();
 
@@ -30,46 +24,6 @@ public abstract partial class GeneratorTests
     {
         GeneratorDriverRunResult result = AssertGeneratedOutput<Generator>();
         AssertFileAndShellExists(GetTypeName(), result);
-    }
-
-    /// <summary>
-    ///     Removes any namespaces from a method name string. For example, My.Namespace.Type.Method(string value) ->
-    ///     Method(string value)
-    /// </summary>
-    protected static ReadOnlySpan<char> GetMethodNameWithArgs(ReadOnlySpan<char> method)
-    {
-        int parentheses = method.IndexOf('(');
-
-        // Slices from the start to the first '(': My.Namespace.Type.Method(
-        ReadOnlySpan<char> firstSlice = method.Slice(0, parentheses);
-
-        // Finds the last dot in the first slice: My.Namespace.Type
-        int lastDot = firstSlice.LastIndexOf('.');
-
-        // Slices from the last dot to the end: Type.Method(...)
-        ReadOnlySpan<char> methodName = method.Slice(lastDot + 1);
-
-        return methodName;
-    }
-
-    /// <summary>
-    ///     Removes any namespaces and args from a method name string. For example, My.Namespace.Type.Method(string value) ->
-    ///     Method
-    /// </summary>
-    protected static ReadOnlySpan<char> GetMethodNameWithoutArgs(ReadOnlySpan<char> method)
-    {
-        int parentheses = method.IndexOf('(');
-
-        // Slices from the start to the first '(': My.Namespace.Type.Method(
-        ReadOnlySpan<char> firstSlice = method.Slice(0, parentheses);
-
-        // Finds the last dot in the first slice: My.Namespace.Type
-        int lastDot = firstSlice.LastIndexOf('.');
-
-        // Slices from the last dot to the end: Type.Method(...)
-        ReadOnlySpan<char> methodName = method.Slice(lastDot + 1, parentheses);
-
-        return methodName;
     }
 
     public static GeneratorDriverRunResult AssertGeneratedOutput<T>(string[]? sources = null, MetadataReference[]? additionalReferences = null)
@@ -128,258 +82,9 @@ public abstract partial class GeneratorTests
         AssertResultContainsFile($"{fileName}.Shell.g.cs", result);
     }
 
-    protected static string[] AppendTypeIfNeeded(string typeName, string[] methods)
-    {
-        for (int i = 0; i < methods.Length; i++)
-        {
-            methods[i] = AppendTypeIfNeeded(typeName, methods[i]);
-        }
-
-        return methods;
-    }
-
-    protected static string AppendTypeIfNeeded(string typeName, string method)
-    {
-        ReadOnlySpan<char> span = method.AsSpan();
-        int parensIndex = span.IndexOf('(');
-
-        if (parensIndex < 0)
-        {
-            return method;
-        }
-
-        if (!string.IsNullOrEmpty(typeName))
-        {
-            ReadOnlySpan<char> slice = span.Slice(0, parensIndex);
-            int dot = slice.IndexOf('.');
-            if (dot < 0)
-            {
-                // There is no dot. We can assume the user meant a method inside the typeName.
-                return AppendNamespace($"{typeName}.{method}");
-            }
-        }
-
-        return AppendNamespace(method);
-    }
-
-    protected static string AppendNamespace(string value)
-    {
-        if (!value.StartsWith($"{Generator.NAMESPACE}."))
-        {
-            return Generator.NAMESPACE + "." + value;
-        }
-
-        return value;
-    }
-
-    protected static Assembly CompileAssembly(params string[] calledMethods)
-    {
-        return CompileAssembly(null, false, calledMethods, null);
-    }
-
-    protected static Assembly CompileAssembly(string useMethods)
-    {
-        return CompileAssembly(null, false, Array.Empty<string>(), useMethods);
-    }
-
-    protected static Assembly CompileUnsafeAssembly(params string[] calledMethods)
-    {
-        return CompileAssembly(null, true, calledMethods, null);
-    }
-
-    private static Assembly CompileAssembly(string? typeName, bool allowUnsafe, string[] calledMethods, string? useMethods)
-    {
-        CancellationToken ct = CancellationToken.None;
-
-        typeName ??= string.Empty;
-
-        // Expand method names to full paths
-        List<string> calledList = new List<string>(calledMethods.Length);
-        for (int i = 0; i < calledMethods.Length; i++)
-        {
-            if (string.IsNullOrEmpty(calledMethods[i]))
-            {
-                continue;
-            }
-
-            calledList.Add(AppendTypeIfNeeded(typeName, calledMethods[i]));
-        }
-
-        // Expand dependencies (constructors etc.)
-        HashSet<string> expanded = Generator.ExpandDependencies(new HashSet<string>(calledList), ct);
-
-        // Generate implementation (.g.cs)
-        ImplementationContext implementationContext = new ImplementationContext(expanded, ct, false);
-
-        using CodeWriter writer = new CodeWriter();
-        writer.AppendNullable();
-        writer.AppendNamespace(Generator.NAMESPACE);
-
-        foreach (KeyValuePair<string, TypeSource> source in Generator.TypesToGenerate)
-        {
-            Generator.AppendType(source.Value, $"{Generator.NAMESPACE}.{source.Key}", writer, in implementationContext);
-        }
-
-        string impl = writer.ToString();
-
-        // Generate shell (.Shell.g.cs)
-        writer.Clear();
-        writer.AppendNullable();
-        writer.AppendNamespace(Generator.NAMESPACE);
-        foreach (KeyValuePair<string, TypeSource> source in Generator.TypesToGenerate)
-        {
-            Generator.AppendShellType(writer, source.Value, ct);
-        }
-
-        string shell = writer.ToString();
-
-        string usings = string.Empty;
-        // Generate using
-        if (!string.IsNullOrEmpty(useMethods))
-        {
-            writer.Clear();
-            writer.AppendNullable();
-            writer.AppendNamespace("TestNamespace");
-            writer.AppendLine("public class TestClass");
-            using (writer.WithBlock())
-            {
-                writer.AppendLine("public static void TestMethod()");
-                using (writer.WithBlock())
-                {
-                    writer.AppendLine(useMethods);
-                }
-            }
-
-            usings = writer.ToString();
-        }
-
-        // Strip EmbeddedAttribute — Roslyn generates this, not a real type
-        shell = EmbeddedAttributeRegex().Replace(shell, string.Empty);
-
-        const string preprocessor_symbol =
-#if DEBUG
-                "DEBUG"
-#else
-                "RELEASE"
-#endif
-            ;
-
-        // Compile
-        string fullSource = $"{impl}\n{shell}\n{usings}";
-
-        Console.WriteLine(fullSource);
-
-        SyntaxTree tree = CSharpSyntaxTree.ParseText(fullSource, CSharpParseOptions.Default.WithPreprocessorSymbols(preprocessor_symbol));
-
-        MetadataReference[] refs = AppDomain.CurrentDomain.GetAssemblies()
-                                            .Where(a => !a.IsDynamic && !string.IsNullOrWhiteSpace(a.Location))
-                                            .Select(a => MetadataReference.CreateFromFile(a.Location))
-                                            .ToArray<MetadataReference>();
-
-        CSharpCompilation compilation = CSharpCompilation.Create("test",
-            [tree], refs,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
-
-        using MemoryStream ms = new MemoryStream();
-        EmitResult emitResult = compilation.Emit(ms);
-
-        if (!emitResult.Success)
-        {
-            Assert.Fail(string.Join("\n", emitResult.Diagnostics
-                                                    .Where(d => d.Severity == DiagnosticSeverity.Error)
-                                                    .Select(d => d.ToString())));
-        }
-
-        ms.Position = 0;
-
-        string tmp = Path.GetTempFileName();
-        File.WriteAllBytes(tmp, ms.ToArray());
-
-        if (!string.IsNullOrEmpty(useMethods))
-        {
-            AssemblyTrimmer trimmer = new AssemblyTrimmer();
-            trimmer.Trim(tmp);
-        }
-
-        return Assembly.Load(File.ReadAllBytes(tmp));
-    }
-
-    private static Type CompileGeneratedType(string typeName, bool allowUnsafe, string[] calledMethods, string? useMethods)
-    {
-        Assembly asm = CompileAssembly(typeName, allowUnsafe, calledMethods, useMethods);
-        Type? foundType = asm.GetType($"{Generator.NAMESPACE}.{typeName}");
-
-        Assert.That(foundType, Is.Not.Null, $"Can't find type {Generator.NAMESPACE}.{typeName}");
-
-        return foundType!;
-    }
-
-    [Obsolete("Use CompileGeneratedTypeByUsing instead.")]
-    protected static Type CompileGeneratedType(string typeName, params string[] calledMethods)
-    {
-        return CompileGeneratedType(typeName, false, calledMethods, null);
-    }
-
     protected static Type CompileGeneratedTypeByUsing(string typeName, string useMethod)
     {
         return AssemblyBuilder.CompileGeneratedTypeByUsing(typeName, useMethod);
-    }
-
-    protected static Assembly CompileAssemblyByUsing(string useMethods)
-    {
-        return AssemblyBuilder.CompileAssemblyByUsing(useMethods);
-    }
-
-    protected static Type CompileUnsafeGeneratedType(string typeName, params string[] calledMethods)
-    {
-        return CompileGeneratedType(typeName, true, calledMethods, null);
-    }
-
-    public static object CompileInstanceByUsing(string typeName, string useMethod)
-    {
-        Type type = CompileGeneratedTypeByUsing(typeName, useMethod);
-        return CreateInstance(type);
-    }
-
-    public static object CreateInstance(Type type, params object?[] args)
-    {
-        object? instance = Activator.CreateInstance(type, args);
-
-        Assert.That(instance, Is.Not.Null, $"Can't create instance from '{type}'");
-
-        return instance!;
-    }
-
-    protected static MethodInfo GetMethod(Type type, string name, BindingFlags flags)
-    {
-        MethodInfo? method = type.GetMethod(name, flags);
-
-        Assert.That(method, Is.Not.Null, $"Can't find method '{name}' in type '{type.FullName}'");
-        return method!;
-    }
-
-    protected static MethodInfo GetMethod(Type type, string name, BindingFlags flags, params Type[] types)
-    {
-        MethodInfo? method = type.GetMethod(name, flags, types);
-
-        Assert.That(method, Is.Not.Null, $"Can't find method '{name}' in type '{type.FullName}'");
-        return method!;
-    }
-
-    protected static FieldInfo GetField(Type type, string name, BindingFlags flags)
-    {
-        FieldInfo? field = type.GetField(name, flags);
-
-        Assert.That(field, Is.Not.Null, $"Can't find field '{name}' in type '{type.FullName}'");
-        return field!;
-    }
-
-    protected static PropertyInfo GetProperty(Type type, string name, BindingFlags flags)
-    {
-        PropertyInfo? property = type.GetProperty(name, flags);
-
-        Assert.That(property, Is.Not.Null, $"Can't find property '{name}' in type '{type.FullName}'");
-        return property!;
     }
 
     protected static string GetTypesString(params Type[] types)
@@ -503,7 +208,4 @@ public abstract partial class GeneratorTests
     }
 
     protected abstract string GetTypeName();
-
-    [GeneratedRegex(@"[ \t]*\[global::Microsoft\.CodeAnalysis\.EmbeddedAttribute\]\r?\n?")]
-    private static partial Regex EmbeddedAttributeRegex();
 }

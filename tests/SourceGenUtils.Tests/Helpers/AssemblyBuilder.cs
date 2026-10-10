@@ -79,7 +79,7 @@ public static class AssemblyBuilder
         return Assembly.Load(File.ReadAllBytes(tmp));
     }
 
-    public static Assembly CompileAssemblyByUsing(string usage)
+    public static Assembly CompileAssemblyByUsing(string usage, bool compileUnsafe = false)
     {
         using CodeWriter writer = new CodeWriter();
 
@@ -98,12 +98,12 @@ public static class AssemblyBuilder
             }
         }
 
-        return BuildAssemblyWithGenerator([writer.ToString()], false, true);
+        return BuildAssemblyWithGenerator([writer.ToString()], compileUnsafe, true);
     }
 
-    public static Type CompileGeneratedTypeByUsing(string typeName, string usage)
+    public static Type CompileGeneratedTypeByUsing(string typeName, string usage, bool compileUnsafe = false)
     {
-        var assembly = CompileAssemblyByUsing(usage);
+        Assembly assembly = CompileAssemblyByUsing(usage, compileUnsafe);
 
         return assembly.GetType($"{Generator.NAMESPACE}.{typeName}", true)!;
     }

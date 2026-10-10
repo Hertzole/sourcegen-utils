@@ -105,6 +105,21 @@ public class VariableNamesTests : GeneratorTests
 
     [Test]
     [TestCaseSource(nameof(NicifyVariableNamesCases))]
+    public string NicifyVariableName_Span(string value)
+    {
+        // Arrange
+        VariableNames wrapper =
+            GetWrapper("VariableNames.NicifyVariableName(ReadOnlySpan<char>.Empty, Span<char>.Empty); VariableNames.GetNiceNameLength(\"\");");
+
+        Span<char> destination = stackalloc char[wrapper.GetNiceNameLength(value)];
+
+        // Act
+        wrapper.NicifyVariableName(value, destination);
+        return new string(destination);
+    }
+
+    [Test]
+    [TestCaseSource(nameof(NicifyVariableNamesCases))]
     public string NicifyVariableName_String(string value)
     {
         // Arrange
@@ -136,6 +151,21 @@ public class VariableNamesTests : GeneratorTests
 
     [Test]
     [TestCaseSource(nameof(RemovePrefixCases))]
+    public string RemovePrefix_Span(string value)
+    {
+        // Arrange
+        VariableNames wrapper = GetWrapper("VariableNames.RemovePrefix(ReadOnlySpan<char>.Empty, Span<char>.Empty);");
+        Span<char> destination = stackalloc char[value.Length];
+
+        // Act
+        int written = wrapper.RemovePrefix(value.AsSpan(), destination);
+
+        // Assert
+        return new string(destination.Slice(0, written));
+    }
+
+    [Test]
+    [TestCaseSource(nameof(RemovePrefixCases))]
     public string RemovePrefix_String(string value)
     {
         // Arrange
@@ -161,6 +191,21 @@ public class VariableNamesTests : GeneratorTests
 
         // Assert
         return arrayBuilder.ToString();
+    }
+
+    [Test]
+    [TestCaseSource(nameof(UppercaseStartCases))]
+    public string UppercaseStart_Span(string value)
+    {
+        // Arrange
+        VariableNames wrapper = GetWrapper("VariableNames.UppercaseStart(ReadOnlySpan<char>.Empty, Span<char>.Empty);");
+        Span<char> destination = stackalloc char[value.Length];
+
+        // Act
+        wrapper.UppercaseStart(value.AsSpan(), destination);
+
+        // Assert
+        return new string(destination);
     }
 
     [Test]
@@ -217,6 +262,21 @@ public class VariableNamesTests : GeneratorTests
 
         // Act
         return wrapper.GetNiceNameLength(value);
+    }
+
+    [Test]
+    [TestCaseSource(nameof(AppendGlobalPrefixCases))]
+    public string AppendGlobalPrefix_Span(string value)
+    {
+        // Arrange
+        VariableNames wrapper = GetWrapper("VariableNames.AppendGlobalPrefix(ReadOnlySpan<char>.Empty, Span<char>.Empty);");
+        Span<char> destination = stackalloc char[value.Length + 8];
+
+        // Act
+        int written = wrapper.AppendGlobalPrefix(value, destination);
+
+        // Assert
+        return new string(destination.Slice(0, written));
     }
 
     [Test]

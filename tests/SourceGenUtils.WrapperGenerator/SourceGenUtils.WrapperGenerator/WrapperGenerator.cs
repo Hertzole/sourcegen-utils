@@ -309,74 +309,199 @@ public sealed class WrapperGenerator : IIncrementalGenerator
         }
 
         using ArrayBuilder<char> nameBuilder = new ArrayBuilder<char>();
+        using ArrayBuilder<SourceParameterInfo> parametersBuilder = new ArrayBuilder<SourceParameterInfo>();
 
         foreach (MethodSource method in type.Methods)
         {
-            if (IsMethodBanned(method))
+            SourceMethodSignature signature = SourceMethodSignature.FromSignature(method.Signature);
+            parametersBuilder.Clear();
+            SourceParameterInfo.FromSignature(method.Signature, parametersBuilder);
+            if (IsMethodBanned(method, in signature, in parametersBuilder))
             {
                 continue;
             }
 
-            SourceMethodSignature signature = SourceMethodSignature.FromSignature(method.Signature);
-
-            writer.Append("private global::System.Reflection.MethodInfo ");
-            writer.Append(SanitizeMethodName(method.Name));
-
-            if (signature.IsExplicitImplementation)
+            if (signature.HasRefStruct)
             {
-                nameBuilder.Clear();
-                nameBuilder.AddRange(signature.ReturnType);
-                SanitizeExplicitName(nameBuilder);
+                writer.Append("private ");
+                AppendDelegate(writer, in signature, in parametersBuilder);
 
-                writer.Append('_').Append(nameBuilder);
-            }
+                string actualName = GetMethodName(typeName, method);
+                writer.Append(' ').Append(SanitizeMethodName(signature.Name.ToString()));
+                if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
+                {
+                    writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
+                }
 
-            if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
-            {
-                writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
-            }
-
-            string actualName = GetMethodName(typeName, method);
-
-            writer.AppendLine("_MethodInfo");
-            using (writer.WithBlock())
-            {
-                writer.AppendLine("get");
+                writer.AppendLine("_Delegate");
                 using (writer.WithBlock())
                 {
-                    writer.AppendLine("if (field == null)");
-                    using (writer.WithBlock(true))
+                    writer.AppendLine("get");
+                    using (writer.WithBlock())
                     {
-                        GetCustomTypes(writer, method);
-                        writer.Append("field = Type.GetMethod(\"");
-                        writer.Append(actualName);
-                        writer.Append("\", ");
-                        writer.Append(GetBindingFlags(method));
-                        writer.Append(", ");
-                        writer.Append(GetParameters(method));
-                        writer.AppendLine(");");
-
                         writer.AppendLine("if (field == null)");
-                        using (writer.WithBlock())
+                        using (writer.WithBlock(true))
                         {
-                            writer.Append("throw new global::System.Exception(\"Method not found: ");
-                            writer.Append(actualName);
-                            writer.AppendLine("\");");
-                        }
-                    }
+                            writer.Append("global::System.Reflection.MethodInfo? __method = Type.GetMethod(\"").Append(actualName).Append("\", ");
+                            signature.AppendFlags(writer);
+                            writer.Append(", [");
+                            for (int i = 0; i < parametersBuilder.Count; i++)
+                            {
+                                writer.Append("typeof(");
+                                writer.Append(WrapType(parametersBuilder[i].Type));
+                                writer.Append(')');
 
-                    writer.AppendLine("return field;");
+                                if (i < parametersBuilder.Count - 1)
+                                {
+                                    writer.Append(", ");
+                                }
+                            }
+
+                            writer.AppendLine("]);");
+
+                            writer.AppendLine("if (__method == null)");
+                            using (writer.WithBlock(true))
+                            {
+                                writer.Append("throw new global::System.MissingMemberException(\"Method '").Append(actualName).Append("' not found in type '")
+                                      .Append(typeName).AppendLine("' not found\");");
+                            }
+
+                            writer.Append("field = (");
+                            AppendDelegate(writer, signature, parametersBuilder);
+                            writer.AppendLine(')');
+                            writer.Indent++;
+                            writer.Append("global::System.Delegate.CreateDelegate(typeof(");
+                            AppendDelegate(writer, in signature, in parametersBuilder);
+                            writer.AppendLine("),").Append(signature.IsStatic ? "null" : "Instance").AppendLine(", __method);");
+
+                            writer.Indent--;
+                        }
+
+                        writer.AppendLine("return field;");
+                    }
+                }
+            }
+            else
+            {
+                writer.Append("private global::System.Reflection.MethodInfo ");
+                writer.Append(SanitizeMethodName(method.Name));
+
+                if (signature.IsExplicitImplementation)
+                {
+                    nameBuilder.Clear();
+                    nameBuilder.AddRange(signature.ReturnType);
+                    SanitizeExplicitName(nameBuilder);
+
+                    writer.Append('_').Append(nameBuilder);
+                }
+
+                if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
+                {
+                    writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
+                }
+
+                string actualName = GetMethodName(typeName, method);
+
+                writer.AppendLine("_MethodInfo");
+                using (writer.WithBlock())
+                {
+                    writer.AppendLine("get");
+                    using (writer.WithBlock())
+                    {
+                        writer.AppendLine("if (field == null)");
+                        using (writer.WithBlock(true))
+                        {
+                            GetCustomTypes(writer, method);
+                            writer.Append("field = Type.GetMethod(\"");
+                            writer.Append(actualName);
+                            writer.Append("\", ");
+                            writer.Append(GetBindingFlags(method));
+                            writer.Append(", ");
+                            writer.Append(GetParameters(method));
+                            writer.AppendLine(");");
+
+                            writer.AppendLine("if (field == null)");
+                            using (writer.WithBlock())
+                            {
+                                writer.Append("throw new global::System.Exception(\"Method not found: ");
+                                writer.Append(actualName);
+                                writer.AppendLine("\");");
+                            }
+                        }
+
+                        writer.AppendLine("return field;");
+                    }
                 }
             }
         }
+
+        static void AppendDelegate(CodeWriter writer, in SourceMethodSignature signature, in ArrayBuilder<SourceParameterInfo> parametersBuilder)
+        {
+            writer.Append("global::System.").Append(signature.IsVoidReturnType ? "Action<" : "Func<");
+            bool hasParameters = AppendParameterTypes(writer, in parametersBuilder);
+
+            if (!signature.IsVoidReturnType)
+            {
+                if (hasParameters)
+                {
+                    writer.Append(", ");
+                }
+
+                writer.Append(WrapType(signature.ReturnType.ToString()));
+            }
+
+            writer.Append(">");
+        }
     }
 
-    private static bool IsMethodBanned(MethodSource method)
+    private static bool AppendParameterTypes(CodeWriter writer, in ArrayBuilder<SourceParameterInfo> parametersBuilder)
     {
-        if (method.Signature.Contains("System.ReadOnlySpan") || method.Signature.Contains("System.Span") ||
-            method.Signature.Contains("OnReturn") && method.Signature.Contains("Hertzole.SourceGen.ArrayBuilder"))
+        if (parametersBuilder.Count == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < parametersBuilder.Count; i++)
+        {
+            writer.Append(WrapType(parametersBuilder[i].Type));
+            if (i < parametersBuilder.Count - 1)
+            {
+                writer.Append(", ");
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsMethodBanned(MethodSource method, in SourceMethodSignature signature, in ArrayBuilder<SourceParameterInfo> parameters)
+    {
+        if (signature.Name.Contains("OnReturn", StringComparison.Ordinal) && method.Signature.Contains("Hertzole.SourceGen.ArrayBuilder"))
         {
             return true;
+        }
+
+        if (signature.IsConstructor && signature.HasRefStruct)
+        {
+            // Can't create instance with ref types
+            return true;
+        }
+
+        if (signature.HasRefStruct && (signature.HasOutParameter || signature.HasRefParameter))
+        {
+            //TODO: Support ref structs with ref/out parameters
+            return true;
+        }
+
+        if (signature.HasRefStruct)
+        {
+            // Can't have methods with ref structs and runtime generated types.
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                if (parameters[i].Type.Contains("Hertzole.SourceGen"))
+                {
+                    return true;
+                }
+            }
         }
 
         return Array.IndexOf(bannedMethods, method.Name) != -1;
@@ -423,14 +548,16 @@ public sealed class WrapperGenerator : IIncrementalGenerator
 
         foreach (MethodSource method in type.Methods)
         {
-            if (IsMethodBanned(method))
+            paramsArray.Clear();
+            SourceParameterInfo.FromSignature(method.Signature, in paramsArray);
+
+            SourceMethodSignature signature = SourceMethodSignature.FromSignature(method.Signature);
+            if (IsMethodBanned(method, in signature, in paramsArray))
             {
                 writer.Append("// Skipped ");
                 writer.AppendLine(method.Signature);
                 continue;
             }
-
-            SourceMethodSignature signature = SourceMethodSignature.FromSignature(method.Signature);
 
             if (signature.IsOperator)
             {
@@ -438,9 +565,6 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 //TODO: Implement operators
                 continue;
             }
-
-            paramsArray.Clear();
-            SourceParameterInfo.FromSignature(method.Signature, in paramsArray);
 
             if (!signature.Accessor.IsEmpty)
             {
@@ -517,7 +641,6 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 }
             }
 
-            // AppendParameters(method, isConstructor);
             writer.AppendLine(')');
             using (writer.WithBlock())
             {
@@ -543,67 +666,97 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                 else
                 {
                     const bool to_instance = true;
-                    writer.Append("object?[] __callerArgs = [");
-                    AppendParameterNames(method, to_instance);
-                    writer.AppendLine("];");
-
-                    if (!signature.IsVoidReturnType)
+                    if (signature.HasRefStruct)
                     {
-                        writer.Append("object? __callResult = ");
-                    }
+                        if (!signature.IsVoidReturnType)
+                        {
+                            writer.Append("return ");
+                        }
 
-                    writer.Append(SanitizeMethodName(method.Name));
+                        writer.Append(SanitizeMethodName(method.Name));
 
-                    if (signature.IsExplicitImplementation)
-                    {
-                        nameBuilder.Clear();
-                        nameBuilder.AddRange(signature.ReturnType);
-                        SanitizeExplicitName(nameBuilder);
+                        if (signature.IsExplicitImplementation)
+                        {
+                            nameBuilder.Clear();
+                            nameBuilder.AddRange(signature.ReturnType);
+                            SanitizeExplicitName(nameBuilder);
 
-                        writer.Append('_').Append(nameBuilder);
-                    }
+                            writer.Append('_').Append(nameBuilder);
+                        }
 
-                    if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
-                    {
-                        writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
-                    }
+                        if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
+                        {
+                            writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
+                        }
 
-                    writer.Append("_MethodInfo!.Invoke(");
-                    if (!signature.IsStatic)
-                    {
-                        writer.Append("Instance, ");
+                        writer.Append("_Delegate.Invoke(");
+                        AppendParameterNames(method);
+                        writer.AppendLine(");");
                     }
                     else
                     {
-                        writer.Append("null, ");
-                    }
+                        writer.Append("object?[] __callerArgs = [");
+                        AppendParameterNames(method, to_instance);
+                        writer.AppendLine("];");
 
-                    writer.Append("__callerArgs)");
-
-                    if (!signature.IsVoidReturnType)
-                    {
-                        writer.Append('!');
-                    }
-
-                    writer.AppendLine(';');
-
-                    bool hasRefParams = method.Signature.Contains("out") || method.Signature.Contains("ref");
-                    if (hasRefParams)
-                    {
-                        AssignRefParams(writer, paramsArray.ToImmutableArray());
-                    }
-
-                    if (!signature.IsVoidReturnType)
-                    {
-                        writer.Append("return ");
-                        if (signature.ReturnType.Contains("Hertzole.SourceGen", StringComparison.Ordinal))
+                        if (!signature.IsVoidReturnType)
                         {
-                            writer.Append("new ").Append(WrapType(signature.ReturnType.ToString())).AppendLine("(__callResult!);");
+                            writer.Append("object? __callResult = ");
+                        }
+
+                        writer.Append(SanitizeMethodName(method.Name));
+
+                        if (signature.IsExplicitImplementation)
+                        {
+                            nameBuilder.Clear();
+                            nameBuilder.AddRange(signature.ReturnType);
+                            SanitizeExplicitName(nameBuilder);
+
+                            writer.Append('_').Append(nameBuilder);
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
+                        {
+                            writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
+                        }
+
+                        writer.Append("_MethodInfo!.Invoke(");
+                        if (!signature.IsStatic)
+                        {
+                            writer.Append("Instance, ");
                         }
                         else
                         {
-                            writer.Append('(').Append(WrapType(signature.ReturnType.ToString()));
-                            writer.AppendLine(")__callResult;");
+                            writer.Append("null, ");
+                        }
+
+                        writer.Append("__callerArgs)");
+
+                        if (!signature.IsVoidReturnType)
+                        {
+                            writer.Append('!');
+                        }
+
+                        writer.AppendLine(';');
+
+                        bool hasRefParams = method.Signature.Contains("out") || method.Signature.Contains("ref");
+                        if (hasRefParams)
+                        {
+                            AssignRefParams(writer, paramsArray.ToImmutableArray());
+                        }
+
+                        if (!signature.IsVoidReturnType)
+                        {
+                            writer.Append("return ");
+                            if (signature.ReturnType.Contains("Hertzole.SourceGen", StringComparison.Ordinal))
+                            {
+                                writer.Append("new ").Append(WrapType(signature.ReturnType.ToString())).AppendLine("(__callResult!);");
+                            }
+                            else
+                            {
+                                writer.Append('(').Append(WrapType(signature.ReturnType.ToString()));
+                                writer.AppendLine(")__callResult;");
+                            }
                         }
                     }
                 }

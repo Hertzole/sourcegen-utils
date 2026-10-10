@@ -1,6 +1,6 @@
 using System;
-using System.Reflection;
 using System.Text;
+using Hertzole.SourceGen.Wrappers;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -19,7 +19,7 @@ public class StringBuilderExtensionsTests : GeneratorTests
     public void Append(bool allowUnsafe)
     {
         // Arrange
-        StringBuilderExtensions extensions = new StringBuilderExtensions(allowUnsafe, "Append(System.Text.StringBuilder, System.ReadOnlySpan<char>)");
+        StringBuilderExtensions extensions = GetWrapper("StringBuilderExtensions.Append(null, default);", allowUnsafe);
         StringBuilder stringBuilder = new StringBuilder();
         ReadOnlySpan<char> value = Fake.Lorem.Sentences().AsSpan();
 
@@ -37,7 +37,7 @@ public class StringBuilderExtensionsTests : GeneratorTests
     public void AppendLine(bool allowUnsafe)
     {
         // Arrange
-        StringBuilderExtensions extensions = new StringBuilderExtensions(allowUnsafe, "AppendLine(System.Text.StringBuilder, System.ReadOnlySpan<char>)");
+        StringBuilderExtensions extensions = GetWrapper("StringBuilderExtensions.AppendLine(null, default);", allowUnsafe);
         StringBuilder stringBuilder = new StringBuilder();
         ReadOnlySpan<char> value1 = Fake.Lorem.Sentences().AsSpan();
         ReadOnlySpan<char> value2 = Fake.Lorem.Sentences().AsSpan();
@@ -52,34 +52,9 @@ public class StringBuilderExtensionsTests : GeneratorTests
         Assert.That(stringBuilder.ToString(), Is.EqualTo(expected));
     }
 
-    private class StringBuilderExtensions
+    private static StringBuilderExtensions GetWrapper(string useMethod, bool allowUnsafe)
     {
-        private readonly Func<StringBuilder, ReadOnlySpan<char>, StringBuilder> append;
-        private readonly Func<StringBuilder, ReadOnlySpan<char>, StringBuilder> appendLine;
-
-        public StringBuilderExtensions(bool allowUnsafe, params string[] calledMethods)
-        {
-            Type type = allowUnsafe
-                ? CompileUnsafeGeneratedType("StringBuilderExtensions", calledMethods)
-                : CompileGeneratedType("StringBuilderExtensions", calledMethods);
-
-            append = (Func<StringBuilder, ReadOnlySpan<char>, StringBuilder>) Delegate.CreateDelegate(
-                typeof(Func<StringBuilder, ReadOnlySpan<char>, StringBuilder>),
-                GetMethod(type, "Append", BindingFlags.Public | BindingFlags.Static, typeof(StringBuilder), typeof(ReadOnlySpan<char>)));
-
-            appendLine = (Func<StringBuilder, ReadOnlySpan<char>, StringBuilder>) Delegate.CreateDelegate(
-                typeof(Func<StringBuilder, ReadOnlySpan<char>, StringBuilder>),
-                GetMethod(type, "AppendLine", BindingFlags.Public | BindingFlags.Static, typeof(StringBuilder), typeof(ReadOnlySpan<char>)));
-        }
-
-        public StringBuilder Append(StringBuilder stringBuilder, ReadOnlySpan<char> value)
-        {
-            return append(stringBuilder, value);
-        }
-
-        public StringBuilder AppendLine(StringBuilder stringBuilder, ReadOnlySpan<char> value)
-        {
-            return appendLine(stringBuilder, value);
-        }
+        Type type = AssemblyBuilder.CompileGeneratedTypeByUsing("StringBuilderExtensions", useMethod, allowUnsafe);
+        return new StringBuilderExtensions(type);
     }
 }

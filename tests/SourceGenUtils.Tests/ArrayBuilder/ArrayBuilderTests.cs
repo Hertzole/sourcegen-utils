@@ -87,7 +87,7 @@ public class ArrayBuilderTests : GeneratorTests
         // Arrange
         using ArrayBuilder<char> builder =
             GetWrapper<char>(
-                "var builder = new ArrayBuilder<char>(); builder.AddRange(new List<char>()); builder.Remove('a'); builder.ToString(); builder.Contains('a');");
+                "var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.Remove('a'); builder.ToString(); builder.Contains('a');");
 
         char[] values = "abcdefg".ToCharArray();
         char toRemove = 'b';
@@ -108,7 +108,7 @@ public class ArrayBuilderTests : GeneratorTests
         // Arrange
         using ArrayBuilder<char> builder =
             GetWrapper<char>(
-                "var builder = new ArrayBuilder<char>(); builder.AddRange(new List<char>()); builder.RemoveAt(0); builder.Contains('a'); builder.ToString(); var x = builder[0];");
+                "var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.RemoveAt(0); builder.Contains('a'); builder.ToString(); var x = builder[0];");
 
         char[] values = "abcdefg".ToCharArray();
         int toRemove = 2;
@@ -127,7 +127,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void IndexOf_Valid()
     {
         // Arrange
-        using ArrayBuilder<int> builder = GetWrapper<int>("var builder = new ArrayBuilder<int>(); builder.AddRange(new List<int>()); builder.IndexOf(0);");
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>("var builder = new ArrayBuilder<int>(); builder.AddRange(ReadOnlySpan<int>.Empty); builder.IndexOf(0);");
+
         builder.AddRange([1, 2, 3, 4, 5]);
 
         // Act
@@ -141,7 +143,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void IndexOf_Invalid()
     {
         // Arrange
-        using ArrayBuilder<int> builder = GetWrapper<int>("var builder = new ArrayBuilder<int>(); builder.AddRange(new List<int>()); builder.IndexOf(0);");
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>("var builder = new ArrayBuilder<int>(); builder.AddRange(ReadOnlySpan<int>.Empty); builder.IndexOf(0);");
+
         builder.AddRange([1, 2, 3, 4, 5]);
 
         // Act
@@ -155,7 +159,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void Contains_True()
     {
         // Arrange
-        using ArrayBuilder<int> builder = GetWrapper<int>(@"var builder = new ArrayBuilder<int>(); builder.AddRange(new List<int>()); builder.Contains(0);");
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>(@"var builder = new ArrayBuilder<int>(); builder.AddRange(ReadOnlySpan<int>.Empty); builder.Contains(0);");
+
         builder.AddRange([1, 2, 3, 4, 5]);
 
         // Act
@@ -169,7 +175,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void Contains_False()
     {
         // Arrange
-        using ArrayBuilder<int> builder = GetWrapper<int>(@"var builder = new ArrayBuilder<int>(); builder.AddRange(new List<int>()); builder.Contains(0);");
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>(@"var builder = new ArrayBuilder<int>(); builder.AddRange(ReadOnlySpan<int>.Empty); builder.Contains(0);");
+
         builder.AddRange([1, 2, 3, 4, 5]);
 
         // Act
@@ -183,7 +191,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void Clear()
     {
         // Arrange
-        using ArrayBuilder<char> builder = GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(new List<char>()); builder.Clear();");
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.Clear();");
+
         builder.AddRange(Fake.Random.Chars(count: 32));
 
         // Act
@@ -197,7 +207,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void ToArray()
     {
         // Arrange
-        using ArrayBuilder<char> builder = GetWrapper<char>(@"var builder = new ArrayBuilder<char>(); builder.AddRange(new List<char>()); builder.ToArray();");
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>(@"var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.ToArray();");
+
         char[] values = Fake.Random.Chars(count: 32);
         builder.AddRange(values);
 
@@ -218,7 +230,7 @@ public class ArrayBuilderTests : GeneratorTests
     {
         // Arrange
         using ArrayBuilder<char> builder =
-            GetWrapper<char>(@"var builder = new ArrayBuilder<char>(); builder.AddRange(new List<char>()); builder.ToImmutableArray();");
+            GetWrapper<char>(@"var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.ToImmutableArray();");
 
         char[] values = Fake.Random.Chars(count: count);
         builder.AddRange(values);
@@ -234,7 +246,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void ToString_Chars()
     {
         // Arrange
-        using ArrayBuilder<char> builder = GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(new List<char>()); builder.ToString();");
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>("var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.ToString();");
+
         char[] values = Fake.Random.Chars(count: 32);
         string expected = new string(values);
         builder.AddRange(values);
@@ -250,7 +264,9 @@ public class ArrayBuilderTests : GeneratorTests
     public void ToString_Others()
     {
         // Arrange
-        using ArrayBuilder<byte> builder = GetWrapper<byte>("var builder = new ArrayBuilder<byte>(); builder.AddRange(new List<byte>()); builder.ToString();");
+        using ArrayBuilder<byte> builder =
+            GetWrapper<byte>("var builder = new ArrayBuilder<byte>(); builder.AddRange(ReadOnlySpan<byte>.Empty); builder.ToString();");
+
         byte[] values = Fake.Random.Bytes(32);
         builder.AddRange(values);
 
@@ -265,7 +281,7 @@ public class ArrayBuilderTests : GeneratorTests
     public void Dispose_PoolsArray()
     {
         // Arrange
-        ArrayBuilder<byte> builder = GetWrapper<byte>(@"var builder = new ArrayBuilder<byte>(); builder.AddRange(new List<byte>());");
+        ArrayBuilder<byte> builder = GetWrapper<byte>(@"var builder = new ArrayBuilder<byte>(); builder.AddRange(ReadOnlySpan<byte>.Empty);");
         builder.AddRange(Fake.Random.Bytes(32));
         byte[] internalArray = builder.writer.array;
 

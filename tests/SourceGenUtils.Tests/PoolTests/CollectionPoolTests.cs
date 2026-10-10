@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
-using Hertzole.SourceGenUtils;
+using Hertzole.SourceGen.Wrappers;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests.PoolTests;
@@ -12,45 +11,45 @@ namespace SourceGenUtils.Tests.PoolTests;
 [TestFixture(typeof(Queue<object>))]
 [TestFixture(typeof(Stack<object>))]
 [TestFixture(typeof(StringBuilder))]
-public class CollectionPoolTests<T> : GeneratorTests
+public class CollectionPoolTests<T> : GeneratorTests where T : class
 {
     private readonly string typeName;
-    private readonly string genericTypeName;
+    private readonly string itemTypeName;
 
     public CollectionPoolTests()
     {
         if (typeof(T) == typeof(List<object>))
         {
             typeName = "ListPool";
-            genericTypeName = "System.Collections.Generic.List<T>";
+            itemTypeName = "System.Collections.Generic.List<object>";
             return;
         }
 
         if (typeof(T) == typeof(HashSet<object>))
         {
             typeName = "HashSetPool";
-            genericTypeName = "System.Collections.Generic.HashSet<T>";
+            itemTypeName = "System.Collections.Generic.HashSet<object>";
             return;
         }
 
         if (typeof(T) == typeof(Queue<object>))
         {
             typeName = "QueuePool";
-            genericTypeName = "System.Collections.Generic.Queue<T>";
+            itemTypeName = "System.Collections.Generic.Queue<object>";
             return;
         }
 
         if (typeof(T) == typeof(Stack<object>))
         {
             typeName = "StackPool";
-            genericTypeName = "System.Collections.Generic.Stack<T>";
+            itemTypeName = "System.Collections.Generic.Stack<object>";
             return;
         }
 
         if (typeof(T) == typeof(StringBuilder))
         {
             typeName = "StringBuilderPool";
-            genericTypeName = "System.Text.StringBuilder";
+            itemTypeName = "System.Text.StringBuilder";
             return;
         }
 
@@ -61,7 +60,7 @@ public class CollectionPoolTests<T> : GeneratorTests
     public void Get()
     {
         // Arrange
-        PoolWrapper pool = CompilePool("Get()", $"Return({genericTypeName})");
+        Pool pool = CompilePool();
 
         // Act
         T item1 = pool.Get();
@@ -77,12 +76,12 @@ public class CollectionPoolTests<T> : GeneratorTests
     public void GetScope()
     {
         // Arrange
-        PoolWrapper pool = CompilePool($"Get({genericTypeName})", $"Return({genericTypeName})");
+        Pool pool = CompilePool();
 
         // Act
-        PoolScopeWrapper scope = pool.Get(out T item1);
+        Scope scope = pool.GetScope(out T item1);
         scope.Dispose();
-        using PoolScopeWrapper scope2 = pool.Get(out T item2);
+        using Scope scope2 = pool.GetScope(out T item2);
 
         // Assert
         Assert.That(item2, Is.Not.Null);
@@ -93,7 +92,7 @@ public class CollectionPoolTests<T> : GeneratorTests
     public void Get_IsCleared()
     {
         // Arrange
-        PoolWrapper pool = CompilePool("Get()", $"Return({genericTypeName})");
+        Pool pool = CompilePool();
 
         // Act
         T item1 = pool.Get();
@@ -118,9 +117,61 @@ public class CollectionPoolTests<T> : GeneratorTests
         return typeName;
     }
 
-    private PoolWrapper CompilePool(params string[] calledMethods)
+    private Pool CompilePool()
     {
-        return new PoolWrapper(typeName, calledMethods);
+        string poolRef = typeof(T) == typeof(StringBuilder) ? typeName : $"{typeName}<object>";
+        string usage =
+            $"var item = {poolRef}.Get(); {poolRef}.Return(item); {poolRef}.Get(out {itemTypeName} item2).Dispose();";
+
+        if (typeof(T) == typeof(StringBuilder))
+        {
+            StringBuilderPool pool = new StringBuilderPool(CompileGeneratedTypeByUsing("StringBuilderPool", usage));
+            return Capture(() => pool.Get(), (out item) => new Scope(pool.Get(out item)), pool.Return);
+        }
+
+        Type poolType = CompileGeneratedTypeByUsing($"{typeName}`1", usage).MakeGenericType(typeof(object));
+
+        if (typeof(T) == typeof(List<object>))
+        {
+            ListPool<object> pool = new ListPool<object>(poolType);
+            return Capture(() => pool.Get(), (out item) => new Scope(pool.Get(out item)), pool.Return);
+        }
+
+        if (typeof(T) == typeof(HashSet<object>))
+        {
+            HashSetPool<object> pool = new HashSetPool<object>(poolType);
+            return Capture(() => pool.Get(), (out item) => new Scope(pool.Get(out item)), pool.Return);
+        }
+
+        if (typeof(T) == typeof(Queue<object>))
+        {
+            QueuePool<object> pool = new QueuePool<object>(poolType);
+            return Capture(() => pool.Get(), (out item) => new Scope(pool.Get(out item)), pool.Return);
+        }
+
+        if (typeof(T) == typeof(Stack<object>))
+        {
+            StackPool<object> pool = new StackPool<object>(poolType);
+            return Capture(() => pool.Get(), (out item) => new Scope(pool.Get(out item)), pool.Return);
+        }
+
+        throw new ArgumentException($"Unsupported type {typeof(T).FullName}");
+    }
+
+    private static Pool Capture<TItem>(Func<TItem> get, GetScopeBridge<TItem> getScope, Action<TItem> @return)
+        where TItem : class
+    {
+        return new Pool
+        {
+            Get = () => (T) (object) get(),
+            GetScope = (out item) =>
+            {
+                Scope scope = getScope(out TItem value);
+                item = (T) (object) value;
+                return scope;
+            },
+            Return = item => @return((TItem) (object) item!)
+        };
     }
 
     private static void Add(T collection, object item)
@@ -162,51 +213,29 @@ public class CollectionPoolTests<T> : GeneratorTests
         return false;
     }
 
-    private sealed class PoolWrapper
+    private delegate Scope GetScopeBridge<TItem>(out TItem item) where TItem : class;
+
+    private sealed class Pool
     {
-        private readonly MethodInfo getMethod;
-        private readonly MethodInfo getOutMethod;
-        private readonly MethodInfo returnMethod;
+        public required Func<T> Get { get; init; }
+        public required GetScopeDelegate GetScope { get; init; }
+        public required Action<T> Return { get; init; }
+    }
 
-        public PoolWrapper(string typeName, params string[] calledMethods)
+    private delegate Scope GetScopeDelegate(out T item);
+
+    private readonly struct Scope : IDisposable
+    {
+        private readonly IDisposable inner;
+
+        public Scope(IDisposable inner)
         {
-            Assembly asm = CompileAssembly(AppendTypeIfNeeded(typeName, calledMethods));
-
-            Type type;
-            if (typeof(T) == typeof(StringBuilder))
-            {
-                type = asm.GetType($"{Generator.NAMESPACE}.StringBuilderPool", true)!;
-            }
-            else
-            {
-                type = asm.GetType($"{Generator.NAMESPACE}.{typeName}`1", true)!.MakeGenericType(typeof(object));
-            }
-
-            getMethod = GetMethod(type, "Get", BindingFlags.Public | BindingFlags.Static, Array.Empty<Type>());
-            getOutMethod = GetMethod(type, "Get", BindingFlags.Public | BindingFlags.Static, typeof(T).MakeByRefType());
-            returnMethod = GetMethod(type, "Return", BindingFlags.Public | BindingFlags.Static, typeof(T));
+            this.inner = inner;
         }
 
-        public T Get()
+        public void Dispose()
         {
-            object? item = getMethod.InvokeStatic();
-
-            Assert.That(item, Is.Not.Null, "Item should not be null");
-
-            return (T) item!;
-        }
-
-        public PoolScopeWrapper Get(out T item)
-        {
-            object?[] args = [null];
-            object? scope = getOutMethod.InvokeStatic(args);
-            item = (T) args[0]!;
-            return new PoolScopeWrapper(scope!);
-        }
-
-        public void Return(T item)
-        {
-            returnMethod.InvokeStatic(item);
+            inner.Dispose();
         }
     }
 }

@@ -1,5 +1,4 @@
-using System;
-using System.Reflection;
+using Hertzole.SourceGen.Wrappers;
 using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 using static SourceGenUtils.Tests.RoslynHelper;
@@ -8,8 +7,6 @@ namespace SourceGenUtils.Tests;
 
 public class SymbolExtensionsTests : GeneratorTests
 {
-    private const string MS_CODE = "Microsoft.CodeAnalysis";
-
     /// <inheritdoc />
     protected override string GetTypeName()
     {
@@ -32,12 +29,12 @@ public class SymbolExtensionsTests : GeneratorTests
     public string GetDeclarationString(string declaration, bool isPartial)
     {
         // Arrange
-        SymbolExtensionsWrapper wrapper = CompileWrapper($"GetDeclarationString({MS_CODE}.ITypeSymbol, bool)");
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.GetDeclarationString(null, false);");
         string source = $"public {declaration} MyType {{}}";
         INamedTypeSymbol symbol = CompileTypeToSymbol(source);
 
         // Act
-        string result = wrapper.GetDeclarationString(symbol, isPartial);
+        string result = extensions.GetDeclarationString(symbol, isPartial);
         // Just to make sure the result is valid C# code.
         string newSource = $"public {result} MyType {{ }}";
 
@@ -57,7 +54,7 @@ public class SymbolExtensionsTests : GeneratorTests
     public bool HasAttribute(string attributeName)
     {
         // Arrange
-        SymbolExtensionsWrapper wrapper = CompileWrapper($"HasAttribute({MS_CODE}.ISymbol, string)");
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.HasAttribute(null, \"\");");
         const string source = """
                               using System;
 
@@ -71,14 +68,14 @@ public class SymbolExtensionsTests : GeneratorTests
         INamedTypeSymbol symbol = CompileTypeToSymbol(source);
 
         // Act
-        return wrapper.HasAttribute(symbol, attributeName);
+        return extensions.HasAttribute(symbol, attributeName);
     }
 
     [Test]
     public void HasAttribute_NoAttributes()
     {
         // Arrange
-        SymbolExtensionsWrapper wrapper = CompileWrapper("HasAttribute(Microsoft.CodeAnalysis.ISymbol, string)");
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.HasAttribute(null, \"\");");
         const string source = """
                               using System;
 
@@ -91,7 +88,7 @@ public class SymbolExtensionsTests : GeneratorTests
         INamedTypeSymbol symbol = CompileTypeToSymbol(source);
 
         // Act
-        bool result = wrapper.HasAttribute(symbol, "System.SerializableAttribute");
+        bool result = extensions.HasAttribute(symbol, "System.SerializableAttribute");
 
         // Assert
         Assert.That(result, Is.False);
@@ -101,7 +98,7 @@ public class SymbolExtensionsTests : GeneratorTests
     public void TryGetAttribute_IsAttribute()
     {
         // Arrange
-        SymbolExtensionsWrapper wrapper = CompileWrapper($"TryGetAttribute({MS_CODE}.ISymbol, string, {MS_CODE}.AttributeData)");
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.TryGetAttribute(null, \"\", out var attribute);");
         const string source = """
                               using System;
 
@@ -115,7 +112,7 @@ public class SymbolExtensionsTests : GeneratorTests
         INamedTypeSymbol symbol = CompileTypeToSymbol(source);
 
         // Act
-        bool result = wrapper.TryGetAttribute(symbol, "global::System.SerializableAttribute", out AttributeData? attribute);
+        bool result = extensions.TryGetAttribute(symbol, "global::System.SerializableAttribute", out AttributeData? attribute);
 
         // Assert
         Assert.That(result, Is.True);
@@ -133,7 +130,7 @@ public class SymbolExtensionsTests : GeneratorTests
     public bool TryGetAttribute_InvalidAttribute(string attributeName)
     {
         // Arrange
-        SymbolExtensionsWrapper wrapper = CompileWrapper($"TryGetAttribute({MS_CODE}.ISymbol, string, {MS_CODE}.AttributeData)");
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.TryGetAttribute(null, \"\", out var attribute);");
         const string source = """
                               using System;
 
@@ -147,48 +144,15 @@ public class SymbolExtensionsTests : GeneratorTests
         INamedTypeSymbol symbol = CompileTypeToSymbol(source);
 
         // Act
-        bool result = wrapper.TryGetAttribute(symbol, attributeName, out AttributeData? attribute);
+        bool result = extensions.TryGetAttribute(symbol, attributeName, out AttributeData? attribute);
 
         // Assert
         Assert.That(attribute, Is.Null);
         return result;
     }
 
-    private static SymbolExtensionsWrapper CompileWrapper(params string[] calledMethods)
+    private static SymbolExtensions CompileWrapper(string usage)
     {
-        return new SymbolExtensionsWrapper(CompileGeneratedType("SymbolExtensions", calledMethods));
-    }
-
-    private class SymbolExtensionsWrapper
-    {
-        private readonly MethodInfo getDeclarationString;
-        private readonly MethodInfo hasAttribute;
-        private readonly MethodInfo tryGetAttribute;
-
-        public SymbolExtensionsWrapper(Type type)
-        {
-            getDeclarationString = GetMethod(type, "GetDeclarationString", BindingFlags.Public | BindingFlags.Static, typeof(ITypeSymbol), typeof(bool));
-            hasAttribute = GetMethod(type, "HasAttribute", BindingFlags.Public | BindingFlags.Static, typeof(ISymbol), typeof(string));
-            tryGetAttribute = GetMethod(type, "TryGetAttribute", BindingFlags.Public | BindingFlags.Static, typeof(ISymbol), typeof(string),
-                typeof(AttributeData).MakeByRefType());
-        }
-
-        public string GetDeclarationString(ITypeSymbol symbol, bool isPartial)
-        {
-            return getDeclarationString.InvokeStatic<string>(symbol, isPartial);
-        }
-
-        public bool HasAttribute(ISymbol symbol, string attributeName)
-        {
-            return hasAttribute.InvokeStatic<bool>(symbol, attributeName);
-        }
-
-        public bool TryGetAttribute(ISymbol symbol, string attributeName, out AttributeData? attribute)
-        {
-            object?[] invokeParams = new object?[] { symbol, attributeName, null };
-            object? result = tryGetAttribute.Invoke(null, invokeParams);
-            attribute = (AttributeData?) invokeParams[2];
-            return (bool) result!;
-        }
+        return new SymbolExtensions(CompileGeneratedTypeByUsing("SymbolExtensions", usage));
     }
 }

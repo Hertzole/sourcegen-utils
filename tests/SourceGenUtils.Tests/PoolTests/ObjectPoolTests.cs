@@ -1,12 +1,17 @@
 using System;
-using System.Reflection;
-using Hertzole.SourceGenUtils;
+using Hertzole.SourceGen.Wrappers;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests.PoolTests;
 
 public class ObjectPoolTests : GeneratorTests
 {
+    private const string POOL_USAGE =
+        "var pool = new ObjectPool<object>(() => new object(), null, null, null); " +
+        "object item = pool.Get(); pool.Return(item); " +
+        "var scope = pool.Get(out object _); scope.Dispose(); " +
+        "pool.Dispose();";
+
     /// <inheritdoc />
     protected override string GetTypeName()
     {
@@ -17,7 +22,7 @@ public class ObjectPoolTests : GeneratorTests
     public void Get()
     {
         // Arrange
-        using ObjectPoolWrapper pool = CompileObjectPool(calledMethods: ["Get()", "Return(T)"]);
+        using ObjectPool<object> pool = CompileObjectPool();
 
         // Act
         object item1 = pool.Get();
@@ -32,12 +37,12 @@ public class ObjectPoolTests : GeneratorTests
     [Test]
     public void GetScope()
     {
-        using ObjectPoolWrapper pool = CompileObjectPool(calledMethods: ["Get(T)", "Return(T)"]);
+        using ObjectPool<object> pool = CompileObjectPool();
 
         // Act
-        PoolScopeWrapper scope = pool.Get(out object item1);
+        PoolScope<object> scope = pool.Get(out object item1);
         scope.Dispose();
-        using PoolScopeWrapper scope2 = pool.Get(out object item2);
+        using PoolScope<object> scope2 = pool.Get(out object item2);
 
         // Assert
         Assert.That(item2, Is.Not.Null);
@@ -49,11 +54,11 @@ public class ObjectPoolTests : GeneratorTests
     {
         // Arrange
         bool factoryCalled = false;
-        using ObjectPoolWrapper pool = CompileObjectPool(() =>
+        using ObjectPool<object> pool = CompileObjectPool(() =>
         {
             factoryCalled = true;
             return new object();
-        }, calledMethods: ["Get()", "Return(T)"]);
+        });
 
         // Act
         object item = pool.Get();
@@ -69,11 +74,11 @@ public class ObjectPoolTests : GeneratorTests
         // Arrange
         bool onGetCalled = false;
         object? onGetItem = null;
-        using ObjectPoolWrapper pool = CompileObjectPool(onGet: o =>
+        using ObjectPool<object> pool = CompileObjectPool(onGet: o =>
         {
             onGetCalled = true;
             onGetItem = o;
-        }, calledMethods: ["Get()", "Return(T)"]);
+        });
 
         // Act
         object item = pool.Get();
@@ -91,11 +96,11 @@ public class ObjectPoolTests : GeneratorTests
         // Arrange
         bool onReturnCalled = false;
         object? onReturnItem = null;
-        using ObjectPoolWrapper pool = CompileObjectPool(onReturn: o =>
+        using ObjectPool<object> pool = CompileObjectPool(onReturn: o =>
         {
             onReturnCalled = true;
             onReturnItem = o;
-        }, calledMethods: ["Get()", "Return(T)"]);
+        });
 
         // Act
         object item = pool.Get();
@@ -114,11 +119,11 @@ public class ObjectPoolTests : GeneratorTests
         // Arrange
         bool onDisposeCalled = false;
         object? onDisposeItem = null;
-        ObjectPoolWrapper pool = CompileObjectPool(onDispose: o =>
+        ObjectPool<object> pool = CompileObjectPool(onDispose: o =>
         {
             onDisposeCalled = true;
             onDisposeItem = o;
-        }, calledMethods: ["Get()", "Return(T)"]);
+        });
 
         // Act
         object item = pool.Get();
@@ -132,73 +137,14 @@ public class ObjectPoolTests : GeneratorTests
         Assert.That(onDisposeItem, Is.SameAs(item));
     }
 
-    private static ObjectPoolWrapper CompileObjectPool(Func<object>? create = null,
+    private static ObjectPool<object> CompileObjectPool(Func<object>? create = null,
         Action<object>? onGet = null,
         Action<object>? onReturn = null,
-        Action<object>? onDispose = null,
-        params string[] calledMethods)
+        Action<object>? onDispose = null)
     {
-        string[] called = ["ObjectPool.ObjectPool(System.Func<T>, System.Action<T>, System.Action<T>, System.Action<T>)", .. calledMethods];
-
-        Assembly asm = CompileAssembly(AppendTypeIfNeeded("ObjectPool", called));
-        Type? type = asm.GetType($"{Generator.NAMESPACE}.ObjectPool`1");
-
-        Assert.That(type, Is.Not.Null, "Couldn't find object pool type in assembly.");
-
-        Type typeWithGeneric = type!.MakeGenericType(typeof(object));
-
         create ??= () => new object();
 
-        object instance = CreateInstance(typeWithGeneric, create, onGet, onReturn, onDispose);
-
-        return new ObjectPoolWrapper(instance);
-    }
-
-    private sealed class ObjectPoolWrapper : IDisposable
-    {
-        private readonly object instance;
-        private readonly MethodInfo getMethod;
-        private readonly MethodInfo getOutMethod;
-        private readonly MethodInfo returnMethod;
-        private readonly MethodInfo disposeMethod;
-
-        public ObjectPoolWrapper(object instance)
-        {
-            this.instance = instance;
-            Type type = instance.GetType();
-
-            getMethod = GetMethod(type, "Get", BindingFlags.Public | BindingFlags.Instance, Array.Empty<Type>());
-            getOutMethod = GetMethod(type, "Get", BindingFlags.Public | BindingFlags.Instance, typeof(object).MakeByRefType());
-            returnMethod = GetMethod(type, "Return", BindingFlags.Public | BindingFlags.Instance, typeof(object));
-            disposeMethod = GetMethod(type, "Dispose", BindingFlags.Public | BindingFlags.Instance);
-        }
-
-        public object Get()
-        {
-            object? item = getMethod.InvokeInstance(instance);
-
-            Assert.That(item, Is.Not.Null, "Item should not be null");
-
-            return item!;
-        }
-
-        public PoolScopeWrapper Get(out object item)
-        {
-            object?[] args = [null];
-            object? scope = getOutMethod.InvokeInstance(instance, args);
-            item = args[0]!;
-            return new PoolScopeWrapper(scope!);
-        }
-
-        public void Return(object item)
-        {
-            returnMethod.InvokeInstance(instance, item);
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            disposeMethod.InvokeInstance(instance);
-        }
+        Type type = CompileGeneratedTypeByUsing("ObjectPool`1", POOL_USAGE).MakeGenericType(typeof(object));
+        return new ObjectPool<object>(type, create, onGet, onReturn, onDispose);
     }
 }

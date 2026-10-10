@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
 using System.Globalization;
-using System.Reflection;
 using System.Text;
+using Hertzole.SourceGen.Wrappers;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -164,23 +164,10 @@ internal partial class CodeWriterTests : GeneratorTests
             type = typeof(object);
         }
 
-        string appendMethod = appendType switch
-        {
-            AppendType.Append => "Append",
-            AppendType.AppendLine => "AppendLine",
-            _ => throw new ArgumentOutOfRangeException(nameof(appendType), appendType, null)
-        };
+        string usage = appendType == AppendType.Append
+            ? $"new CodeWriter().Append(default({GetTypesString(type)})).ToString();"
+            : $"new CodeWriter().AppendLine(string.Empty).AppendLine(default({GetTypesString(type)})).ToString();";
 
-        string appendLineMethodName = appendType switch
-        {
-            AppendType.AppendLine => "AppendLine(string)",
-            _ => string.Empty
-        };
-
-        // Arrange
-        object writer = CompileCodeWriter(isUnsafe, $"{appendMethod}({GetTypesString(type)})", "ToString()", appendLineMethodName);
-        MethodInfo targetMethod = GetMethod(writer.GetType(), appendMethod, BindingFlags.Public | BindingFlags.Instance, type);
-        MethodInfo? appendLineMethod = null;
         string expectedMessage;
         string? line1 = null;
 
@@ -196,7 +183,6 @@ internal partial class CodeWriterTests : GeneratorTests
         }
         else
         {
-            appendLineMethod = GetMethod(writer.GetType(), "AppendLine", BindingFlags.Public | BindingFlags.Instance, typeof(string));
             line1 = Fake.Lorem.Sentence();
             string valueString = value!.ToString()!;
 
@@ -212,13 +198,18 @@ internal partial class CodeWriterTests : GeneratorTests
                                """;
         }
 
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(isUnsafe, usage);
+
         // Act
-        if (appendLineMethod != null && line1 != null)
+        if (line1 != null)
         {
-            appendLineMethod.InvokeInstance(writer, line1);
+            writer.AppendLine(line1);
         }
 
-        object? returnedValue = targetMethod.InvokeInstance(writer, value!);
+        CodeWriter returnedValue = appendType == AppendType.Append
+            ? writer.Append((dynamic) value!)
+            : writer.AppendLine((dynamic) value!);
 
         // Assert
         AssertWriter(expectedMessage, writer, returnedValue);
@@ -226,46 +217,36 @@ internal partial class CodeWriterTests : GeneratorTests
 
     private static void CreateAppendFormatTest<T>(AppendType appendType, bool isUnsafe, T value) where T : IFormattable
     {
-        string appendMethod = appendType switch
-        {
-            AppendType.Append => "Append",
-            AppendType.AppendLine => "AppendLine",
-            _ => throw new ArgumentOutOfRangeException(nameof(appendType), appendType, null)
-        };
+        string appendMethod = appendType == AppendType.Append ? "Append" : "AppendLine";
 
         // Arrange
         Type type = typeof(T);
         CultureInfo culture = Fake.PickRandom(CultureInfo.GetCultures(CultureTypes.AllCultures));
         const string format = "P1";
         string expected = value.ToString(format, culture);
-        object writer = CompileCodeWriter(isUnsafe, $"{appendMethod}({GetTypesString(type)}, string, System.IFormatProvider)", "ToString()");
-        MethodInfo method = GetMethod(writer.GetType(), appendMethod, BindingFlags.Public | BindingFlags.Instance, type, typeof(string),
-            typeof(IFormatProvider));
+
+        string usage = $"new CodeWriter().{appendMethod}(default({GetTypesString(type)}), string.Empty, null).ToString();";
+        CodeWriter writer = CompileCodeWriter(isUnsafe, usage);
 
         // Act
-        object? returnedValue = method.InvokeInstance(writer, value, format, culture);
+        CodeWriter returnedValue = appendType == AppendType.Append
+            ? writer.Append((dynamic) value, format, culture)
+            : writer.AppendLine((dynamic) value, format, culture);
 
         // Assert
         AssertWriter(expected, writer, returnedValue);
     }
 
-    private static void AssertWriter(string expectedMessage, object writer, object? returnedValue)
+    private static void AssertWriter(string expectedMessage, CodeWriter writer, CodeWriter returnedValue)
     {
         Assert.That(writer.ToString(), Is.EqualTo(expectedMessage));
         Assert.That(returnedValue, Is.Not.Null);
-        Assert.That(returnedValue, Is.SameAs(writer));
-        Assert.That(returnedValue!.GetType(), Is.EqualTo(writer.GetType()));
+        Assert.That(returnedValue.Instance, Is.SameAs(writer.Instance));
     }
 
-    private static object CompileCodeWriter(bool isUnsafe, params string[] calledMethods)
+    private static CodeWriter CompileCodeWriter(bool isUnsafe, string usage)
     {
-        string[] calledWithConstructor = ["CodeWriter.CodeWriter()", .. calledMethods];
-        Type type = isUnsafe ? CompileUnsafeGeneratedType("CodeWriter", calledWithConstructor) : CompileGeneratedType("CodeWriter", calledWithConstructor);
-        object? writer = Activator.CreateInstance(type);
-
-        Assert.That(writer, Is.Not.Null, $"Couldn't create writer from type {type.FullName}");
-
-        return writer!;
+        return new CodeWriter(AssemblyBuilder.CompileGeneratedTypeByUsing("CodeWriter", usage, isUnsafe));
     }
 
     private static string BuildTypeSource(string signature, string? typeNamespace = null)

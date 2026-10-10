@@ -1,5 +1,5 @@
 using System;
-using System.Reflection;
+using Hertzole.SourceGen.Wrappers;
 using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 
@@ -27,14 +27,11 @@ internal partial class CodeWriterTests
     {
         // Arrange
         INamedTypeSymbol symbol = RoslynHelper.CompileTypeToSymbol(source);
-        object writer = CompileCodeWriter(false, "AppendLine(Microsoft.CodeAnalysis.ITypeSymbol, bool, bool)", "ToString()");
-        MethodInfo appendMethod = GetMethod(writer.GetType(), "AppendLine", BindingFlags.Public | BindingFlags.Instance, typeof(ITypeSymbol), typeof(bool),
-            typeof(bool));
-
-        MethodInfo toStringMethod = GetMethod(writer.GetType(), "ToString", BindingFlags.Public | BindingFlags.Instance);
+        CodeWriter writer = CompileCodeWriter(false,
+            "new CodeWriter().AppendLine((Microsoft.CodeAnalysis.ITypeSymbol)null!, true, true).ToString();");
 
         // Act
-        appendMethod.InvokeInstance(writer, symbol, isPartial, includeNamespace);
-        return toStringMethod.InvokeInstance<string>(writer);
+        writer.AppendLine(symbol, isPartial, includeNamespace);
+        return writer.ToString();
     }
 }

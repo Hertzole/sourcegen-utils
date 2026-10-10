@@ -1,8 +1,7 @@
 using System;
 using System.Collections;
-using System.Reflection;
 using System.Text;
-using Hertzole.SourceGenUtils;
+using Hertzole.SourceGen.Wrappers;
 using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 
@@ -40,26 +39,22 @@ internal partial class CodeWriterTests
     {
         // Arrange
         string message = Fake.Lorem.Sentence();
-        Type writerType = CompileGeneratedType("CodeWriter", "CodeWriter.CodeWriter()", $"CodeWriter.Append({Generator.NAMESPACE}.ArrayBuilder<char>)",
-            "CodeWriter.ToString()", "ArrayBuilder.ArrayBuilder()", "ArrayBuilder.Add(T)");
+        CodeWriter writer = CompileCodeWriter(false,
+            "var builder = new ArrayBuilder<char>(); builder.Add('a'); new CodeWriter().Append(builder).ToString();");
 
-        object writerInstance = CreateInstance(writerType);
-        Type arrayBuilderType = writerType.Assembly.GetType($"{Generator.NAMESPACE}.ArrayBuilder`1", true)!.MakeGenericType(typeof(char));
-        object arrayBuilderInstance = CreateInstance(arrayBuilderType);
-        MethodInfo appendMethod = GetMethod(writerType, "Append", BindingFlags.Public | BindingFlags.Instance, arrayBuilderType);
-        MethodInfo addRangeMethod = GetMethod(arrayBuilderType, "Add", BindingFlags.Public | BindingFlags.Instance);
+        ArrayBuilder<char> arrayBuilder = new ArrayBuilder<char>(writer.Type.Assembly);
 
         // Act
         // Because we can't pass ReadOnlySpan in args, add each letter instead.
         for (int i = 0; i < message.Length; i++)
         {
-            addRangeMethod.InvokeInstance(arrayBuilderInstance, message[i]);
+            arrayBuilder.Add(message[i]);
         }
 
-        object? value = appendMethod.InvokeInstance(writerInstance, arrayBuilderInstance);
+        CodeWriter returnedValue = writer.Append(arrayBuilder);
 
         // Assert
-        AssertWriter(message, writerInstance, value);
+        AssertWriter(message, writer, returnedValue);
     }
 
     [Test]
@@ -69,14 +64,13 @@ internal partial class CodeWriterTests
         char value = Fake.Random.Char();
         int repeatCount = Fake.Random.Int(5, 10);
         string expected = new string(value, repeatCount);
-        object writerInstance = CompileCodeWriter(isUnsafe, "CodeWriter.Append(char, int)", "CodeWriter.ToString()");
-        MethodInfo appendMethod = GetMethod(writerInstance.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(char), typeof(int));
+        CodeWriter writer = CompileCodeWriter(isUnsafe, "new CodeWriter().Append('a', 1).ToString();");
 
         // Act
-        object? returnedValue = appendMethod.InvokeInstance(writerInstance, value, repeatCount);
+        CodeWriter returnedValue = writer.Append(value, repeatCount);
 
         // Assert
-        AssertWriter(expected, writerInstance, returnedValue);
+        AssertWriter(expected, writer, returnedValue);
     }
 
     [Test]
@@ -85,11 +79,10 @@ internal partial class CodeWriterTests
         // Arrange
         char[] value = Fake.Random.Chars();
         string expected = new string(value);
-        object writer = CompileCodeWriter(isUnsafe, "Append(char[])", "ToString()");
-        MethodInfo appendMethod = GetMethod(writer.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(char[]));
+        CodeWriter writer = CompileCodeWriter(isUnsafe, "new CodeWriter().Append(new char[] { }).ToString();");
 
         // Act
-        object? returnedValue = appendMethod.InvokeInstance(writer, value);
+        CodeWriter returnedValue = writer.Append(value);
 
         // Assert
         AssertWriter(expected, writer, returnedValue);
@@ -103,11 +96,10 @@ internal partial class CodeWriterTests
         int start = Fake.Random.Int(2, 7);
         int count = Fake.Random.Int(3, 5);
         string expected = value.AsSpan(start, count).ToString();
-        object writer = CompileCodeWriter(isUnsafe, "Append(char[], int, int)", "ToString()");
-        MethodInfo appendMethod = GetMethod(writer.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(char[]), typeof(int), typeof(int));
+        CodeWriter writer = CompileCodeWriter(isUnsafe, "new CodeWriter().Append(new char[] { }, 0, 0).ToString();");
 
         // Act
-        object? returnedValue = appendMethod.InvokeInstance(writer, value, start, count);
+        CodeWriter returnedValue = writer.Append(value, start, count);
 
         // Assert
         AssertWriter(expected, writer, returnedValue);
@@ -155,22 +147,20 @@ internal partial class CodeWriterTests
     public void AppendIndentedSource(string value)
     {
         // Arrange
-        object writer = CompileCodeWriter(false, "AppendIndentedSource(string)", "AppendLine(string)", "ToString()");
-        MethodInfo appendLine = GetMethod(writer.GetType(), "AppendLine", BindingFlags.Public | BindingFlags.Instance, typeof(string));
-        MethodInfo appendMethod = GetMethod(writer.GetType(), "AppendIndentedSource", BindingFlags.Public | BindingFlags.Instance, typeof(string));
-        PropertyInfo indent = GetProperty(writer.GetType(), "Indent", BindingFlags.Public | BindingFlags.Instance);
+        CodeWriter writer = CompileCodeWriter(false,
+            "var writer = new CodeWriter(); writer.Indent = 1; writer.AppendLine(\"\"); writer.AppendIndentedSource(\"\"); writer.Indent = 0; writer.ToString();");
 
         // Act
-        appendLine.InvokeInstance(writer, "public void Method(bool value)");
-        appendLine.InvokeInstance(writer, "{");
-        indent.SetValue(writer, 1);
-        object? returned = appendMethod.InvokeInstance(writer, value);
-        indent.SetValue(writer, 0);
-        appendLine.InvokeInstance(writer, "}");
+        writer.AppendLine("public void Method(bool value)");
+        writer.AppendLine("{");
+        writer.Indent = 1;
+        CodeWriter returned = writer.AppendIndentedSource(value);
+        writer.Indent = 0;
+        writer.AppendLine("}");
 
         // Assert
         Assert.That(EXPECTED_INDENTED_SOURCE, Is.EqualTo(writer.ToString()));
-        Assert.That(returned, Is.SameAs(writer));
+        Assert.That(returned.Instance, Is.SameAs(writer.Instance));
     }
 
     [Test]
@@ -179,15 +169,12 @@ internal partial class CodeWriterTests
     {
         // Arrange
         INamedTypeSymbol symbol = RoslynHelper.CompileTypeToSymbol(source);
-        object writer = CompileCodeWriter(false, "Append(Microsoft.CodeAnalysis.ITypeSymbol, bool, bool)", "ToString()");
-        MethodInfo appendMethod = GetMethod(writer.GetType(), "Append", BindingFlags.Public | BindingFlags.Instance, typeof(ITypeSymbol), typeof(bool),
-            typeof(bool));
-
-        MethodInfo toStringMethod = GetMethod(writer.GetType(), "ToString", BindingFlags.Public | BindingFlags.Instance);
+        CodeWriter writer = CompileCodeWriter(false,
+            "new CodeWriter().Append((Microsoft.CodeAnalysis.ITypeSymbol)null!, true, true).ToString();");
 
         // Act
-        appendMethod.InvokeInstance(writer, symbol, isPartial, includeNamespace);
-        return toStringMethod.InvokeInstance<string>(writer);
+        writer.Append(symbol, isPartial, includeNamespace);
+        return writer.ToString();
     }
 
     private static string MessUpSource(string value, bool replaceNewLines, bool replaceTabs)

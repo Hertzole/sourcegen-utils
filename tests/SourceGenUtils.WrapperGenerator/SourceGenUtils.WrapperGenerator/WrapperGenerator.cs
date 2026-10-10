@@ -417,7 +417,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                             writer.Append("\", ");
                             writer.Append(GetBindingFlags(method));
                             writer.Append(", ");
-                            writer.Append(GetParameters(method));
+                            writer.Append(GetParameters(method, in parametersBuilder));
                             writer.AppendLine(");");
 
                             writer.AppendLine("if (field == null)");
@@ -917,7 +917,7 @@ public sealed class WrapperGenerator : IIncrementalGenerator
         }
     }
 
-    private static string GetParameters(MethodSource method)
+    private static string GetParameters(MethodSource method, in ArrayBuilder<SourceParameterInfo> parameters)
     {
         if (method.ParameterCount == 0)
         {
@@ -928,11 +928,11 @@ public sealed class WrapperGenerator : IIncrementalGenerator
 
         sb.Append('[');
 
-        string[] parameters = method.ParameterTypesKey.Split(',');
+        string[] types = method.ParameterTypesKey.Split(',');
         int customType = 0;
-        for (int i = 0; i < parameters.Length; i++)
+        for (int i = 0; i < types.Length; i++)
         {
-            if (parameters[i].Contains("Hertzole.SourceGen", StringComparison.Ordinal))
+            if (types[i].Contains("Hertzole.SourceGen", StringComparison.Ordinal))
             {
                 sb.Append("__customType");
                 sb.Append(customType);
@@ -941,11 +941,16 @@ public sealed class WrapperGenerator : IIncrementalGenerator
             else
             {
                 sb.Append("typeof(");
-                sb.Append(parameters[i].AsSpan().Trim());
+                sb.Append(types[i].AsSpan().Trim());
                 sb.Append(")");
             }
 
-            if (i < parameters.Length - 1)
+            if (i < parameters.Count && parameters[i].IsReferenceValue)
+            {
+                sb.Append(".MakeByRefType()");
+            }
+
+            if (i < types.Length - 1)
             {
                 sb.Append(", ");
             }

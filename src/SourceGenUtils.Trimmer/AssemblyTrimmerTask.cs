@@ -10,6 +10,7 @@ public class AssemblyTrimmerTask : Task
 
     public bool RemoveGeneratedCodeAttribute { get; set; } = true;
     public bool RemoveCodeCoverageAttribute { get; set; } = true;
+    public bool Verbose { get; set; } = false;
 
     /// <inheritdoc />
     public override bool Execute()
@@ -20,6 +21,6 @@ public class AssemblyTrimmerTask : Task
             RemoveCodeCoverageAttribute = RemoveCodeCoverageAttribute
         };
 
-        return trimmer.Trim(AssemblyPath, true);
+        return trimmer.Trim(AssemblyPath, Verbose);
     }
 }

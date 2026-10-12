@@ -41,6 +41,7 @@ public sealed class AssemblyTrimmer
                     }
 
                     GetSourceGenTypes(assembly, sourceGenTypes);
+                    // Remove types first because that may drastically decrease the number of methods/properties/fields it needs to check. 
                     dirty |= RemoveUnusedTypes(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
                     if (dirty)
                     {
@@ -50,6 +51,7 @@ public sealed class AssemblyTrimmer
 
                     dirty |= RemoveUnusedMethodUsages(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
                     dirty |= RemoveUnusedProperties(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
+                    dirty |= RemoveUnusedFields(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
                     count++;
 
                     if (log)
@@ -229,6 +231,47 @@ public sealed class AssemblyTrimmer
                 Console.WriteLine($"REMOVE PROPERTY :: {usages[i].Property.FullName} is unused.");
             }
 
+            dirty = true;
+        }
+
+        return dirty;
+    }
+
+    private static bool RemoveUnusedFields(IReadOnlyList<TypeDefinition> sourceGenTypes,
+        AssemblyDefinition assembly,
+        bool removeGeneratedCodeAttribute,
+        bool removeCodeCoverageAttribute,
+        bool log)
+    {
+        FieldUsage[] usages = sourceGenTypes.SelectMany(static x => x.Fields).Select(x => new FieldUsage(true, x)).ToArray();
+        FindFieldUsageJob typeJob = new FindFieldUsageJob(assembly, log);
+        ParallelHelper.ForEach<FieldUsage, FindFieldUsageJob>(usages, in typeJob);
+
+        bool dirty = false;
+
+        for (int i = 0; i < usages.Length; i++)
+        {
+            if (usages[i].IsUsed)
+            {
+                if (RemoveOptionalAttributes(usages[i].Field, removeGeneratedCodeAttribute, removeCodeCoverageAttribute))
+                {
+                    dirty = true;
+                    if (log)
+                    {
+                        Console.WriteLine(
+                            $"REMOVE FIELD :: {usages[i].Field.DeclaringType.FullName}.{usages[i].Field.Name} is used, but removed optional attributes.");
+                    }
+                }
+
+                continue;
+            }
+
+            if (log)
+            {
+                Console.WriteLine($"REMOVE FIELD :: {usages[i].Field.DeclaringType.FullName}.{usages[i].Field.Name} is unused.");
+            }
+
+            usages[i].Field.DeclaringType.Fields.Remove(usages[i].Field);
             dirty = true;
         }
 

@@ -21,4 +21,22 @@ internal static class CecilExtensions
             return reference.Resolve();
         }
     }
+
+    public static FieldDefinition LockedResolve(this FieldReference reference)
+    {
+        lock (resolveLock)
+        {
+            return reference.Resolve();
+        }
+    }
+
+    public static string GetActualFullName(this IMemberDefinition member)
+    {
+        if (member.DeclaringType == null)
+        {
+            return member.Name;
+        }
+
+        return $"{member.DeclaringType.FullName}.{member.Name}";
+    }
 }

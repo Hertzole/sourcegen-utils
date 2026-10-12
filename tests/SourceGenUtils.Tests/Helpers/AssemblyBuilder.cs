@@ -96,6 +96,8 @@ public static class AssemblyBuilder
             {
                 writer.AppendLine(usage);
             }
+
+            writer.AppendLine("public static void Use(params object[] values) { }");
         }
 
         return BuildAssemblyWithGenerator([writer.ToString()], compileUnsafe, true);

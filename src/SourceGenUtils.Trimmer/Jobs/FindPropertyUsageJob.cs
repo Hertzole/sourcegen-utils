@@ -50,6 +50,18 @@ internal readonly struct FindPropertyUsageJob : IRefAction<PropertyUsage>
             return true;
         }
 
+        if (type.HasNestedTypes)
+        {
+            Collection<TypeDefinition> nestedTypes = type.NestedTypes;
+            for (int i = 0; i < nestedTypes.Count; i++)
+            {
+                if (FindUsageInType(nestedTypes[i], propertyToFind))
+                {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 }

@@ -232,6 +232,23 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "RemoveRange",
+                    Signature = "public partial void RemoveRange(int start, int count)",
+                    Implementation = (codeWriter, in _) => { codeWriter.AppendLine("writer.RemoveRange(start, count);"); },
+                    Dependencies = [$"{writer_no_generic}.RemoveRange(int, int)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Removes a range of items, starting at the specified start index and removes the specified count.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["start"] = "The zero-based index of the first item to remove.",
+                            ["count"] = "The number of items to remove."
+                        }
+                    },
+                    Attributes = AggressiveInlineAttribute
+                },
+                new MethodSource
+                {
                     Name = "IndexOf",
                     Signature = "public partial int IndexOf(T item)",
                     Implementation = (code, in _) => { code.AppendLine("return global::System.Array.IndexOf(writer.array, item, 0, writer.size);"); },
@@ -438,6 +455,29 @@ partial class Generator
                                 }
 
                                 code.AppendLine("array[size] = default!;");
+                            }
+                        },
+                        new MethodSource
+                        {
+                            Name = "RemoveRange",
+                            Signature = "internal partial void RemoveRange(int start, int count)",
+                            Implementation = (code, in _) =>
+                            {
+                                code.AppendIndentedSource("""
+                                                          if (count > 0)
+                                                          {
+                                                              size -= count;
+                                                              if (start < size)
+                                                              {
+                                                                  global::System.Array.Copy(array, start + count, array, start, size - start);
+                                                              }
+
+                                                              if (typeof(T) != typeof(char))
+                                                              {
+                                                                  global::System.Array.Clear(array, size, count);
+                                                              }
+                                                          }
+                                                          """);
                             }
                         },
                         new MethodSource

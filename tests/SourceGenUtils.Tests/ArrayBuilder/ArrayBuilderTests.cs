@@ -124,6 +124,25 @@ public class ArrayBuilderTests : GeneratorTests
     }
 
     [Test]
+    public void RemoveRange()
+    {
+        // Arrange
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>("var b = new ArrayBuilder<char>(); b.AddRange(ReadOnlySpan<char>.Empty); b.RemoveRange(0, 1); b.ToString(); Use(b.Count);");
+
+        char[] values = "abcdefg".ToCharArray();
+        char[] expected = "abefg".ToCharArray();
+        builder.AddRange(values);
+
+        // Act
+        builder.RemoveRange(2, 2);
+
+        // Assert
+        Assert.That(builder.Count, Is.EqualTo(expected.Length));
+        Assert.That(builder.ToString(), Is.EqualTo(new string(expected)));
+    }
+
+    [Test]
     public void IndexOf_Valid()
     {
         // Arrange

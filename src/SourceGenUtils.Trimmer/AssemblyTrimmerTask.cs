@@ -20,6 +20,6 @@ public class AssemblyTrimmerTask : Task
             RemoveCodeCoverageAttribute = RemoveCodeCoverageAttribute
         };
 
-        return trimmer.Trim(AssemblyPath);
+        return trimmer.Trim(AssemblyPath, true);
     }
 }

@@ -41,9 +41,21 @@ public sealed class AssemblyTrimmer
                     }
 
                     GetSourceGenTypes(assembly, sourceGenTypes);
-                    dirty |= RemoveUnusedMethodUsages(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
                     dirty |= RemoveUnusedTypes(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
+                    if (dirty)
+                    {
+                        // Get source gen types again because the source gen types have changed
+                        GetSourceGenTypes(assembly, sourceGenTypes);
+                    }
+
+                    dirty |= RemoveUnusedMethodUsages(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
+                    dirty |= RemoveUnusedProperties(sourceGenTypes, assembly, RemoveGeneratedCodeAttribute, RemoveCodeCoverageAttribute, log);
                     count++;
+
+                    if (log)
+                    {
+                        Console.WriteLine($"=== ITERATION {count} DONE ==={(dirty ? " (dirty)" : string.Empty)}");
+                    }
 
                     if (count >= 512)
                     {
@@ -174,6 +186,47 @@ public sealed class AssemblyTrimmer
             if (log)
             {
                 Console.WriteLine($"REMOVE TYPES :: {usages[i].Type.FullName} is unused.");
+            }
+
+            dirty = true;
+        }
+
+        return dirty;
+    }
+
+    private static bool RemoveUnusedProperties(IReadOnlyList<TypeDefinition> sourceGenTypes,
+        AssemblyDefinition assembly,
+        bool removeGeneratedCodeAttribute,
+        bool removeCodeCoverageAttribute,
+        bool log)
+    {
+        PropertyUsage[] usages = sourceGenTypes.SelectMany(static x => x.Properties).Select(x => new PropertyUsage(true, x)).ToArray();
+        FindPropertyUsageJob typeJob = new FindPropertyUsageJob(assembly, log);
+        ParallelHelper.ForEach<PropertyUsage, FindPropertyUsageJob>(usages, in typeJob);
+
+        bool dirty = false;
+
+        for (int i = 0; i < usages.Length; i++)
+        {
+            if (usages[i].IsUsed)
+            {
+                if (RemoveOptionalAttributes(usages[i].Property, removeGeneratedCodeAttribute, removeCodeCoverageAttribute))
+                {
+                    dirty = true;
+                    if (log)
+                    {
+                        Console.WriteLine($"REMOVE PROPERTY :: {usages[i].Property.FullName} is used, but removed optional attributes.");
+                    }
+                }
+
+                continue;
+            }
+
+            usages[i].Property.DeclaringType.Properties.Remove(usages[i].Property);
+
+            if (log)
+            {
+                Console.WriteLine($"REMOVE PROPERTY :: {usages[i].Property.FullName} is unused.");
             }
 
             dirty = true;

@@ -173,7 +173,7 @@ internal readonly struct FindMethodUsageJob : IRefAction<MethodUsage>
             }
         }
 
-        if (FindUsageInMethods(type, methodToFind))
+        if (FindUsageInMethods(type, methodToFind, log))
         {
             return true;
         }
@@ -218,7 +218,7 @@ internal readonly struct FindMethodUsageJob : IRefAction<MethodUsage>
         return false;
     }
 
-    private bool FindUsageInMethods(TypeDefinition type, MethodDefinition methodToFind)
+    public static bool FindUsageInMethods(TypeDefinition type, MethodDefinition methodToFind, bool log)
     {
         if (!type.HasMethods)
         {
@@ -228,7 +228,7 @@ internal readonly struct FindMethodUsageJob : IRefAction<MethodUsage>
         Collection<MethodDefinition> methods = type.Methods;
         for (int i = 0; i < methods.Count; i++)
         {
-            if (FindUsageInMethod(methods[i], methodToFind))
+            if (FindUsageInMethod(methods[i], methodToFind, log))
             {
                 return true;
             }
@@ -237,7 +237,7 @@ internal readonly struct FindMethodUsageJob : IRefAction<MethodUsage>
         return false;
     }
 
-    private bool FindUsageInMethod(MethodDefinition targetMethod, MethodDefinition methodToFind)
+    public static bool FindUsageInMethod(MethodDefinition targetMethod, MethodDefinition methodToFind, bool log)
     {
         Collection<Instruction> il = targetMethod.Body.Instructions;
         for (int j = 0; j < il.Count; j++)

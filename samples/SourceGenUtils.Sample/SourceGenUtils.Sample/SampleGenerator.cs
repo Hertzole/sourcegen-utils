@@ -55,6 +55,7 @@ internal sealed class SampleGeneratorAttribute : global::System.Attribute { }
         try
         {
             using CodeWriter writer = new CodeWriter();
+            using ArrayBuilder<char> nameBuilder = new ArrayBuilder<char>();
 
             writer.Append(symbol);
 
@@ -90,7 +91,11 @@ internal sealed class SampleGeneratorAttribute : global::System.Attribute { }
                 }
             }
 
-            context.AddSource(symbol.Name, writer);
+            nameBuilder.Clear();
+            nameBuilder.AddRange(symbol.Name);
+            nameBuilder.AddRange(".g.cs");
+
+            context.AddSource(nameBuilder.ToString(), writer);
 
             Log.Info("Added source");
         }

@@ -33,6 +33,8 @@ public sealed class AssemblyTrimmer
                 int count = 0;
                 while (dirty)
                 {
+                    dirty = false;
+
                     if (log)
                     {
                         Console.WriteLine($"=== ITERATION {count} ===");

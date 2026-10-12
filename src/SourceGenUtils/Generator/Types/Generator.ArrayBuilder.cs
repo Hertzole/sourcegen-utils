@@ -249,6 +249,35 @@ partial class Generator
                 },
                 new MethodSource
                 {
+                    Name = "ReplaceAll",
+                    Signature = "public partial void ReplaceAll(T toReplace, T newValue)",
+                    Implementation = (codeWriter, in _) =>
+                    {
+                        codeWriter.AppendIndentedSource("""
+                                                        int index = 0;
+                                                        do
+                                                        {
+                                                            index = global::System.Array.IndexOf(writer.array, toReplace, index, writer.size - index);
+                                                            if (index != -1)
+                                                            {
+                                                                writer.array[index] = newValue;
+                                                            }
+                                                        } while (index != -1);
+                                                        """);
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Replaces all values of the specified value in the array with the new specified value.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["toReplace"] = "The value to replace.",
+                            ["newValue"] = "The new value to insert."
+                        }
+                    },
+                    Attributes = AggressiveInlineAttribute
+                },
+                new MethodSource
+                {
                     Name = "IndexOf",
                     Signature = "public partial int IndexOf(T item)",
                     Implementation = (code, in _) => { code.AppendLine("return global::System.Array.IndexOf(writer.array, item, 0, writer.size);"); },

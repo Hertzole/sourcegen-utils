@@ -143,6 +143,25 @@ public class ArrayBuilderTests : GeneratorTests
     }
 
     [Test]
+    public void ReplaceAll()
+    {
+        // Arrange
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>("var b = new ArrayBuilder<int>(); b.AddRange(ReadOnlySpan<int>.Empty); b.ReplaceAll(0, 1); b.ToArray(); Use(b.Count, b[0]);");
+
+        int[] values = [1, 2, 0, 0, 0, 3, 4, 5];
+        int[] expected = [1, 2, 9, 9, 9, 3, 4, 5];
+        builder.AddRange(values);
+
+        // Act
+        builder.ReplaceAll(0, 9);
+
+        // Assert
+        Assert.That(builder.Count, Is.EqualTo(expected.Length));
+        Assert.That(builder.ToArray(), Is.EqualTo(expected));
+    }
+
+    [Test]
     public void IndexOf_Valid()
     {
         // Arrange

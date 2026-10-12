@@ -531,9 +531,9 @@ public sealed class WrapperGenerator : IIncrementalGenerator
             builder.RemoveRange(0, 8);
         }
 
-        builder.Replace('.', '_');
-        builder.Replace('<', '_');
-        builder.Replace('>', '_');
+        builder.ReplaceAll('.', '_');
+        builder.ReplaceAll('<', '_');
+        builder.ReplaceAll('>', '_');
     }
 
     private static void WriteMethodsImplementations(CodeWriter writer, TypeSource type, string typeName)

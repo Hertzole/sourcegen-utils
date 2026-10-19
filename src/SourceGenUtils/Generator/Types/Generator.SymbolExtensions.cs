@@ -113,7 +113,7 @@ partial class Generator
                                   </code>
 
                                   <code>
-                                  ITypeSymbol structSymbol = ... public struct MyStruct [}
+                                  ITypeSymbol structSymbol = ... public struct MyStruct {}
                                   structSymbol.GetDeclarationString(false); // struct MyStruct
                                   </code>
 

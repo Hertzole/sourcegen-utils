@@ -177,6 +177,79 @@ internal partial class CodeWriterTests
         return writer.ToString();
     }
 
+    [Test]
+    public void AppendNullable()
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false, "new CodeWriter().AppendNullable().AppendLine(\"\").ToString();");
+        const string expected = """
+                                #nullable enable
+                                // Comment
+                                #nullable restore
+                                """;
+
+        // Act
+        writer.AppendNullable();
+        writer.AppendLine("// Comment");
+
+        // As
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void AppendGeneratedCodeAttribute()
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false, "new CodeWriter().AppendGeneratedCodeAttribute(\"\", \"\").AppendLine(\"\").ToString();");
+        const string expected = """
+                                [global::System.CodeDom.Compiler.GeneratedCode("My.Generator", "1.2.3.4")]
+                                public void Method() {}
+                                """;
+
+        // Act
+        writer.AppendGeneratedCodeAttribute("My.Generator", "1.2.3.4");
+        writer.AppendLine("public void Method() {}");
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void AppendExcludeFromCodeCoverageAttribute()
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false, "new CodeWriter().AppendExcludeFromCodeCoverageAttribute().AppendLine(\"\").ToString();");
+        const string expected = """
+                                [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+                                public void Method() {}
+                                """;
+
+        // Act
+        writer.AppendExcludeFromCodeCoverageAttribute();
+        writer.AppendLine("public void Method() {}");
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void AppendEmbeddedAttribute()
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false, "new CodeWriter().AppendEmbeddedAttribute().AppendLine(\"\").ToString();");
+        const string expected = """
+                                [global::Microsoft.CodeAnalysis.EmbeddedAttribute]
+                                public void Method() {}
+                                """;
+
+        // Act
+        writer.AppendEmbeddedAttribute();
+        writer.AppendLine("public void Method() {}");
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
     private static string MessUpSource(string value, bool replaceNewLines, bool replaceTabs)
     {
         StringBuilder sb = new StringBuilder(value);

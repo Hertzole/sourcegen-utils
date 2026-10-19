@@ -154,6 +154,147 @@ internal partial class CodeWriterTests : GeneratorTests
         return "CodeWriter";
     }
 
+    [Test]
+    public void WithBlock([Values] bool newLineOnDispose)
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false, "var writer = new CodeWriter().AppendLine(\"\").Append(\"\"); writer.WithBlock(); writer.ToString();");
+        // Use \n because code writer appends \n instead of using environment new line.
+        StringBuilder builder = new StringBuilder()
+                                .Append("{\n")
+                                .Append("    Inner\n")
+                                .Append("}\n");
+
+        if (newLineOnDispose)
+        {
+            builder.Append('\n');
+        }
+
+        builder.Append("Outer");
+        string expected = builder.ToString();
+
+        // Act
+        using (writer.WithBlock(newLineOnDispose))
+        {
+            writer.AppendLine("Inner");
+        }
+
+        writer.Append("Outer");
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(4)]
+    public void WithIndent(int indent)
+    {
+        // Arrange
+        const int start_indent = 2;
+        const int indent_size = 4;
+        string message = Fake.Lorem.Sentence();
+        string message2 = Fake.Lorem.Sentence();
+        CodeWriter writer = CompileCodeWriter(false,
+            "var writer = new CodeWriter().AppendLine(\"\").Append(\"\"); writer.Indent = 0; writer.WithIndent(0); writer.ToString();");
+
+        StringBuilder builder = new StringBuilder()
+                                .Append(' ', start_indent * indent_size).Append(message).Append('\n')
+                                .Append(' ', indent * indent_size).Append(message2); // indent by 4 spaces per indent
+
+        string expected = builder.ToString();
+
+        // Act
+        writer.Indent = start_indent;
+        writer.AppendLine(message);
+        using (writer.WithIndent(indent))
+        {
+            writer.Append(message2);
+        }
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    [TestCase("#if DEBUG")]
+    [TestCase("if DEBUG")]
+    [TestCase(" DEBUG")]
+    [TestCase("DEBUG")]
+    public void WithCondition(string condition)
+    {
+        // Arrange
+        string message = Fake.Lorem.Sentence();
+        CodeWriter writer = CompileCodeWriter(false, "var writer = new CodeWriter().AppendLine(\"\"); writer.WithCondition(\"\"); writer.ToString();");
+        string expected = $"{message}\n#if DEBUG\n{message}\n#endif";
+
+        // Act
+        writer.AppendLine(message);
+        using (writer.WithCondition(condition))
+        {
+            writer.AppendLine(message);
+        }
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void ToString_NothingWritten_IsEmpty()
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false, "new CodeWriter().ToString();");
+
+        // Act
+        string result = writer.ToString();
+
+        // Assert
+        Assert.That(result, Is.Empty);
+    }
+
+    [Test]
+    public void Clear()
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false,
+            "var writer = new CodeWriter().AppendLine(\"\").AppendNamespace(\"\").AppendNullable().Clear(); Use(writer.Indent); writer.ToString();");
+
+        // Act
+        writer.Indent = 10;
+        writer.AppendLine("// Comment");
+        writer.AppendNullable();
+        writer.AppendNamespace("Namespace");
+        writer.Clear();
+
+        // Assert
+        Assert.That(writer.Indent, Is.EqualTo(0));
+        Assert.That(writer.builder.Length, Is.EqualTo(0));
+        Assert.That(writer.ToString(), Is.Empty);
+    }
+
+    [Test]
+    public void IndentIsWrittenOnFirstCall()
+    {
+        // Arrange
+        CodeWriter writer = CompileCodeWriter(false, "var writer = new CodeWriter().AppendLine(\"\"); writer.Indent = 0; writer.Clear(); writer.ToString();");
+        const string expected = "    test";
+
+        // Act
+        writer.Indent = 1;
+        writer.AppendLine("test");
+        string result1 = writer.ToString();
+        writer.Clear();
+
+        writer.Indent = 1;
+        writer.AppendLine("test");
+        string result2 = writer.ToString();
+
+        // Assert
+        Assert.That(result1, Is.EqualTo(expected));
+        Assert.That(result2, Is.EqualTo(expected));
+    }
+
     private static void CreateAppendTest<T>(AppendType appendType, bool isUnsafe, T value)
     {
         Type type = typeof(T);

@@ -45,54 +45,53 @@ partial class Generator
                     Signature = "public static partial string GetDeclarationString(this global::Microsoft.CodeAnalysis.ITypeSymbol symbol, bool isPartial)",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("if (symbol.IsReferenceType)");
-                        using (writer.WithBlock(true))
-                        {
-                            writer.AppendLine("if (isPartial)");
-                            using (writer.WithBlock(true))
-                            {
-                                writer.AppendLine("if (symbol.IsRecord)");
-                                using (writer.WithBlock(true))
-                                {
-                                    writer.AppendLine("return \"partial record\";");
-                                }
+                        writer.AppendIndentedSource(
+                            $$"""
+                              if (symbol.IsReferenceType)
+                              {
+                                  if (isPartial)
+                                  {
+                                      if (symbol.TypeKind == {{GLOBAL_MS_CODE}}.TypeKind.Interface)
+                                      {
+                                          return "partial interface";
+                                      }
+                                      else if (symbol.IsRecord)
+                                      {
+                                          return "partial record";
+                                      }
 
-                                writer.AppendLine("return symbol.IsStatic ? \"static partial class\" : \"partial class\";");
-                            }
+                                      return symbol.IsStatic ? "static partial class" : "partial class";
+                                  }
 
-                            // Not partial
-                            writer.AppendLine("if (symbol.IsRecord)");
-                            using (writer.WithBlock(true))
-                            {
-                                writer.AppendLine("return \"record\";");
-                            }
+                                  if (symbol.TypeKind == {{GLOBAL_MS_CODE}}.TypeKind.Interface)
+                                  {
+                                      return "interface";
+                                  }
+                                  else if (symbol.IsRecord)
+                                  {
+                                      return "record";
+                                  }
 
-                            // Not record
-                            writer.AppendLine("return symbol.IsStatic ? \"static class\" : \"class\";");
-                        }
+                                  return symbol.IsStatic ? "static class" : "class";
+                              }
 
-                        // Must be value type.
-                        writer.AppendLine("if (symbol.IsRecord)");
-                        using (writer.WithBlock(true))
-                        {
-                            writer.AppendLine("if (isPartial)");
-                            using (writer.WithBlock(true))
-                            {
-                                writer.AppendLine("return symbol.IsReadOnly ? \"readonly partial record struct\" : \"partial record struct\";");
-                            }
+                              if (symbol.IsRecord)
+                              {
+                                  if (isPartial)
+                                  {
+                                      return symbol.IsReadOnly ? "readonly partial record struct" : "partial record struct";
+                                  }
 
-                            writer.AppendLine("return symbol.IsReadOnly ? \"readonly record struct\" : \"record struct\";");
-                        }
+                                  return symbol.IsReadOnly ? "readonly record struct" : "record struct";
+                              }
 
-                        // Not a record.
-                        writer.AppendLine("if (isPartial)");
-                        using (writer.WithBlock(true))
-                        {
-                            writer.AppendLine("return symbol.IsReadOnly ? \"readonly partial struct\" : \"partial struct\";");
-                        }
+                              if (isPartial)
+                              {
+                                  return symbol.IsReadOnly ? "readonly partial struct" : "partial struct";
+                              }
 
-                        // Not partial, just your average struct.
-                        writer.AppendLine("return symbol.IsReadOnly ? \"readonly struct\" : \"struct\";");
+                              return symbol.IsReadOnly ? "readonly struct" : "struct";
+                              """);
                     },
                     EmptyStub = "return string.Empty;",
                     Trivia = new TriviaSource

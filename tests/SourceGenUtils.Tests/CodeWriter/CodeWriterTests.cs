@@ -128,6 +128,30 @@ internal partial class CodeWriterTests : GeneratorTests
             yield return new TestCaseData(BuildTypeSource("struct A", TEST_NAMESPACE), false, false)
                          .SetName("Struct with namespace ()")
                          .Returns(BuildSymbolDeclaration("struct A"));
+
+            yield return new TestCaseData(BuildTypeSource("interface A"), true, true)
+                         .SetName("Interface without namespace (Partial, Include namespace)")
+                         .Returns(BuildSymbolDeclaration("partial interface A"));
+
+            yield return new TestCaseData(BuildTypeSource("interface A"), false, true)
+                         .SetName("Interface without namespace (Include namespace)")
+                         .Returns(BuildSymbolDeclaration("interface A"));
+
+            yield return new TestCaseData(BuildTypeSource("interface A"), false, false)
+                         .SetName("Interface without namespace ()")
+                         .Returns(BuildSymbolDeclaration("interface A"));
+
+            yield return new TestCaseData(BuildTypeSource("interface A", TEST_NAMESPACE), true, true)
+                         .SetName("Interface with namespace (Partial, Include namespace)")
+                         .Returns(BuildSymbolDeclaration("partial interface A", TEST_NAMESPACE));
+
+            yield return new TestCaseData(BuildTypeSource("interface A", TEST_NAMESPACE), false, true)
+                         .SetName("Interface with namespace (Include namespace)")
+                         .Returns(BuildSymbolDeclaration("interface A", TEST_NAMESPACE));
+
+            yield return new TestCaseData(BuildTypeSource("interface A", TEST_NAMESPACE), false, false)
+                         .SetName("Interface with namespace ()")
+                         .Returns(BuildSymbolDeclaration("interface A"));
         }
     }
 

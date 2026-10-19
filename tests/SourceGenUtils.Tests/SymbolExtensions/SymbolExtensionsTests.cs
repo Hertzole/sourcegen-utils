@@ -26,6 +26,8 @@ public class SymbolExtensionsTests : GeneratorTests
     [TestCase("record struct", false, ExpectedResult = "record struct")]
     [TestCase("struct", true, ExpectedResult = "partial struct")]
     [TestCase("struct", false, ExpectedResult = "struct")]
+    [TestCase("interface", true, ExpectedResult = "partial interface")]
+    [TestCase("interface", false, ExpectedResult = "interface")]
     public string GetDeclarationString(string declaration, bool isPartial)
     {
         // Arrange

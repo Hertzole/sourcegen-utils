@@ -558,12 +558,14 @@ internal static partial class CodeWriterGenerator
                 Trivia = new TriviaSource
                 {
                     Summary =
-                        "Creates a scope in a preprocessor conditional block. Returns a disposable scope that closes the conditional block when disposed.",
+                        "Creates a scope in a preprocessor conditional block (<c>#if CONDITION</c>). Returns a disposable scope that closes the conditional block (<c>#endif</c>) when disposed.",
                     Parameters = new Dictionary<string, string>
                     {
                         ["condition"] = "The condition."
                     },
                     Returns = "A disposable scope that closes the conditional block when disposed.",
+                    Remarks =
+                        "You can write <c>#if CONDITION</c>, <c>if CONDITION</c> or just <c>CONDITION</c> and the  condition will be wrapped in <c>#if</c> and <c>#endif</c> no matter what.",
                     Example = """
                               <code>
                               using CodeWriter writer = new CodeWriter();

@@ -13,6 +13,8 @@ partial class Generator
     private static TypeSource CreateEquatableArray()
     {
         const string equatable = "global::System.IEquatable";
+        string arrayTrivia = GetTypeTriviaReference($"{GLOBAL_EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>");
+        string immutableTrivia = GetTypeTriviaReference("global::System.Collections.Immutable.ImmutableArray{T}", "ImmutableArray<T>");
 
         return new TypeSource
         {
@@ -69,7 +71,7 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            $"Creates a new {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")} from the specified array. The array is copied.",
+                            $"Creates a new {arrayTrivia} from the specified array. The array is copied.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["array"] = "The array to wrap."
@@ -87,7 +89,8 @@ partial class Generator
                     },
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Creates a new {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")} from the specified immutable array.",
+                        Summary =
+                            $"Creates a new {arrayTrivia} from the specified immutable array.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["array"] = "The immutable array to wrap."
@@ -113,11 +116,8 @@ partial class Generator
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
-                        Summary =
-                            $"Converts this {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")} to an " +
-                            $"{GetTypeTriviaReference("global::System.Collections.Immutable.ImmutableArray{T}", "ImmutableArray<T>")}.",
-                        Returns =
-                            $"An {GetTypeTriviaReference("global::System.Collections.Immutable.ImmutableArray{T}", "ImmutableArray<T>")} containing the elements."
+                        Summary = $"Converts this {arrayTrivia} to an {immutableTrivia}.",
+                        Returns = $"An {immutableTrivia} containing the elements."
                     }
                 },
                 new MethodSource
@@ -139,8 +139,7 @@ partial class Generator
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
-                        Summary =
-                            $"Returns a read-only span over the elements of this {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")}.",
+                        Summary = $"Returns a read-only span over the elements of this {arrayTrivia}.",
                         Returns = "A read-only span over the elements."
                     }
                 },
@@ -221,12 +220,12 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary =
-                            $"Determines whether this instance is equal to another {GetTypeTriviaReference($"{EQUATABLE_ARRAY}{{T}}", "EquatableArray<T>")}.",
+                            $"Determines whether this instance is equal to another {arrayTrivia}.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["other"] = "The other instance to compare."
                         },
-                        Returns = "<see langword=\"true\"/> if this instance is equal to <paramref name=\"other\"/>; otherwise <see langword=\"false\"/>."
+                        Returns = $"{TRIVIA_TRUE} if this instance is equal to <paramref name=\"other\"/>; otherwise {TRIVIA_FALSE}."
                     }
                 },
                 new MethodSource
@@ -252,7 +251,7 @@ partial class Generator
                         {
                             ["other"] = "The object to compare."
                         },
-                        Returns = "<see langword=\"true\"/> if this instance is equal to <paramref name=\"other\"/>; otherwise <see langword=\"false\"/>."
+                        Returns = $"{TRIVIA_TRUE} if this instance is equal to <paramref name=\"other\"/>; otherwise {TRIVIA_FALSE}."
                     }
                 },
                 new MethodSource
@@ -297,7 +296,7 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "EquatableArrayOperator",
-                    Signature = "public static implicit operator global::" + EQUATABLE_ARRAY +
+                    Signature = "public static implicit operator " + GLOBAL_EQUATABLE_ARRAY +
                                 "<T>(global::System.Collections.Immutable.ImmutableArray<T> array)",
                     Implementation = (writer, in context) =>
                     {
@@ -307,22 +306,20 @@ partial class Generator
                             return;
                         }
 
-                        writer.AppendLine("return new global::" + EQUATABLE_ARRAY + "<T>(array);");
+                        writer.AppendLine("return new " + GLOBAL_EQUATABLE_ARRAY + "<T>(array);");
                     },
                     AlwaysWrite = true,
                     SkipPartial = true,
                     Trivia = new TriviaSource
                     {
-                        Summary =
-                            "Implicitly converts an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/> to an <see cref=\"EquatableArray{T}\"/>.",
-                        Returns = "The converted <see cref=\"EquatableArray{T}\"/>."
+                        Summary = $"Implicitly converts an {immutableTrivia} to an {arrayTrivia}.",
+                        Returns = $"The converted {arrayTrivia}."
                     }
                 },
                 new MethodSource
                 {
                     Name = "ImmutableArrayOperator",
-                    Signature = "public static implicit operator global::System.Collections.Immutable.ImmutableArray<T>(global::" + EQUATABLE_ARRAY +
-                                "<T> array)",
+                    Signature = $"public static implicit operator global::System.Collections.Immutable.ImmutableArray<T>({GLOBAL_EQUATABLE_ARRAY}<T> array)",
                     Implementation = (writer, in context) =>
                     {
                         if (!HasConstructed(in context))
@@ -337,15 +334,14 @@ partial class Generator
                     SkipPartial = true,
                     Trivia = new TriviaSource
                     {
-                        Summary =
-                            "Implicitly converts an <see cref=\"EquatableArray{T}\"/> to an <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>.",
-                        Returns = "The converted <see cref=\"global::System.Collections.Immutable.ImmutableArray{T}\"/>."
+                        Summary = $"Implicitly converts an {arrayTrivia} to an {immutableTrivia}.",
+                        Returns = $"The converted {immutableTrivia}."
                     }
                 },
                 new MethodSource
                 {
                     Name = "==",
-                    Signature = "public static bool operator ==(global::" + EQUATABLE_ARRAY + "<T> left, global::" + EQUATABLE_ARRAY + "<T> right)",
+                    Signature = $"public static bool operator ==({GLOBAL_EQUATABLE_ARRAY}<T> left, {GLOBAL_EQUATABLE_ARRAY}<T> right)",
                     Implementation = (writer, in context) =>
                     {
                         if (!HasConstructed(in context))
@@ -360,14 +356,14 @@ partial class Generator
                     SkipPartial = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are equal.",
+                        Summary = $"Determines whether two {arrayTrivia} instances are equal.",
                         Returns = $"{TRIVIA_TRUE} if <paramref name=\"left\"/> is equal to <paramref name=\"right\"/>; otherwise {TRIVIA_FALSE}."
                     }
                 },
                 new MethodSource
                 {
                     Name = "!=",
-                    Signature = "public static bool operator !=(global::" + EQUATABLE_ARRAY + "<T> left, global::" + EQUATABLE_ARRAY + "<T> right)",
+                    Signature = $"public static bool operator !=({GLOBAL_EQUATABLE_ARRAY}<T> left, {GLOBAL_EQUATABLE_ARRAY}<T> right)",
                     Implementation = (writer, in context) =>
                     {
                         if (!HasConstructed(in context))
@@ -382,7 +378,7 @@ partial class Generator
                     SkipPartial = true,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Determines whether two <see cref=\"EquatableArray{T}\"/> instances are not equal.",
+                        Summary = $"Determines whether two {arrayTrivia} instances are not equal.",
                         Returns = $"{TRIVIA_TRUE} if <paramref name=\"left\"/> is not equal to <paramref name=\"right\"/>; otherwise {TRIVIA_FALSE}."
                     }
                 }

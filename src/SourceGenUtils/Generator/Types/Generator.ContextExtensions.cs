@@ -47,7 +47,8 @@ partial class Generator
                 Dependencies = Dependencies(),
                 Trivia = new TriviaSource
                 {
-                    Summary = $"Adds source code from the provided {GetTypeTriviaReference(GLOBAL_CODE_WRITER, "CodeWriter", out _)} to the compilation.",
+                    Summary =
+                        $"Adds source code from the provided {GetTypeTriviaReference(GLOBAL_CODE_WRITER, "CodeWriter", out _)} to the compilation with UTF-8 encoding.",
                     Remarks = "The writer will be cleared after adding the source.",
                     Parameters = new Dictionary<string, string>
                     {

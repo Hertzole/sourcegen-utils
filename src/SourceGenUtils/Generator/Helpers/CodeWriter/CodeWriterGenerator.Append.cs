@@ -31,7 +31,7 @@ internal partial class CodeWriterGenerator
                 },
                 Dependencies = appendDependencies,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("string")
+                Trivia = CreateAppendTrivia("global::System.String", "string")
             },
             new MethodSource
             {
@@ -83,7 +83,7 @@ internal partial class CodeWriterGenerator
                 Implementation = AppendImplementation,
                 Dependencies = appendDependencies,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("char")
+                Trivia = CreateAppendTrivia("global::System.Char", "char")
             },
             new MethodSource
             {
@@ -102,7 +102,7 @@ internal partial class CodeWriterGenerator
                 Trivia = new TriviaSource
                 {
                     Summary =
-                        "Appends the specified number of copies of the specified <see cref=\"char\"/> value to the current line without creating a new line.",
+                        $"Appends the specified number of copies of the specified {GetTypeTriviaReference("global::System.Char", "char")} value to the current line without creating a new line.",
                     Parameters = new Dictionary<string, string>
                     {
                         ["value"] = "The char to append.",
@@ -121,7 +121,8 @@ internal partial class CodeWriterGenerator
                 EmptyStub = return_this,
                 Trivia = new TriviaSource
                 {
-                    Summary = "Appends the specified <see cref=\"char\"/> array to the current line without creating a new line.",
+                    Summary =
+                        $"Appends the specified {GetTypeTriviaReference("global::System.Char", "char")} array to the current line without creating a new line.",
                     Parameters = new Dictionary<string, string>
                     {
                         ["value"] = "The char array to append."
@@ -163,7 +164,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("byte")
+                Trivia = CreateAppendTrivia("global::System.Byte", "byte")
             },
             new MethodSource
             {
@@ -173,7 +174,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("byte")
+                Trivia = CreateAppendFormatTrivia("global::System.Byte", "byte")
             },
             new MethodSource
             {
@@ -183,7 +184,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("sbyte")
+                Trivia = CreateAppendTrivia("global::System.SByte", "sbyte")
             },
             new MethodSource
             {
@@ -193,7 +194,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("sbyte")
+                Trivia = CreateAppendFormatTrivia("global::System.SByte", "sbyte")
             },
             new MethodSource
             {
@@ -203,7 +204,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("short")
+                Trivia = CreateAppendTrivia("global::System.Int16", "short")
             },
             new MethodSource
             {
@@ -213,7 +214,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("short")
+                Trivia = CreateAppendFormatTrivia("global::System.Int16", "short")
             },
             new MethodSource
             {
@@ -223,7 +224,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("ushort")
+                Trivia = CreateAppendTrivia("global::System.UInt16", "ushort")
             },
             new MethodSource
             {
@@ -233,7 +234,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("ushort")
+                Trivia = CreateAppendFormatTrivia("global::System.UInt16", "ushort")
             },
             new MethodSource
             {
@@ -243,7 +244,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("int")
+                Trivia = CreateAppendTrivia("global::System.Int32", "int")
             },
             new MethodSource
             {
@@ -253,7 +254,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("int")
+                Trivia = CreateAppendFormatTrivia("global::System.Int32", "int")
             },
             new MethodSource
             {
@@ -263,7 +264,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("uint")
+                Trivia = CreateAppendTrivia("global::System.UInt32", "uint")
             },
             new MethodSource
             {
@@ -273,7 +274,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("uint")
+                Trivia = CreateAppendFormatTrivia("global::System.UInt32", "uint")
             },
             new MethodSource
             {
@@ -283,7 +284,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("long")
+                Trivia = CreateAppendTrivia("global::System.Int64", "long")
             },
             new MethodSource
             {
@@ -293,7 +294,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("long")
+                Trivia = CreateAppendFormatTrivia("global::System.Int64", "long")
             },
             new MethodSource
             {
@@ -303,7 +304,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("ulong")
+                Trivia = CreateAppendTrivia("global::System.UInt64", "ulong")
             },
             new MethodSource
             {
@@ -313,7 +314,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("ulong")
+                Trivia = CreateAppendFormatTrivia("global::System.UInt64", "ulong")
             },
             new MethodSource
             {
@@ -323,7 +324,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("float")
+                Trivia = CreateAppendTrivia("global::System.Single", "float")
             },
             new MethodSource
             {
@@ -333,7 +334,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("float")
+                Trivia = CreateAppendFormatTrivia("global::System.Single", "float")
             },
             new MethodSource
             {
@@ -343,7 +344,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("double")
+                Trivia = CreateAppendTrivia("global::System.Double", "double")
             },
             new MethodSource
             {
@@ -353,7 +354,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("double")
+                Trivia = CreateAppendFormatTrivia("global::System.Double", "double")
             },
             new MethodSource
             {
@@ -363,7 +364,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, false),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("decimal")
+                Trivia = CreateAppendTrivia("global::System.Decimal", "decimal")
             },
             new MethodSource
             {
@@ -373,7 +374,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => AppendFormattable(writer, true),
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendFormatTrivia("decimal")
+                Trivia = CreateAppendFormatTrivia("global::System.Decimal", "decimal")
             },
             new MethodSource
             {
@@ -383,7 +384,7 @@ internal partial class CodeWriterGenerator
                 Implementation = (writer, in _) => { writer.AppendLine("return Append(value ? \"true\" : \"false\");"); },
                 Dependencies = dependsOnAppend,
                 EmptyStub = return_this,
-                Trivia = CreateAppendTrivia("bool")
+                Trivia = CreateAppendTrivia("global::System.Boolean", "bool")
             },
             new MethodSource
             {
@@ -437,8 +438,8 @@ internal partial class CodeWriterGenerator
                     Summary =
                         $"Appends the string representation of the specified {GetTypeTriviaReference($"{GLOBAL_MS_CODE}.ITypeSymbol", "ITypeSymbol", out _)}, " +
                         $"along with its required declarations, without creating a newline.<br/>\n" +
-                        $"Optionally inserts the <c>partial</c> keyword in the declaration if <paramref name=\"isPartial\"/> is <see langword=\"true\"/>.<br/>\n" +
-                        $"Optionally inserts the namespace if <paramref name=\"appendNamespace\"/> is <see langword=\"true\"/>.",
+                        $"Optionally inserts the <c>partial</c> keyword in the declaration if <paramref name=\"isPartial\"/> is {TRIVIA_TRUE}.<br/>\n" +
+                        $"Optionally inserts the namespace if <paramref name=\"appendNamespace\"/> is {TRIVIA_TRUE}.",
                     Parameters = new Dictionary<string, string>
                     {
                         ["value"] = "The type to append.",

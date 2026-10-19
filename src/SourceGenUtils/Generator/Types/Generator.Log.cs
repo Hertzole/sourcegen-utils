@@ -19,7 +19,8 @@ partial class Generator
             ],
             Trivia = new TriviaSource
             {
-                Summary = "Provides debug-only logging that writes to a log file."
+                Summary = "Provides debug-only logging that writes to a log file.",
+                Remarks = "All calls to this class are compiled out in release builds."
             },
             Fields = new Dictionary<string, FieldSource>
             {

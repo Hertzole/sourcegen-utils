@@ -101,7 +101,7 @@ partial class Generator
                     Dependencies = constructorArgs,
                     Trivia = new TriviaSource
                     {
-                        Summary = "Creates a new <see cref=\"ArrayBuilder{T}\"/> with a default initial capacity."
+                        Summary = $"Creates a new {GetTypeTriviaReference($"{GLOBAL_ARRAY_BUILDER}{{T}}", "ArrayBuilder<T>")} with a default initial capacity."
                     }
                 },
                 new MethodSource
@@ -116,7 +116,8 @@ partial class Generator
                     Dependencies = [.. constructorArgs, $"{writer_no_generic}.EnsureCapacity(int)"],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Creates a new <see cref=\"ArrayBuilder{T}\"/> with the specified initial capacity.",
+                        Summary =
+                            $"Creates a new {GetTypeTriviaReference($"{GLOBAL_ARRAY_BUILDER}{{T}}", "ArrayBuilder<T>")} with the specified initial capacity.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["capacity"] = "The minimum capacity of the backing array."
@@ -135,7 +136,8 @@ partial class Generator
                     Dependencies = [.. constructorArgs, $"{writer_no_generic}.AddRange({R_SPAN}<T>)"],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Creates a new <see cref=\"ArrayBuilder{T}\"/> initialized with the specified items.",
+                        Summary =
+                            $"Creates a new {GetTypeTriviaReference($"{GLOBAL_ARRAY_BUILDER}{{T}}", "ArrayBuilder<T>")} initialized with the specified items.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["items"] = "The items to initialize the builder with."
@@ -394,8 +396,9 @@ partial class Generator
                     EmptyStub = "return string.Empty;",
                     Trivia = new TriviaSource
                     {
-                        Summary = "For <see cref=\"ArrayBuilder{Char}\"/>, returns a new string that represents the builder's contents.\n" +
-                                  "Otherwise, returns a <see cref=\"string\"/> with the name of the type and the number of elements."
+                        Summary =
+                            $"For {GetTypeTriviaReference($"{GLOBAL_ARRAY_BUILDER}{{Char}}", "ArrayBuilder<char>")}, returns a new string that represents the builder's contents.\n" +
+                            $"Otherwise, returns a {GetTypeTriviaReference("global::System.String", "string")} with the name of the type and the number of elements."
                     }
                 }
             ],

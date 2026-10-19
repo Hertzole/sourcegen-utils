@@ -1,0 +1,29 @@
+<Project>
+
+    <PropertyGroup>
+        <SourceGenUtilsTrimmerAssembly>$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\SourceGenUtils.Trimmer.dll</SourceGenUtilsTrimmerAssembly>
+        <SourceGenUtilsTrim Condition="'$(SourceGenUtilsTrim)' == ''">true</SourceGenUtilsTrim>
+        <_SourceGenUtilsTrimStamp>$(IntermediateOutputPath)$(MSBuildProjectName).sgutrim.stamp</_SourceGenUtilsTrimStamp>
+    </PropertyGroup>
+
+    <UsingTask TaskName="SourceGenUtils.Trimmer.AssemblyTrimmerTask"
+               AssemblyFile="$(SourceGenUtilsTrimmerAssembly)"/>
+
+    <Target Name="SourceGenUtilsTrimAssembly"
+            AfterTargets="CoreCompile"
+            Condition="'$(SourceGenUtilsTrim)' == 'true'"
+            Inputs="@(IntermediateAssembly)"
+            Outputs="$(_SourceGenUtilsTrimStamp)">
+
+        <AssemblyTrimmerTask AssemblyPath="@(IntermediateAssembly->'%(FullPath)')"
+                             RemoveGeneratedCodeAttribute="$(SourceGenUtilsRemoveGeneratedCodeAttribute)"
+                             RemoveCodeCoverageAttribute="$(SourceGenUtilsRemoveCodeCoverageAttribute)"
+                             Verbose="$(SourceGenUtilsTrimVerbose)"/>
+
+        <Touch Files="$(_SourceGenUtilsTrimStamp)" AlwaysCreate="true"/>
+        <ItemGroup>
+            <FileWrites Include="$(_SourceGenUtilsTrimStamp)"/>
+        </ItemGroup>
+    </Target>
+
+</Project>

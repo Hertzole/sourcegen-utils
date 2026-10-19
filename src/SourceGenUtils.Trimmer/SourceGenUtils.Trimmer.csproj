@@ -5,11 +5,13 @@
         <LangVersion>latestmajor</LangVersion>
         <Nullable>enable</Nullable>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.2"/>
-        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.10.1"/>
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.10.1" PrivateAssets="all" ExcludeAssets="runtime"/>
+        <PackageReference Include="Microsoft.Build.Framework" Version="18.10.1" PrivateAssets="all" ExcludeAssets="runtime"/>
         <PackageReference Include="Mono.Cecil" Version="0.11.6"/>
     </ItemGroup>
 

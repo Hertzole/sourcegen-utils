@@ -26,6 +26,8 @@
         <PackageTags>sourcegen, source, generator, sourcegenerator, incremental, incrementalgenerator, util, utility, utils, string, stringbuilder, builder, code, writer, codewriter</PackageTags>
         <NeutralLanguage>en-US</NeutralLanguage>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DevelopmentDependency>true</DevelopmentDependency>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_PackTrimmerTask</TargetsForTfmSpecificContentInPackage>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -35,16 +37,37 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all"/>
+        <ProjectReference Include="..\SourceGenUtils.Trimmer\SourceGenUtils.Trimmer.csproj"
+                          ReferenceOutputAssembly="false"
+                          PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
         <None Include="../../README.md" Pack="true" PackagePath="\"/>
+        <None Include="build\Hertzole.SourceGenUtils.targets" Pack="true" PackagePath="build"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(Configuration)' == 'Release'">
         <!-- Package the generator in the analyzer directory of the nuget package -->
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     </ItemGroup>
+
+    <Target Name="_PackTrimmerTask">
+        <MSBuild Projects="..\SourceGenUtils.Trimmer\SourceGenUtils.Trimmer.csproj"
+                 Targets="GetTargetPath"
+                 Properties="Configuration=$(Configuration)">
+            <Output TaskParameter="TargetOutputs" ItemName="_TrimmerTargetPath"/>
+        </MSBuild>
+
+        <PropertyGroup>
+            <_TrimmerDir>@(_TrimmerTargetPath->'%(RootDir)%(Directory)')</_TrimmerDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <_TrimmerFiles Include="$(_TrimmerDir)*.dll"/>
+            <_TrimmerFiles Remove="$(_TrimmerDir)Microsoft.Build*.dll"/>
+            <TfmSpecificPackageFile Include="@(_TrimmerFiles)" PackagePath="tasks/netstandard2.0"/>
+        </ItemGroup>
+    </Target>
 
 </Project>
 

@@ -1,6 +1,23 @@
+## 1.3.0 - Unreleased
+
+### Added
+
+- Assembly trimmer to automatically remove all unused types and members from SourceGen Utils
+- `ArrayBuilder<T>.RemoveRange(int start, int count)` to remove a range of elements from the builder
+- `ArrayBuilder<T>.ReplaceAll(T toReplace, T newValue)` to replace all occurrences of a value in the builder
+
+### Fixed
+
+- `EquatableArray` equals going recursive
+- Compilation errors when using `SyntaxExtensions.GetAttributeSymbol`
+- First indent not being written in `CodeWriter` until `AppendLine` has been called
+- `SymbolExtensions.GetDeclarationString` not supporting interfaces / `CodeWriter.Append(ITypeSymbol)` not supporting
+  interfaces
+
 ## 1.2.0 - 2026-09-05
 
 ### Added
+
 - `EnableRecordSupportAttribute` - assembly level attribute for injecting support for records
 - `EnableRequiredSupportAttribute` - assembly level attribute for injecting support for required members
 - `ArrayBuilder<T>.ToImmutableArray()` for converting the builder contents to an immutable array
@@ -12,11 +29,13 @@
 - `CodeWriter.AppendIndentedSource(string)` for appending an entire block of code with the proper indentation
 
 ### Fixed
+
 - `CodeWriter.AppendLine(ITypeSymbol, bool, bool)` not generating `CodeWriter.Append(ITypeSymbol, bool, bool)`
 
 ## 1.1.0 - 2026-08-01
 
 ### Added
+
 - `CodeWriter.WithBlock(bool newLineOnDispose = false)` for automatic newline when block is disposed
 - `ArrayBuilder<T>.AddRange(IEnumerable<T>)` for adding generic `IEnumerable` collections
 - `ArrayBuilder<T>.ToArray()` for converting the builder to an array

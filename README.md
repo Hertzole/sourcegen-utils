@@ -16,7 +16,7 @@ zero unused code - only what you call gets generated.
 
 ### NuGet
 
-```
+```sh
 dotnet add package Hertzole.SourceGenUtils
 ```
 

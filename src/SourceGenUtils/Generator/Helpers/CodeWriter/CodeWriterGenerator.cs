@@ -52,7 +52,7 @@ internal static partial class CodeWriterGenerator
                 },
                 ["shouldWriteIndent"] = new FieldSource
                 {
-                    Signature = "private bool shouldWriteIndent = false;",
+                    Signature = "private bool shouldWriteIndent = true;",
                     RequiredDependencies = [write_indent]
                 },
                 ["hasNamespace"] = new FieldSource
@@ -303,7 +303,7 @@ internal static partial class CodeWriterGenerator
                     if (HasWrittenAnything(in ctx))
                     {
                         writer.AppendLine("builder.Clear();");
-                        writer.AppendLine("shouldWriteIndent = false;");
+                        writer.AppendLine("shouldWriteIndent = true;");
 
                         bool hasCalledToString = ctx.HasCalledMethod(CODE_WRITER + ".ToString()");
 

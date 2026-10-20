@@ -5,6 +5,33 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string STRING_BUILDER_POOL_EXAMPLE =
+        """
+        The following example gets a StringBuilder from the pool and returns it when done.
+
+        <code>
+        using System.Text;
+        using Hertzole.SourceGen;
+
+        public static class TextJoiner
+        {
+            public static string Join(IEnumerable<string> values)
+            {
+                // The scope returns and clears the builder when disposed.
+                using (StringBuilderPool.Get(out StringBuilder builder))
+                {
+                    foreach (string value in values)
+                    {
+                        builder.Append(value);
+                    }
+
+                    return builder.ToString();
+                }
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateStringBuilderPool()
     {
         const string builder = "System.Text.StringBuilder";
@@ -18,7 +45,8 @@ partial class Generator
             Signature = "internal static partial class StringBuilderPool",
             Trivia = new TriviaSource
             {
-                Summary = $"Provides a shared pool of {stringBuilderTriviaRef} instances to reduce allocations."
+                Summary = $"Provides a shared pool of {stringBuilderTriviaRef} instances to reduce allocations.",
+                Example = STRING_BUILDER_POOL_EXAMPLE
             },
             Fields = new Dictionary<string, FieldSource>
             {

@@ -4,6 +4,33 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string EQUATABLE_ARRAY_EXAMPLE =
+        """
+        The following example uses EquatableArray in a model passed through an incremental generator pipeline so that changes are detected by value instead of by reference.
+
+        <code>
+        using System.Collections.Immutable;
+        using Hertzole.SourceGen;
+
+        public readonly record struct TypeModel(string Name, EquatableArray<string> Members);
+
+        public static class ModelFactory
+        {
+            public static TypeModel Create(string name, ImmutableArray<string> members)
+            {
+                // Implicitly converts ImmutableArray<T> to EquatableArray<T>.
+                return new TypeModel(name, members);
+            }
+
+            public static bool HasSameMembers(TypeModel left, TypeModel right)
+            {
+                // Compares the contents of the arrays, not the array references.
+                return left.Members.Equals(right.Members);
+            }
+        }
+        </code>
+        """;
+
     private static readonly string[] equatableArrayConstructors =
     [
         EQUATABLE_ARRAY + ".EquatableArray(T[])",
@@ -23,7 +50,8 @@ partial class Generator
             Trivia = new TriviaSource
             {
                 Summary =
-                    $"A wrapper around an array that implements {GetTypeTriviaReference($"{equatable}{{T}}", "IEquatable<T>")} for value-based equality comparison."
+                    $"A wrapper around an array that implements {GetTypeTriviaReference($"{equatable}{{T}}", "IEquatable<T>")} for value-based equality comparison.",
+                Example = EQUATABLE_ARRAY_EXAMPLE
             },
             Fields = new Dictionary<string, FieldSource>
             {

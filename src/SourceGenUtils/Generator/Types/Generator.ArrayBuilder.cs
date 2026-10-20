@@ -4,6 +4,65 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string ARRAY_BUILDER_EXAMPLE =
+        """
+        The following example demonstrates how to add, remove, consume, and dispose the array builder.
+
+        <code>
+        using System;
+        using System.Reflection;
+        using Hertzole.SourceGen;
+
+        public class MethodCaller
+        {
+            public void CallMethods(object target)
+            {
+                // Must dispose when the builder is no longer needed.
+                using ArrayBuilder<MethodInfo> builder = new ArrayBuilder<MethodInfo>();
+
+                CollectMethods(target, builder);
+                CallCollectedMethods(builder.AsSpan());
+            }
+
+            private void CollectMethods(object target, ArrayBuilder<MethodInfo> builder)
+            {
+                Type type = target.GetType();
+                MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+                builder.AddRange(methods);
+            }
+
+            private void CallCollectedMethods(object target, ReadOnlySpan<MethodInfo> methods)
+            {
+                foreach (MethodInfo method in methods)
+                {
+                    method.Invoke(target, null);
+                }
+            }
+        }
+        </code>
+
+        The following example shows how you can use ArrayBuilder to quickly create strings.
+
+        <code>
+        using System;
+        using Hertzole.SourceGen;
+
+        public class Announcer
+        {
+            public void AnnounceName(int playerIndex)
+            {
+                // Must dispose when the builder is no longer needed.
+                using ArrayBuilder<char> builder = new ArrayBuilder<char>();
+                builder.AddRange("Player ");
+                builder.AddRange(playerIndex.ToString());
+
+                // ToString on ArrayBuilder<char> returns a constructed string.
+                Console.WriteLine($"Welcome, {builder.ToString()}!");
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateArrayBuilder()
     {
         const string array_builder = ARRAY_BUILDER + "<T>";
@@ -33,7 +92,8 @@ partial class Generator
             Signature = "internal readonly partial struct ArrayBuilder<T> : global::System.IDisposable",
             Trivia = new TriviaSource
             {
-                Summary = "A lightweight, pool-backed builder for constructing arrays. Dispose returns the backing buffer to the pool."
+                Summary = "A lightweight, pool-backed builder for constructing arrays. Dispose returns the backing buffer to the pool.",
+                Example = ARRAY_BUILDER_EXAMPLE
             },
             Fields = new Dictionary<string, FieldSource>
             {

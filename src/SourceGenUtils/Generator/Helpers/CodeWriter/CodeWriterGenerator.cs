@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 namespace Hertzole.SourceGenUtils.Helpers;
 
@@ -33,6 +34,64 @@ internal static partial class CodeWriterGenerator
     private const string new_line = "builder.Append('\\n');";
     private const string format_args = "string format, global::System.IFormatProvider? provider = null";
 
+    private const string CODE_WRITER_EXAMPLE =
+        """
+        The following example demonstrates how to write a simple type declaration with a namespace, fields, and a method.
+
+        <code>
+        using Hertzole.SourceGen;
+
+        public class SourceGenerator
+        {
+            public string Generate()
+            {
+                // Must dispose when the writer is no longer needed.
+                using CodeWriter writer = new CodeWriter();
+
+                writer.AppendLine("using System;").AppendLine();
+                writer.AppendNamespace("My.Namespace");
+                writer.AppendLine("public class MyClass");
+                // Creates a new indented block surrounded by two brackets.
+                using (writer.WithBlock())
+                {
+                    // Now inside the class scope
+
+                    // Create a new field and a new line below that to add some space.
+                    writer.AppendLine("public int myField;").AppendLine();
+
+                    writer.AppendLine("public void MyMethod()");
+                    using (writer.WithBlock())
+                    {
+                        writer.AppendLine("Console.WriteLine(\"Hello World!\");");
+                    }
+                }
+
+                // Call ToString to get the final string.
+                return writer.ToString();
+            }
+        }
+        </code>
+
+        The returning string from the writer would output this:
+
+        <code>
+        using System;
+
+        namespace My.Namespace
+        {
+            public class MyClass
+            {
+                public int myField;
+
+                public void MyMethod()
+                {
+                    Console.WriteLine("Hello World!");
+                }
+            }
+        }
+        </code>
+        """;
+
     public static TypeSource CreateCodeWriter()
     {
         return new TypeSource
@@ -41,7 +100,8 @@ internal static partial class CodeWriterGenerator
             Trivia = new TriviaSource
             {
                 Summary =
-                    "Wrapper around <see cref=\"global::System.Text.StringBuilder\">StringBuilder</see> that provides formatting and utility methods for code writing."
+                    $"Wrapper around {GetTypeTriviaReference<StringBuilder>("StringBuilder")} that provides formatting and utility methods for code writing.",
+                Example = CODE_WRITER_EXAMPLE
             },
             Fields = new Dictionary<string, FieldSource>
             {

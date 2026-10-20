@@ -6,6 +6,38 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string SYNTAX_EXTENSIONS_EXAMPLE =
+        """
+        The following example finds a field declaration from a syntax node and resolves attribute symbols.
+
+        <code>
+        using System;
+        using System.Linq;
+        using Hertzole.SourceGen;
+        using Microsoft.CodeAnalysis;
+        using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+        public static class SyntaxInspector
+        {
+            public static void Inspect(SyntaxNode node, SemanticModel semanticModel)
+            {
+                // Finds the field declaration that contains the node or one of its ancestors.
+                if (node.TryGetFieldDeclaration(out FieldDeclarationSyntax? field))
+                {
+                    Console.WriteLine(field);
+                }
+
+                foreach (AttributeSyntax attribute in node.DescendantNodes().OfType<AttributeSyntax>())
+                {
+                    // Resolves the attribute syntax to its type symbol.
+                    INamedTypeSymbol? attributeSymbol = attribute.GetAttributeSymbol(semanticModel);
+                    Console.WriteLine(attributeSymbol);
+                }
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateSyntaxExtensions()
     {
         return new TypeSource
@@ -13,7 +45,8 @@ partial class Generator
             Signature = "internal static partial class SyntaxExtensions",
             Trivia = new TriviaSource
             {
-                Summary = "Extension methods for working with syntax nodes."
+                Summary = "Extension methods for working with syntax nodes.",
+                Example = SYNTAX_EXTENSIONS_EXAMPLE
             },
             Methods =
             [

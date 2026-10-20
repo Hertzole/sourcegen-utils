@@ -6,6 +6,28 @@ partial class Generator
 {
     private const string LOG_NAME = NAMESPACE + ".Log";
 
+    private const string LOG_EXAMPLE =
+        """
+        The following example writes messages to the log file during a generator run.
+
+        <code>
+        using Hertzole.SourceGen;
+
+        public static class GeneratorDiagnostics
+        {
+            public static void Report()
+            {
+                Log.Info("Starting generation.");
+                Log.Warning("No types were found to generate.");
+                Log.Error("Failed to generate the output.");
+
+                // Clears the log file.
+                Log.ClearLogs();
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateLog()
     {
         string[] deps = [LOG_NAME + ".Write(string)"];
@@ -20,7 +42,8 @@ partial class Generator
             Trivia = new TriviaSource
             {
                 Summary = "Provides debug-only logging that writes to a log file.",
-                Remarks = "All calls to this class are compiled out in release builds."
+                Remarks = "All calls to this class are compiled out in release builds.",
+                Example = LOG_EXAMPLE
             },
             Fields = new Dictionary<string, FieldSource>
             {

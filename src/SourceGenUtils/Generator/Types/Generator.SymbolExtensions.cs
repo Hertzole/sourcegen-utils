@@ -4,6 +4,39 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string SYMBOL_EXTENSIONS_EXAMPLE =
+        """
+        The following example checks a symbol for an attribute and gets its declaration string.
+
+        <code>
+        using System;
+        using Hertzole.SourceGen;
+        using Microsoft.CodeAnalysis;
+
+        public static class SymbolInspector
+        {
+            public static void Inspect(INamedTypeSymbol symbol)
+            {
+                // Checks for the fully qualified attribute name.
+                if (symbol.HasAttribute("My.Namespace.MyAttribute"))
+                {
+                    Console.WriteLine("The type has the attribute.");
+                }
+
+                // Gets the attribute data if the attribute exists.
+                if (symbol.TryGetAttribute("My.Namespace.MyAttribute", out AttributeData? attribute))
+                {
+                    Console.WriteLine(attribute);
+                }
+
+                // Returns e.g. "partial class" for a partial class symbol.
+                string declaration = symbol.GetDeclarationString(isPartial: true);
+                Console.WriteLine(declaration);
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateSymbolExtensions()
     {
         TriviaSource hasAttributeTrivia = new TriviaSource
@@ -36,7 +69,11 @@ partial class Generator
         return new TypeSource
         {
             Signature = "internal static partial class SymbolExtensions",
-            Trivia = "Extension methods for working with symbols.",
+            Trivia = new TriviaSource
+            {
+                Summary = "Extension methods for working with symbols.",
+                Example = SYMBOL_EXTENSIONS_EXAMPLE
+            },
             Methods =
             [
                 new MethodSource

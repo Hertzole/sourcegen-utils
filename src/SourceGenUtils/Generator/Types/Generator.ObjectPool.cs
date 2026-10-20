@@ -6,6 +6,33 @@ partial class Generator
 {
     private const string OBJECT_POOL = NAMESPACE + ".ObjectPool";
 
+    private const string OBJECT_POOL_EXAMPLE =
+        """
+        The following example creates an object pool for a custom reference type.
+
+        <code>
+        using Hertzole.SourceGen;
+
+        public sealed class Buffer
+        {
+            public byte[] Data = new byte[1024];
+        }
+
+        public static class BufferPooling
+        {
+            public static void Use()
+            {
+                // The pool can be disposed to invoke onDispose for the remaining objects.
+                using ObjectPool<Buffer> pool = new ObjectPool<Buffer>(create: () => new Buffer(), onReturn: buffer => buffer.Data.AsSpan().Clear());
+
+                Buffer buffer = pool.Get();
+                // Do work with the buffer...
+                pool.Return(buffer);
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateObjectPool()
     {
         return new TypeSource
@@ -13,7 +40,8 @@ partial class Generator
             Signature = "internal sealed partial class ObjectPool<T> : global::System.IDisposable where T : class",
             Trivia = new TriviaSource
             {
-                Summary = "A simple object pool that reuses instances of a reference type to reduce allocations."
+                Summary = "A simple object pool that reuses instances of a reference type to reduce allocations.",
+                Example = OBJECT_POOL_EXAMPLE
             },
             Fields = new Dictionary<string, FieldSource>
             {

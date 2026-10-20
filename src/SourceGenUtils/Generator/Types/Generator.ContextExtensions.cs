@@ -4,6 +4,54 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string CONTEXT_EXTENSIONS_EXAMPLE =
+        """
+        The following example demonstrates how to add generated source code to the compilation from an incremental generator.
+
+        <code>
+        using Hertzole.SourceGen;
+        using Microsoft.CodeAnalysis;
+
+        public class MyGenerator : IIncrementalGenerator
+        {
+            public void Initialize(IncrementalGeneratorInitializationContext context)
+            {
+                context.RegisterSourceOutput(context.CompilationProvider, (productionContext, _) =>
+                {
+                    // Must dispose when the writer is no longer needed.
+                    using CodeWriter writer = new CodeWriter();
+                    writer.AppendLine("namespace My.Namespace");
+                    using (writer.WithBlock())
+                    {
+                        writer.AppendLine("public class GeneratedClass { }");
+                    }
+
+                    // Adds the writer's contents to the compilation and clears the writer.
+                    productionContext.AddSource("My.Namespace.GeneratedClass.g.cs", writer);
+                });
+            }
+        }
+        </code>
+
+        The following example adds source code using a specific encoding instead of the default UTF-8.
+
+        <code>
+        using System.Text;
+        using Hertzole.SourceGen;
+
+        public static class SourceEmitter
+        {
+            public static void Emit(SourceProductionContext context)
+            {
+                using CodeWriter writer = new CodeWriter();
+                writer.AppendLine("// Generated code.");
+
+                context.AddSource("Generated.g.cs", writer, Encoding.UTF8);
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateContextExtensions()
     {
         const string ms_analysis = "global::Microsoft.CodeAnalysis";
@@ -15,6 +63,11 @@ partial class Generator
         return new TypeSource
         {
             Signature = "internal static partial class ContextExtensions",
+            Trivia = new TriviaSource
+            {
+                Summary = "Extension methods for adding generated source code to a generator context.",
+                Example = CONTEXT_EXTENSIONS_EXAMPLE
+            },
             Methods = new[]
             {
                 AddSource("GeneratorExecutionContext"),

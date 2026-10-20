@@ -4,6 +4,33 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private const string VARIABLE_NAMES_EXAMPLE =
+        """
+        The following example transforms variable names into a more readable form.
+
+        <code>
+        using Hertzole.SourceGen;
+
+        public static class Naming
+        {
+            public static void Demonstrate()
+            {
+                // Returns "ValueChanged" ('m_' prefix removed and first letter uppercased).
+                string nicified = VariableNames.NicifyVariableName("m_valueChanged");
+
+                // Returns "valueChanged" ('_' prefix removed).
+                string withoutPrefix = VariableNames.RemovePrefix("_valueChanged");
+
+                // Returns "global::Value".
+                string prefixed = VariableNames.AppendGlobalPrefix("Value");
+
+                // Returns true for "OnValueChanged".
+                bool isEvent = VariableNames.StartsWithOn("OnValueChanged");
+            }
+        }
+        </code>
+        """;
+
     private static TypeSource CreateVariableNames()
     {
         const string variable_names = NAMESPACE + ".VariableNames";
@@ -52,7 +79,8 @@ partial class Generator
             Signature = "internal static partial class VariableNames",
             Trivia = new TriviaSource
             {
-                Summary = "Utilities for transforming variable names into a more readable form."
+                Summary = "Utilities for transforming variable names into a more readable form.",
+                Example = VARIABLE_NAMES_EXAMPLE
             },
             Methods =
             [

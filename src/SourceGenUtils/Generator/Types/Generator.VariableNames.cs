@@ -108,7 +108,8 @@ partial class Generator
                             ["value"] = "The variable name to transform.",
                             ["destination"] = destination_trivia
                         },
-                        Returns = written_trivia
+                        Returns = written_trivia,
+                        Remarks = "You can use <see cref=\"GetNiceNameLength(System.ReadOnlySpan{char})\"/> to get the length of the resulting span."
                     }
                 },
                 new MethodSource

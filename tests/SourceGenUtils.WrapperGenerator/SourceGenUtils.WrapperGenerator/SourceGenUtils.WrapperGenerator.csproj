@@ -8,6 +8,9 @@
 
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
+        <!-- roslyn loads analyzer dependencies by probing the analyzer directory; the deps.json
+             lists a bogus SourceGenUtils/1.0.0.0 reference entry that fails resolution (CS8784) -->
+        <GenerateDependencyFile>false</GenerateDependencyFile>
 
         <RootNamespace>SourceGenUtils.WrapperGenerator</RootNamespace>
         <PackageId>SourceGenUtils.WrapperGenerator</PackageId>

@@ -50,20 +50,52 @@ public static partial class Program
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("---");
         sb.AppendLine("title: API Reference");
+        sb.AppendLine("description: API Reference for Hertzole.SourceGen");
         sb.AppendLine("sidebar:");
         sb.AppendLine("  hidden: true");
         sb.AppendLine("---");
 
+        List<GeneratorType> types = new List<GeneratorType>();
+
         foreach ((string name, TypeSource type) in Generator.TypesToGenerate)
         {
-            AppendType(sb, name, type);
+            types.Add(new GeneratorType(name, type));
+        }
+
+        types.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal));
+
+        for (int i = 0; i < types.Count; i++)
+        {
+            AppendType(sb, types[i]);
         }
 
         File.WriteAllText(Path.Combine(path, "index.md"), sb.ToString());
 
-        static void AppendType(StringBuilder sb, string name, TypeSource type)
+        static void AppendType(StringBuilder sb, in GeneratorType type)
         {
-            sb.Append("### [").Append(name).Append("](../api/").Append(name.ToLowerInvariant()).AppendLine(")");
+            if (!type.IsAccessible)
+            {
+                return;
+            }
+
+            sb.Append("### [").Append(type.Name).Append("](../api/").Append(type.Name.ToLowerInvariant()).AppendLine(")").AppendLine();
+            sb.AppendLine(Format(type.Summary, true)).AppendLine();
+
+            if (type.Type.Types is Dictionary<string, TypeSource> nestedTypesSource)
+            {
+                List<GeneratorType> nestedTypes = new List<GeneratorType>();
+                foreach ((string key, TypeSource value) in nestedTypesSource)
+                {
+                    nestedTypes.Add(new GeneratorType(key, value));
+                }
+
+                nestedTypes.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal));
+
+                for (int i = 0; i < nestedTypes.Count; i++)
+                {
+                    AppendType(sb, nestedTypes[i]);
+                }
+            }
         }
     }
 
@@ -241,7 +273,7 @@ public static partial class Program
         }
 
         List<MethodSource> methods = new List<MethodSource>();
-        foreach (MethodSource method in type.Type.Methods)
+        foreach (MethodSource method in methodsSource)
         {
             if (method.Name == type.Name || method.Signature.Contains('~') || method.Signature.Contains("operator") || method.Signature.Contains("private"))
             {
@@ -384,7 +416,7 @@ public static partial class Program
     [GeneratedRegex("<see cref=\"([^\"]*)\"(?: ?>([^\"]*)?</see>|/>)")]
     private static partial Regex SolveTypeReferencesRegex();
 
-    private static string SolveTypeReferences(string value)
+    private static string SolveTypeReferences(string value, bool isIndex)
     {
         if (!value.Contains("<see cref="))
         {
@@ -397,7 +429,7 @@ public static partial class Program
 
         for (int i = 0; i < matches.Count; i++)
         {
-            string path = GetPath(matches[i]);
+            string path = GetPath(matches[i], isIndex);
 
             if (matches[i].Groups.Count == 3 && !string.IsNullOrEmpty(matches[i].Groups[2].Value))
             {
@@ -420,7 +452,7 @@ public static partial class Program
 
         return sb.ToString();
 
-        static string GetPath(Match match)
+        static string GetPath(Match match, bool isIndex)
         {
             string value = match.Groups[1].Value;
 
@@ -453,7 +485,21 @@ public static partial class Program
                     sb.Remove(generic, closeGeneric - generic + 1);
                 }
 
-                sb.Insert(0, "../").Append('/');
+                int globalIndex = sb.ToString().IndexOf("global::", StringComparison.Ordinal);
+
+                if (globalIndex != -1)
+                {
+                    sb.Remove(globalIndex, 8);
+                }
+
+                if (isIndex)
+                {
+                    sb.Append('/');
+                }
+                else
+                {
+                    sb.Insert(0, "../").Append('/');
+                }
             }
             else
             {
@@ -487,12 +533,12 @@ public static partial class Program
     [GeneratedRegex("<c>([^<]*)< ?/c>")]
     private static partial Regex CodeRegex();
 
-    private static string Format(string value)
+    private static string Format(string value, bool isIndex = false)
     {
         value = value.Replace("<br/>", "\n\n");
         value = CodeRegex().Replace(value, "`$1`");
         value = FixParamref(value);
-        value = SolveTypeReferences(value);
+        value = SolveTypeReferences(value, isIndex);
         value = FixLangWords(value);
         value = FixGenerics(value);
 

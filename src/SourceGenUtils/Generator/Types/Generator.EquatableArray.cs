@@ -31,12 +31,6 @@ partial class Generator
         </code>
         """;
 
-    private static readonly string[] equatableArrayConstructors =
-    [
-        EQUATABLE_ARRAY + ".EquatableArray(T[])",
-        EQUATABLE_ARRAY + ".EquatableArray(System.Collections.Immutable.ImmutableArray<T>)"
-    ];
-
     private static TypeSource CreateEquatableArray()
     {
         const string equatable = "global::System.IEquatable";
@@ -57,8 +51,7 @@ partial class Generator
             {
                 ["array"] = new FieldSource
                 {
-                    Signature = "private readonly T[]? array;",
-                    Dependencies = equatableArrayConstructors
+                    Signature = "private readonly T[]? array;"
                 }
             },
             Properties = new Dictionary<string, PropertySource>
@@ -67,22 +60,19 @@ partial class Generator
                 {
                     Signature = "public bool IsEmpty",
                     GetAttributes = AggressiveInlineAttribute,
-                    GetImplementation = (writer, in _) => { writer.AppendLine("return array == null || array.Length == 0;"); },
-                    Dependencies = equatableArrayConstructors
+                    GetImplementation = (writer, in _) => { writer.AppendLine("return array == null || array.Length == 0;"); }
                 },
                 ["Length"] = new PropertySource
                 {
                     Signature = "public int Length",
                     GetAttributes = AggressiveInlineAttribute,
-                    GetImplementation = (writer, in _) => { writer.AppendLine("return array == null ? 0 : array.Length;"); },
-                    Dependencies = equatableArrayConstructors
+                    GetImplementation = (writer, in _) => { writer.AppendLine("return array == null ? 0 : array.Length;"); }
                 },
                 ["this"] = new PropertySource
                 {
                     Signature = "public ref readonly T this[int index]",
                     GetAttributes = AggressiveInlineAttribute,
-                    GetImplementation = (writer, in _) => { writer.AppendLine("return ref AsImmutableArray().ItemRef(index);"); },
-                    Dependencies = equatableArrayConstructors
+                    GetImplementation = (writer, in _) => { writer.AppendLine("return ref AsImmutableArray().ItemRef(index);"); }
                 }
             },
             Methods =
@@ -96,6 +86,7 @@ partial class Generator
                         writer.AppendLine("this.array = new T[array.Length];");
                         writer.AppendLine("global::System.Array.Copy(array, this.array, array.Length);");
                     },
+                    AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
                         Summary =
@@ -115,6 +106,7 @@ partial class Generator
                         writer.AppendLine(
                             "this.array = global::System.Runtime.CompilerServices.Unsafe.As<global::System.Collections.Immutable.ImmutableArray<T>, T[]?>(ref array);");
                     },
+                    AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
                         Summary =
@@ -130,14 +122,8 @@ partial class Generator
                     Name = "AsImmutableArray",
                     Signature = "public partial global::System.Collections.Immutable.ImmutableArray<T> AsImmutableArray()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
                         writer.AppendLine(
                             "return global::System.Runtime.CompilerServices.Unsafe.As<T[]?, global::System.Collections.Immutable.ImmutableArray<T>>(ref global::System.Runtime.CompilerServices.Unsafe.AsRef(in array));");
                     },
@@ -153,14 +139,8 @@ partial class Generator
                     Name = "AsSpan",
                     Signature = "public partial global::System.ReadOnlySpan<T> AsSpan()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
                         writer.AppendLine(
                             $"return array == null ? {GLOBAL_R_SPAN}<T>.Empty : new {GLOBAL_R_SPAN}<T>(array, 0, array.Length);");
                     },
@@ -176,16 +156,7 @@ partial class Generator
                     Name = "GetEnumerator",
                     Signature = "public partial global::System.Collections.Immutable.ImmutableArray<T>.Enumerator GetEnumerator()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
-                    {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
-                        writer.AppendLine("return AsImmutableArray().GetEnumerator();");
-                    },
+                    Implementation = (writer, in _) => { writer.AppendLine("return AsImmutableArray().GetEnumerator();"); },
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
@@ -198,14 +169,8 @@ partial class Generator
                     Name = "GetEnumerator",
                     Signature = "global::System.Collections.Generic.IEnumerator<T> global::System.Collections.Generic.IEnumerable<T>.GetEnumerator()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default!;");
-                            return;
-                        }
-
                         writer.AppendLine("return ((global::System.Collections.Generic.IEnumerable<T>) AsImmutableArray()).GetEnumerator();");
                     },
                     AlwaysWrite = true,
@@ -216,14 +181,8 @@ partial class Generator
                     Name = "GetEnumerator",
                     Signature = "global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default!;");
-                            return;
-                        }
-
                         writer.AppendLine("return ((global::System.Collections.IEnumerable) AsImmutableArray()).GetEnumerator();");
                     },
                     AlwaysWrite = true,
@@ -234,16 +193,7 @@ partial class Generator
                     Name = "Equals",
                     Signature = $"public partial bool Equals({GLOBAL_EQUATABLE_ARRAY}<T> other)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
-                    {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
-                        writer.AppendLine($"return {GLOBAL_MEMORY_EXT}.SequenceEqual<T>(AsSpan(), other.AsSpan());");
-                    },
+                    Implementation = (writer, in _) => { writer.AppendLine($"return {GLOBAL_MEMORY_EXT}.SequenceEqual<T>(AsSpan(), other.AsSpan());"); },
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
@@ -261,16 +211,7 @@ partial class Generator
                     Name = "Equals",
                     Signature = "public override partial bool Equals(object? other)",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
-                    {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
-                        writer.AppendLine($"return other is {GLOBAL_EQUATABLE_ARRAY}<T> array && array.Equals(this);");
-                    },
+                    Implementation = (writer, in _) => { writer.AppendLine($"return other is {GLOBAL_EQUATABLE_ARRAY}<T> array && array.Equals(this);"); },
                     AlwaysWrite = true,
                     Trivia = new TriviaSource
                     {
@@ -287,14 +228,8 @@ partial class Generator
                     Name = "GetHashCode",
                     Signature = "public override partial int GetHashCode()",
                     Attributes = AggressiveInlineAttribute,
-                    Implementation = (writer, in context) =>
+                    Implementation = (writer, in _) =>
                     {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
                         writer.AppendLine("if (array == null)");
                         using (writer.WithBlock())
                         {
@@ -324,18 +259,8 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "EquatableArrayOperator",
-                    Signature = "public static implicit operator " + GLOBAL_EQUATABLE_ARRAY +
-                                "<T>(global::System.Collections.Immutable.ImmutableArray<T> array)",
-                    Implementation = (writer, in context) =>
-                    {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
-                        writer.AppendLine("return new " + GLOBAL_EQUATABLE_ARRAY + "<T>(array);");
-                    },
+                    Signature = $"public static implicit operator {GLOBAL_EQUATABLE_ARRAY}<T>(global::System.Collections.Immutable.ImmutableArray<T> array)",
+                    Implementation = (writer, in _) => { writer.AppendLine($"return new {GLOBAL_EQUATABLE_ARRAY}<T>(array);"); },
                     AlwaysWrite = true,
                     SkipPartial = true,
                     Trivia = new TriviaSource
@@ -348,16 +273,7 @@ partial class Generator
                 {
                     Name = "ImmutableArrayOperator",
                     Signature = $"public static implicit operator global::System.Collections.Immutable.ImmutableArray<T>({GLOBAL_EQUATABLE_ARRAY}<T> array)",
-                    Implementation = (writer, in context) =>
-                    {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
-                        writer.AppendLine("return array.AsImmutableArray();");
-                    },
+                    Implementation = (writer, in _) => { writer.AppendLine("return array.AsImmutableArray();"); },
                     AlwaysWrite = true,
                     SkipPartial = true,
                     Trivia = new TriviaSource
@@ -370,16 +286,7 @@ partial class Generator
                 {
                     Name = "==",
                     Signature = $"public static bool operator ==({GLOBAL_EQUATABLE_ARRAY}<T> left, {GLOBAL_EQUATABLE_ARRAY}<T> right)",
-                    Implementation = (writer, in context) =>
-                    {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
-                        writer.AppendLine("return left.Equals(right);");
-                    },
+                    Implementation = (writer, in _) => { writer.AppendLine("return left.Equals(right);"); },
                     AlwaysWrite = true,
                     SkipPartial = true,
                     Trivia = new TriviaSource
@@ -392,16 +299,7 @@ partial class Generator
                 {
                     Name = "!=",
                     Signature = $"public static bool operator !=({GLOBAL_EQUATABLE_ARRAY}<T> left, {GLOBAL_EQUATABLE_ARRAY}<T> right)",
-                    Implementation = (writer, in context) =>
-                    {
-                        if (!HasConstructed(in context))
-                        {
-                            writer.AppendLine("return default;");
-                            return;
-                        }
-
-                        writer.AppendLine("return !left.Equals(right);");
-                    },
+                    Implementation = (writer, in _) => { writer.AppendLine("return !left.Equals(right);"); },
                     AlwaysWrite = true,
                     SkipPartial = true,
                     Trivia = new TriviaSource
@@ -412,18 +310,5 @@ partial class Generator
                 }
             ]
         };
-
-        bool HasConstructed(in ImplementationContext context)
-        {
-            for (int i = 0; i < equatableArrayConstructors.Length; i++)
-            {
-                if (context.HasCalledMethod(equatableArrayConstructors[i]))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }

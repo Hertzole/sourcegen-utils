@@ -38,6 +38,7 @@ partial class Generator
         <code>
         using System.Text;
         using Hertzole.SourceGen;
+        using Microsoft.CodeAnalysis;
 
         public static class SourceEmitter
         {

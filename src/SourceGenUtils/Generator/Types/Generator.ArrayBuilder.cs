@@ -35,7 +35,11 @@ partial class Generator
             {
                 foreach (MethodInfo method in methods)
                 {
-                    method.Invoke(target, null);
+                    // Methods like object.Equals(object) take parameters, so skip them.
+                    if (method.GetParameters().Length == 0)
+                    {
+                        method.Invoke(target, null);
+                    }
                 }
             }
         }

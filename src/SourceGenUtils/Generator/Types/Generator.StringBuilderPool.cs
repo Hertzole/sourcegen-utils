@@ -10,6 +10,7 @@ partial class Generator
         The following example gets a StringBuilder from the pool and returns it when done.
 
         <code>
+        using System.Collections.Generic;
         using System.Text;
         using Hertzole.SourceGen;
 

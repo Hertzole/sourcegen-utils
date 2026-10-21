@@ -11,6 +11,7 @@ partial class Generator
         The following example creates an object pool for a custom reference type.
 
         <code>
+        using System;
         using Hertzole.SourceGen;
 
         public sealed class Buffer

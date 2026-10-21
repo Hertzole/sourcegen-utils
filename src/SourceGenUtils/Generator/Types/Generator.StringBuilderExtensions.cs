@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 namespace Hertzole.SourceGenUtils;
 
@@ -8,10 +9,40 @@ partial class Generator
     {
         const string sb = "System.Text.StringBuilder";
         const string g_sb = $"global::{sb}";
+        const string remarks =
+            "If the project allows unsafe code, this method uses a pointer to the span instead of appending each character in the span, thus being faster. It is recommended to enable unsafe code.";
 
         return new TypeSource
         {
             Signature = "internal static partial class StringBuilderExtensions",
+            Trivia = new TriviaSource
+            {
+                Summary = $"Extension methods for {GetTypeTriviaReference<StringBuilder>()}.",
+                Example =
+                    """
+                    The following example shows how to use Append and AppendLine with spans.
+
+                    <code>
+                    using System;
+                    using System.Text;
+                    using Hertzole.SourceGen;
+
+                    public static class Joiner
+                    {
+                        public static string Join(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
+                        {
+                            StringBuilder builder = new StringBuilder();
+
+                            builder.Append(a);
+                            builder.Append(", ");
+                            builder.AppendLine(b);
+
+                            return builder.ToString();
+                        }
+                    }
+                    </code>
+                    """
+            },
             Methods =
             [
                 new MethodSource
@@ -58,6 +89,7 @@ partial class Generator
                     {
                         Summary = "Appends the string representation of a specified read-only character span to this instance.",
                         Returns = "A reference to this instance after the append operation is completed.",
+                        Remarks = remarks,
                         Parameters = new Dictionary<string, string>
                         {
                             { "builder", "The StringBuilder instance to append to." },
@@ -84,6 +116,7 @@ partial class Generator
                         Summary =
                             "Appends the string representation of a specified read-only character span followed by the default line terminator to the end of the current StringBuilder object",
                         Returns = "A reference to this instance after the append operation is completed.",
+                        Remarks = remarks,
                         Parameters = new Dictionary<string, string>
                         {
                             { "builder", "The StringBuilder instance to append to." },

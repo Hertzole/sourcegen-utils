@@ -21,7 +21,7 @@ partial class Generator
                 using ArrayBuilder<MethodInfo> builder = new ArrayBuilder<MethodInfo>();
 
                 CollectMethods(target, builder);
-                CallCollectedMethods(builder.AsSpan());
+                CallCollectedMethods(target, builder.AsSpan());
             }
 
             private void CollectMethods(object target, ArrayBuilder<MethodInfo> builder)

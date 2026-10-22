@@ -12,9 +12,9 @@ partial class Generator
         using System.Collections.Immutable;
         using Hertzole.SourceGen;
 
-        public readonly record struct TypeModel(string Name, EquatableArray<string> Members);
+        internal readonly record struct TypeModel(string Name, EquatableArray<string> Members);
 
-        public static class ModelFactory
+        internal static class ModelFactory
         {
             public static TypeModel Create(string name, ImmutableArray<string> members)
             {

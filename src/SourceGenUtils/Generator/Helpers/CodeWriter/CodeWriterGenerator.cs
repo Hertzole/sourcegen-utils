@@ -538,27 +538,94 @@ internal static partial class CodeWriterGenerator
                 {
                     Summary = "Opens a new code block. Returns a disposable scope that closes the block and restores indentation when disposed.",
                     Returns = "A disposable scope that closes the block when disposed.",
-                    Example = """
-                              <code>
-                              using CodeWriter writer = new CodeWriter();
+                    Example =
+                        $$"""
+                          The following example demonstrates how to use <c>WithBlock</c>.
 
-                              writer.AppendLine("public class MyClass");
-                              using (writer.WithBlock())
+                          <code>
+                          using Hertzole.SourceGen;
+
+                          internal static class CodeHelper
+                          {
+                              public static string Write()
                               {
-                                  writer.AppendLine("public int myField;");
+                                  using CodeWriter writer = new CodeWriter();
+                                  AppendMethod(writer, "Method1", true);
+                                  AppendMethod(writer, "Method2", false);
+
+                                  return writer.ToString();
                               }
 
-                              return writer.ToString();
-                              </code>
-
-                              Output:
-                              <code>
-                              public class MyClass
+                              public static void AppendMethod(CodeWriter writer, string methodName, bool isPublic)
                               {
-                                  public int myField;
+                                  writer.Append(isPublic ? "public " : "private ")
+                                        .Append("void ").Append(methodName).AppendLine("()");
+
+                                  // Must dispose the scope to close the block and restore indentation.
+                                  using (writer.WithBlock())
+                                  {
+                                      writer.AppendLine("Console.WriteLine(\"Hello World!\");");
+                                  }
                               }
-                              </code>
-                              """,
+                          }
+                          </code>
+
+                          The output from the writer would be:
+                          <!code>
+                          public void Method1()
+                          {
+                              Console.WriteLine(\"Hello World!\");")
+                          }
+                          public void Method2()
+                          {
+                              Console.WriteLine(\"Hello World!\");")
+                          }
+                          </code>
+
+                          The following examples demonstrates the output when <c>newLineOnDispose</c> is set to {{TRIVIA_TRUE}}.
+
+                          <code>
+                          using Hertzole.SourceGen;
+
+                          internal static class CodeHelper
+                          {
+                              public static string Write()
+                              {
+                                  using CodeWriter writer = new CodeWriter();
+                                  AppendMethod(writer, "Method1", true);
+                                  AppendMethod(writer, "Method2", false);
+
+                                  return writer.ToString();
+                              }
+
+                              public static void AppendMethod(CodeWriter writer, string methodName, bool isPublic)
+                              {
+                                  writer.Append(isPublic ? "public " : "private ")
+                                        .Append("void ").Append(methodName).AppendLine("()");
+
+                                  // Must dispose the scope to close the block and restore indentation.
+                                  //  This will add a new line when closing the block.
+                                  using (writer.WithBlock(true))
+                                  {
+                                      writer.AppendLine("Console.WriteLine(\"Hello World!\");");
+                                  }
+                              }
+                          }
+                          </code>
+
+                          The output from the writer would be:
+                          <!code>
+                          public void Method1()
+                          {
+                              Console.WriteLine(\"Hello World!\");")
+                          }
+
+                          public void Method2()
+                          {
+                              Console.WriteLine(\"Hello World!\");")
+                          }
+                          </code>
+                          """,
                     Parameters = new Dictionary<string, string>
                     {
                         ["newLineOnDispose"] = $"If {TRIVIA_TRUE}, a newline will be inserted when the block scope is disposed."
@@ -584,24 +651,46 @@ internal static partial class CodeWriterGenerator
                         ["newIndent"] = "The indentation level to use within the scope."
                     },
                     Returns = "A disposable scope that restores the original indentation when disposed.",
-                    Example = """
-                              <code>
-                              using CodeWriter writer = new CodeWriter();
+                    Example =
+                        """
+                        The following example demonstrates how to use <c>WithIndent</c> to change indentation.
 
-                              writer.AppendLine("if (true == false)
-                              using (writer.WithIndent(1))
-                              {
-                                  writer.AppendLine("return false;");
-                              }
-                              return writer.ToString();
-                              </code>
+                        <code>
+                        using Hertzole.SourceGen;
 
-                              Output:
-                              <code>
-                              if (true == false)
-                                  return false;
-                              </code>
-                              """
+                        internal static class CodeHelper
+                        {
+                            public static void Write()
+                            {
+                                using CodeWriter writer = new CodeWriter();
+                                writer.Indent = 1;
+                                writer.AppendLine("// Stairs");
+                                AppendStairs(writer, 5);
+                            }
+
+                            public static void AppendStairs(CodeWriter writer, int length)
+                            {
+                                using (writer.WithIndent(0))
+                                {
+                                    for (int i = 0; i < length; i++)
+                                    {
+                                        writer.Append(' ', i).AppendLine('_');
+                                    }
+                                }
+                            }
+                        }
+                        </code>
+
+                        The output from the writer would be:
+                        <!code>
+                            // Stairs
+                        _
+                         _
+                          _
+                           _
+                            _
+                        </code>
+                        """
                 }
             },
             new MethodSource
@@ -615,6 +704,7 @@ internal static partial class CodeWriterGenerator
                     writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.ConditionalScope(this, condition);");
                 },
                 Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope(Hertzole.SourceGen.CodeWriter, string)", throw_if_disposed],
+                //TODO: Show output
                 Trivia = new TriviaSource
                 {
                     Summary =
@@ -626,23 +716,47 @@ internal static partial class CodeWriterGenerator
                     Returns = "A disposable scope that closes the conditional block when disposed.",
                     Remarks =
                         "You can write <c>#if CONDITION</c>, <c>if CONDITION</c> or just <c>CONDITION</c> and the  condition will be wrapped in <c>#if</c> and <c>#endif</c> no matter what.",
-                    Example = """
-                              <code>
-                              using CodeWriter writer = new CodeWriter();
+                    Example =
+                        """
+                        The following example demonstrates how to use <c>WithCondition</c> to wrap the content in a preprocessor conditional block.
 
-                              using (writer.WithCondition("DEBUG"))
-                              {
-                                  writer.AppendLine("Log(\"This is a debug message\");");
-                              }
-                              </code>
+                        <code>
+                        using Hertzole.SourceGen;
 
-                              Output:
-                              <code>
-                              #if DEBUG
-                              Log("This is a debug message");
-                              #endif
-                              </code>
-                              """
+                        internal static class CodeHelper
+                        {
+                            public static void Write()
+                            {
+                                using CodeWriter writer = new CodeWriter();
+                                writer.AppendLine("public void Method()");
+                                using (writer.WithBlock())
+                                {
+                                    AppendDebugLog(writer, "Calling method!");
+                                    writer.AppendLine("// TODO: Method stuff");
+                                }
+                            }
+
+                            public static void AppendDebugLog(CodeWriter writer, string message)
+                            {
+                                using (writer.WithCondition("DEBUG"))
+                                {
+                                    writer.AppendLine($"System.Diagnostics.WriteLine({message});");
+                                }
+                            }
+                        }
+                        </code>
+
+                        The output from the writer would be:
+                        <!code>
+                        public void Method()
+                        {
+                        #if DEBUG
+                            System.Diagnostics.WriteLine(\"Calling method!\");")
+                        #endif
+                            // TODO: Method stuff
+                        }
+                        </code>
+                        """
                 }
             }
         ];

@@ -11,37 +11,29 @@ internal partial class CodeWriterGenerator
             Summary = "Appends an entire multi-line string to the writer and handles the indentation.",
             Remarks =
                 "This method automatically indents each line of the string according to the current indentation level. It handles replacing newlines with the current line ending and tabs with spaces.",
-            Example = """"
-                      <code>
-                      using CodeWriter writer = new CodeWriter();
-                      string value = """
-                                     if (true == false)
-                                     {
-                                         // Do thing
-                                     }
-                                     """
+            Example =
+                """"
+                The following example demonstrates how to use <c>AppendIndentedSource</c> to insert a multi-line string. 
 
-                      writer.AppendLine("public void MyMethod()");
-                      using (writer.WithBlock())
-                      {
-                          // Appended within an indented block
-                          writer.AppendIndentedSource(value);
-                      }
+                <code>
+                using Hertzole.SourceGen;
 
-                      writer.ToString();
-                      </code>
-
-                      The result of calling <c>ToString()</c>:
-                      <code>
-                      public void MyMethod()
-                      {
-                          if (true == false)
-                          {
-                              // Do thing
-                          }
-                      }
-                      </code>
-                      """",
+                internal static class CodeHelper
+                {
+                    public static void AppendDisposedBlock(CodeWriter writer)
+                    {
+                        writer.AppendIndentedSource(
+                            """
+                            if (isDisposed)
+                            {
+                                throw new System.ObjectDisposedException("This object is disposed.");
+                            }
+                            """
+                        );
+                    }
+                }
+                </code>
+                """",
             Returns = APPEND_RETURN_TRIVIA,
             Parameters = new Dictionary<string, string>
             {

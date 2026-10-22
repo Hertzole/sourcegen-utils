@@ -134,31 +134,41 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary = "Gets the type declaration, without access modifiers, for the provided symbol.<br/>\n" +
-                                  "If <paramref name=\"isPartial\"/> is <see langword=\"true\"/> then the type declaration will include the <c>partial</c> keyword.",
+                                  $"If <paramref name=\"isPartial\"/> is {TRIVIA_TRUE} then the type declaration will include the <c>partial</c> keyword.",
                         Returns = "The type declaration.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["symbol"] = "The symbol to get the declaration from.",
                             ["isPartial"] = "Whether the type declaration should include the <c>partial</c> keyword."
                         },
-                        Example = """
-                                  <code>
-                                  ITypeSymbol classSymbol = ... public class MyClass {}
-                                  classSymbol.GetDeclarationString(false); // class MyClass
-                                  classSymbol.GetDeclarationString(true);  // partial class MyClass
-                                  </code>
+                        Example =
+                            $$"""
+                              The following example shows how to get the declaration string of a symbol.
 
-                                  <code>
-                                  ITypeSymbol structSymbol = ... public struct MyStruct {}
-                                  structSymbol.GetDeclarationString(false); // struct MyStruct
-                                  </code>
+                              <code>
+                              using Hertzole.SourceGen;
+                              using {{MS_CODE}};
 
-                                  <code>
-                                  ITypeSymbol readonlyStructSymbol = ... private readonly struct MyReadonlyStruct {}
-                                  readonlyStructSymbol.GetDeclarationString(false); // readonly struct MyReadonlyStruct
-                                  readonlyStructSymbol.GetDeclarationString(true);  // partial readonly struct MyReadonlyStruct
-                                  </code>
-                                  """
+                              internal static class CodeHelper
+                              {
+                                  public static void AppendDeclaration(CodeWriter writer, ITypeSymbol symbol, bool isPartial)
+                                  {
+                                      writer.Append(symbol.GetDeclarationString(isPartial));
+                                      
+                                      // If the symbol is...
+                                      //   an interface -> "interface IMyInterface"
+                                      //   a class -> "class MyClass"
+                                      //   a static class -> "static class MyClass"
+                                      //   a record -> "record MyRecord"
+                                      //   a struct -> "struct MyStruct"
+                                      //   a readonly struct -> "readonly struct MyStruct"
+                                      //   a record struct -> "record struct MyRecordStruct"
+                                      //   a readonly record struct -> "readonly record struct MyRecordStruct"
+                                      // If partial is true, then the declaration will include the "partial" keyword.
+                                  }
+                              }
+                              </code>
+                              """
                     }
                 },
                 new MethodSource

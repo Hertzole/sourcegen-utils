@@ -160,16 +160,18 @@ public static partial class Program
         }
     }
 
-    private static void AppendExample(StringBuilder sb, string example)
+    private static void AppendExample(StringBuilder sb, string? example, int depth = 0)
     {
         if (string.IsNullOrEmpty(example))
         {
             return;
         }
 
+        sb.Append('#', depth);
         sb.AppendLine("## Examples").AppendLine();
 
-        sb.AppendLine(example.Trim().Replace("<code>", "```csharp title=\"C#\"").Replace("</code>", "```")).AppendLine();
+        sb.AppendLine(FixLangWords(FixCode(example.Trim().Replace("<!code>", "<code>").Replace("<code>", "```csharp title=\"C#\"").Replace("</code>", "```"))))
+          .AppendLine();
     }
 
     private static void AppendConstructors(StringBuilder sb, in GeneratorType type)
@@ -378,6 +380,8 @@ public static partial class Program
                 }
             }
 
+            AppendExample(sb, trivia.Example, 2);
+
             if (!string.IsNullOrEmpty(trivia.Remarks))
             {
                 sb.AppendLine("#### Remarks").AppendLine().AppendLine(Format(trivia.Remarks)).AppendLine();
@@ -536,7 +540,7 @@ public static partial class Program
     private static string Format(string value, bool isIndex = false)
     {
         value = value.Replace("<br/>", "\n\n");
-        value = CodeRegex().Replace(value, "`$1`");
+        value = FixCode(value);
         value = FixParamref(value);
         value = SolveTypeReferences(value, isIndex);
         value = FixLangWords(value);
@@ -547,6 +551,11 @@ public static partial class Program
 
     [GeneratedRegex("<see langword=\"([^\"]*)\" ?/>")]
     private static partial Regex LangWordRegex();
+
+    private static string FixCode(string value)
+    {
+        return CodeRegex().Replace(value, "`$1`");
+    }
 
     private static string FixLangWords(string value)
     {

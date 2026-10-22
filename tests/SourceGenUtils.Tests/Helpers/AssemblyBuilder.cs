@@ -14,35 +14,53 @@ namespace SourceGenUtils.Tests;
 
 public static class AssemblyBuilder
 {
-    public static Assembly BuildAssemblyWithGenerator(string[] sources, bool allowUnsafe, bool trim)
-    {
-        const string preprocessor_symbol =
+    private const string PREPROCESSOR_SYMBOL =
 #if DEBUG
-                "DEBUG"
+            "DEBUG"
 #else
-                "RELEASE"
+            "RELEASE"
 #endif
-            ;
+        ;
 
+    public static GeneratorDriverRunResult GetGeneratorResult(string[] sources,
+        bool allowUnsafe,
+        out ImmutableArray<Diagnostic> diagnostics,
+        out Compilation compilation)
+    {
+        SyntaxTree[] sourceTrees = sources.Select(static source => ParseSyntaxTree(source)).ToArray();
+
+        return GetGeneratorResult(sourceTrees, allowUnsafe, out diagnostics, out compilation);
+    }
+
+    public static SyntaxTree ParseSyntaxTree(string source, string path = "")
+    {
+        return CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithPreprocessorSymbols(PREPROCESSOR_SYMBOL), path);
+    }
+
+    public static GeneratorDriverRunResult GetGeneratorResult(SyntaxTree[] sourceTrees,
+        bool allowUnsafe,
+        out ImmutableArray<Diagnostic> diagnostics,
+        out Compilation compilation)
+    {
         Generator generator = new Generator();
         CSharpGeneratorDriver driver = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() },
-            parseOptions: CSharpParseOptions.Default.WithPreprocessorSymbols(preprocessor_symbol));
-
-        SyntaxTree[] sourceTrees = sources.Select(static source =>
-            CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithPreprocessorSymbols(preprocessor_symbol))).ToArray();
+            parseOptions: CSharpParseOptions.Default.WithPreprocessorSymbols(PREPROCESSOR_SYMBOL));
 
         MetadataReference[] refs = AppDomain.CurrentDomain.GetAssemblies()
                                             .Where(a => !a.IsDynamic && !string.IsNullOrWhiteSpace(a.Location))
                                             .Select(a => MetadataReference.CreateFromFile(a.Location))
                                             .ToArray<MetadataReference>();
 
-        CSharpCompilation compilation = CSharpCompilation.Create("test",
+        CSharpCompilation c = CSharpCompilation.Create("test",
             sourceTrees, refs,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe, nullableContextOptions: NullableContextOptions.Enable));
 
-        GeneratorDriverRunResult runResult = driver
-                                             .RunGeneratorsAndUpdateCompilation(compilation, out Compilation newCompilation,
-                                                 out ImmutableArray<Diagnostic> diagnostics).GetRunResult();
+        return driver.RunGeneratorsAndUpdateCompilation(c, out compilation, out diagnostics).GetRunResult();
+    }
+
+    public static Assembly BuildAssemblyWithGenerator(string[] sources, bool allowUnsafe, bool trim)
+    {
+        GeneratorDriverRunResult runResult = GetGeneratorResult(sources, allowUnsafe, out ImmutableArray<Diagnostic> diagnostics, out Compilation compilation);
 
         Assert.That(runResult, Is.Not.Null, "Run result is null.");
         Assert.That(runResult.Diagnostics, Is.Empty, "Generator produced errors.");
@@ -56,7 +74,7 @@ public static class AssemblyBuilder
         }
 
         using MemoryStream ms = new MemoryStream();
-        EmitResult emitResult = newCompilation.Emit(ms);
+        EmitResult emitResult = compilation.Emit(ms);
 
         if (!emitResult.Success)
         {

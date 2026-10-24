@@ -13,6 +13,7 @@
 - First indent not being written in `CodeWriter` until `AppendLine` has been called
 - `SymbolExtensions.GetDeclarationString` not supporting interfaces / `CodeWriter.Append(ITypeSymbol)` not supporting
   interfaces
+- `ObjectPool<T>` (and the collection pools) is now thread-safe
 
 ## 1.2.0 - 2026-09-05
 

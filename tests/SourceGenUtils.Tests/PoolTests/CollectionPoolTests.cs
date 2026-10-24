@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Hertzole.SourceGen.Wrappers;
 using NUnit.Framework;
 
@@ -109,6 +110,41 @@ public class CollectionPoolTests<T> : GeneratorTests where T : class
         Assert.That(item2, Is.Not.Null);
         Assert.That(item2, Is.SameAs(item1));
         Assert.That(IsCleared(item2), Is.True);
+    }
+
+    [Test]
+    public void Get_ThreadSafe()
+    {
+        // Arrange
+        Pool pool = CompilePool();
+
+        // Act
+        Parallel.For(0, 10000, _ =>
+        {
+            T item = pool.Get();
+            pool.Return(item);
+        });
+
+        // Assert
+        Assert.Pass();
+    }
+
+    [Test]
+    public void Return_ThreadSafe()
+    {
+        // Arrange
+        Pool pool = CompilePool();
+        T[] items = new T[10000];
+        for (int i = 0; i < items.Length; i++)
+        {
+            items[i] = pool.Get();
+        }
+
+        // Act
+        Parallel.For(0, items.Length, i => pool.Return(items[i]));
+
+        // Assert
+        Assert.Pass();
     }
 
     /// <inheritdoc />

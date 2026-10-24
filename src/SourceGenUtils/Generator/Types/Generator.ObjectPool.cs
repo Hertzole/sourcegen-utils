@@ -48,7 +48,8 @@ partial class Generator
             {
                 ["pool"] = new FieldSource
                 {
-                    Signature = "private readonly global::System.Collections.Generic.Stack<T> pool = new global::System.Collections.Generic.Stack<T>();",
+                    Signature =
+                        "private readonly global::System.Collections.Concurrent.ConcurrentStack<T> pool = new global::System.Collections.Concurrent.ConcurrentStack<T>();",
                     Dependencies = [OBJECT_POOL + ".ObjectPool"]
                 },
                 ["create"] = new FieldSource
@@ -106,22 +107,16 @@ partial class Generator
                     EmptyStub = "return default!;",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("T result;");
-                        writer.AppendLine("if (pool.Count > 0)");
-                        using (writer.WithBlock())
-                        {
-                            writer.AppendLine("result = pool.Pop();");
-                        }
+                        writer.AppendIndentedSource(
+                            """
+                            if (!pool.TryPop(out T result))
+                            {
+                                result = create.Invoke();
+                            }
 
-                        writer.AppendLine("else");
-                        using (writer.WithBlock())
-                        {
-                            writer.AppendLine("result = create.Invoke();");
-                        }
-
-                        writer.AppendLine();
-                        writer.AppendLine("onGet?.Invoke(result);");
-                        writer.AppendLine("return result;");
+                            onGet?.Invoke(result);
+                            return result;
+                            """);
                     },
                     Trivia = new TriviaSource
                     {
@@ -174,19 +169,19 @@ partial class Generator
                     Signature = "public partial void Dispose()",
                     Implementation = (writer, in _) =>
                     {
-                        writer.AppendLine("global::System.GC.SuppressFinalize(this);");
-                        writer.AppendLine("if (onDispose != null)");
-                        using (writer.WithBlock())
-                        {
-                            writer.AppendLine("while (pool.Count > 0)");
-                            using (writer.WithBlock())
+                        writer.AppendIndentedSource(
+                            """
+                            global::System.GC.SuppressFinalize(this);
+                            if (onDispose != null)
                             {
-                                writer.AppendLine("onDispose.Invoke(pool.Pop());");
+                                while (pool.TryPop(out T item))
+                                {
+                                    onDispose.Invoke(item);
+                                }
                             }
-                        }
 
-                        writer.AppendLine();
-                        writer.AppendLine("pool.Clear();");
+                            pool.Clear();
+                            """);
                     },
                     Trivia = new TriviaSource
                     {

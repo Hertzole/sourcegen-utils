@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Hertzole.SourceGen.Wrappers;
 using NUnit.Framework;
 
@@ -135,6 +136,41 @@ public class ObjectPoolTests : GeneratorTests
         Assert.That(item, Is.Not.Null);
         Assert.That(onDisposeItem, Is.Not.Null);
         Assert.That(onDisposeItem, Is.SameAs(item));
+    }
+
+    [Test]
+    public void Get_ThreadSafe()
+    {
+        // Arrange
+        using ObjectPool<object> pool = CompileObjectPool();
+
+        // Act
+        Parallel.For(0, 10000, _ =>
+        {
+            object item = pool.Get();
+            pool.Return(item);
+        });
+
+        // Assert
+        Assert.Pass();
+    }
+
+    [Test]
+    public void Return_ThreadSafe()
+    {
+        // Arrange
+        using ObjectPool<object> pool = CompileObjectPool();
+        object[] items = new object[10000];
+        for (int i = 0; i < items.Length; i++)
+        {
+            items[i] = pool.Get();
+        }
+
+        // Act
+        Parallel.For(0, items.Length, i => pool.Return(items[i]));
+
+        // Assert
+        Assert.Pass();
     }
 
     private static ObjectPool<object> CompileObjectPool(Func<object>? create = null,

@@ -10,7 +10,7 @@ internal partial class CodeWriterGenerator
         {
             Summary = "Appends an entire multi-line string to the writer and handles the indentation.",
             Remarks =
-                "This method automatically indents each line of the string according to the current indentation level. It handles replacing newlines with the current line ending and tabs with spaces.",
+                "This method automatically indents each line of the string according to the current indentation level. It normalizes line endings and replaces and tabs with spaces.",
             Example =
                 """"
                 The following example demonstrates how to use <c>AppendIndentedSource</c> to insert a multi-line string. 

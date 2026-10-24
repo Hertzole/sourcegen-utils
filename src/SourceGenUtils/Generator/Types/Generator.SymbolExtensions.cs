@@ -156,14 +156,14 @@ partial class Generator
                                       writer.Append(symbol.GetDeclarationString(isPartial));
                                       
                                       // If the symbol is...
-                                      //   an interface -> "interface IMyInterface"
-                                      //   a class -> "class MyClass"
-                                      //   a static class -> "static class MyClass"
-                                      //   a record -> "record MyRecord"
-                                      //   a struct -> "struct MyStruct"
-                                      //   a readonly struct -> "readonly struct MyStruct"
-                                      //   a record struct -> "record struct MyRecordStruct"
-                                      //   a readonly record struct -> "readonly record struct MyRecordStruct"
+                                      //   an interface -> "interface"
+                                      //   a class -> "class"
+                                      //   a static class -> "static class"
+                                      //   a record -> "record"
+                                      //   a struct -> "struct"
+                                      //   a readonly struct -> "readonly struct"
+                                      //   a record struct -> "record struct"
+                                      //   a readonly record struct -> "readonly record struct"
                                       // If partial is true, then the declaration will include the "partial" keyword.
                                   }
                               }

@@ -450,7 +450,7 @@ partial class Generator
                     ],
                     Trivia = new TriviaSource
                     {
-                        Summary = "Returns a new string with the first character uppercased.",
+                        Summary = "Uppercases the first character of the value and writes the result to the specified builder.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The input string.",

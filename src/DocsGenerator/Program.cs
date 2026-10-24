@@ -412,7 +412,7 @@ public static partial class Program
 
         public string Signature
         {
-            get { return Type.Signature.Replace("partial ", string.Empty).Replace("global::", string.Empty).Replace("internal", string.Empty); }
+            get { return Type.Signature.Replace("partial ", string.Empty).Replace("global::", string.Empty); }
         }
 
         public string Example

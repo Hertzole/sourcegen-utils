@@ -331,7 +331,7 @@ public static partial class Program
             string name;
             if (isImplicit)
             {
-                name = OperatorRegex().Replace(FixGenerics(ShortenTypes(method.Signature)), "Implicit($1 to $2)");
+                name = OperatorRegex().Replace(FixGenerics(ShortenTypes(method.Signature)), "Implicit($2 to $1)");
             }
             else
             {

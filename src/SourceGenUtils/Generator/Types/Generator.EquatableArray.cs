@@ -68,7 +68,7 @@ partial class Generator
                     GetAttributes = AggressiveInlineAttribute,
                     GetImplementation = (writer, in _) => { writer.AppendLine("return array == null ? 0 : array.Length;"); }
                 },
-                ["this"] = new PropertySource
+                ["indexer"] = new PropertySource
                 {
                     Signature = "public ref readonly T this[int index]",
                     GetAttributes = AggressiveInlineAttribute,

@@ -99,6 +99,9 @@ public static partial class Program
         }
     }
 
+    [GeneratedRegex("""<see cref="[A-Za-z:\.{}]*"> ?(.*?) ?</see>""")]
+    private static partial Regex DescriptionTypeRegex();
+
     private static void WriteType(string path, in GeneratorType type, ref int index)
     {
         if (!type.IsAccessible)
@@ -114,7 +117,8 @@ public static partial class Program
         sb.AppendLine("title: " + type.Name);
         if (!string.IsNullOrEmpty(type.Summary))
         {
-            sb.AppendLine("description: " + type.Summary);
+            sb.AppendLine("description: " + FixGenerics(DescriptionTypeRegex().Replace(type.Summary, "$1"))).Replace("&lt;", "<").Replace("&gt;", ">")
+              .Replace("&amp;", "&");
         }
 
         sb.AppendLine("sidebar:");

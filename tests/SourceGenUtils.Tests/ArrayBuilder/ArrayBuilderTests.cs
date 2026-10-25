@@ -235,6 +235,25 @@ public class ArrayBuilderTests : GeneratorTests
         Assert.That(builder.ToArray(), Is.EqualTo(expected));
     }
 
+    // Replacing a value with the same value should do nothing.
+    [Test]
+    public void ReplaceAll_SameValues()
+    {
+        // Arrange
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>("var b = new ArrayBuilder<int>(); b.AddRange(ReadOnlySpan<int>.Empty); b.ReplaceAll(0, 1); b.ToArray(); Use(b.Count, b[0]);");
+
+        int[] values = [1, 2, 0, 0, 0, 3, 4, 5];
+        builder.AddRange(values);
+
+        // Act
+        builder.ReplaceAll(0, 0);
+
+        // Assert
+        Assert.That(builder.Count, Is.EqualTo(values.Length));
+        Assert.That(builder.ToArray(), Is.EqualTo(values));
+    }
+
     [Test]
     public void IndexOf_Valid()
     {

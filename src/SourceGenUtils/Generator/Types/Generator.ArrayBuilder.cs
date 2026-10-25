@@ -414,17 +414,23 @@ partial class Generator
                     Signature = "public partial void ReplaceAll(T toReplace, T newValue)",
                     Implementation = (codeWriter, in _) =>
                     {
-                        codeWriter.AppendIndentedSource("""
-                                                        int index = 0;
-                                                        do
-                                                        {
-                                                            index = global::System.Array.IndexOf(writer.array, toReplace, index, writer.size - index);
-                                                            if (index != -1)
-                                                            {
-                                                                writer.array[index] = newValue;
-                                                            }
-                                                        } while (index != -1);
-                                                        """);
+                        codeWriter.AppendIndentedSource(
+                            """
+                            if (global::System.Collections.Generic.EqualityComparer<T>.Default.Equals(toReplace, newValue))
+                            {
+                                return;
+                            }
+
+                            int index = 0;
+                            do
+                            {
+                                index = global::System.Array.IndexOf(writer.array, toReplace, index, writer.size - index);
+                                if (index != -1)
+                                {
+                                    writer.array[index] = newValue;
+                                }
+                            } while (index != -1);
+                            """);
                     },
                     Trivia = new TriviaSource
                     {

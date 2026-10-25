@@ -17,12 +17,6 @@ public static partial class Program
 
         string path = args[0];
 
-        if (!Path.IsPathFullyQualified(path))
-        {
-            Console.WriteLine("Invalid path.");
-            return;
-        }
-
         if (!Directory.Exists(path))
         {
             Directory.CreateDirectory(path);

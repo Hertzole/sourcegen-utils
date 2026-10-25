@@ -740,7 +740,7 @@ internal static partial class CodeWriterGenerator
                     },
                     Returns = "A disposable scope that closes the conditional block when disposed.",
                     Remarks =
-                        "You can write <c>#if CONDITION</c>, <c>if CONDITION</c> or just <c>CONDITION</c> and the condition will be wrapped in <c>#if</c> and <c>#endif</c>, as long as the provided string isn't null or empty",
+                        "You can write <c>#if CONDITION</c>, <c>if CONDITION</c> or just <c>CONDITION</c> and the condition will be wrapped in <c>#if</c> and <c>#endif</c>, as long as the provided string isn't null or empty/whitespace.",
                     Example =
                         """
                         The following example demonstrates how to use <c>WithCondition</c> to wrap the content in a preprocessor conditional block.

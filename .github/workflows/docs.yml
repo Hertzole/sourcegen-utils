@@ -32,11 +32,10 @@ jobs:
       - run: npm run build
         working-directory: docs
 
-      - name: Upload documentation
-        id: upload-docs
-        uses: actions/upload-artifact@v7
+      - name: Upload pages artifact
+        id: upload-pages
+        uses: actions/upload-pages-artifact@v5
         with:
-          name: docs_output
           path: docs/dist
 
   deploy:

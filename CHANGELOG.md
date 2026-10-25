@@ -20,6 +20,7 @@
 - `SymbolExtensions.GetDeclarationString` not supporting interfaces / `CodeWriter.Append(ITypeSymbol)` not supporting
   interfaces
 - `ObjectPool<T>` (and the collection pools) is now thread-safe
+- `CodeWriter.WithCondition` still writing the closing `#endif` when the condition is empty
 
 ## 1.2.0 - 2026-09-05
 

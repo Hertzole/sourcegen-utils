@@ -250,12 +250,36 @@ internal partial class CodeWriterTests : GeneratorTests
     {
         // Arrange
         string message = Fake.Lorem.Sentence();
-        CodeWriter writer = CompileCodeWriter(false, "var writer = new CodeWriter().AppendLine(\"\"); writer.WithCondition(\"\"); writer.ToString();");
+        using CodeWriter writer = CompileCodeWriter(false, "var writer = new CodeWriter().AppendLine(\"\"); writer.WithCondition(\"\"); writer.ToString();");
         string expected = $"{message}\n#if DEBUG\n{message}\n#endif";
 
         // Act
         writer.AppendLine(message);
         using (writer.WithCondition(condition))
+        {
+            writer.AppendLine(message);
+        }
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    // If condition is empty/null, emit nothing.
+    [Test]
+    [TestCase(null)]
+    [TestCase("")]
+    [TestCase(" ")]
+    [TestCase("        ")]
+    public void WithCondition_Empty(string? value)
+    {
+        // Arrange
+        string message = Fake.Lorem.Sentence();
+        using CodeWriter writer = CompileCodeWriter(false, "var writer = new CodeWriter().AppendLine(\"\"); writer.WithCondition(null); writer.ToString();");
+        string expected = $"{message}\n{message}";
+
+        // Act
+        writer.AppendLine(message);
+        using (writer.WithCondition(value))
         {
             writer.AppendLine(message);
         }

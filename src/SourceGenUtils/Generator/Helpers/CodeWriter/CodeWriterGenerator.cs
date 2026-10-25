@@ -285,6 +285,11 @@ internal static partial class CodeWriterGenerator
                         {
                             Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
                             Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope"]
+                        },
+                        ["isEmpty"] = new FieldSource
+                        {
+                            Signature = "private readonly bool isEmpty;",
+                            Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope"]
                         }
                     },
                     Methods =
@@ -295,8 +300,18 @@ internal static partial class CodeWriterGenerator
                             Signature = $"public partial ConditionalScope(global::{NAMESPACE}.CodeWriter writer, string? condition)",
                             Implementation = (writer, in _) =>
                             {
-                                writer.AppendLine("this.writer = writer;");
-                                writer.AppendLine("writer.AppendConditionalSymbol(condition);");
+                                writer.AppendIndentedSource(
+                                    """
+                                    if (string.IsNullOrWhiteSpace(condition))
+                                    {
+                                        isEmpty = true;
+                                        return;
+                                    }
+
+                                    isEmpty = false;
+                                    this.writer = writer;
+                                    writer.AppendConditionalSymbol(condition);
+                                    """);
                             },
                             Dependencies = [CODE_WRITER + ".ConditionalScope.Dispose()", CODE_WRITER + ".AppendConditionalSymbol(string)"],
                             Trivia = new TriviaSource
@@ -313,7 +328,18 @@ internal static partial class CodeWriterGenerator
                         {
                             Name = "Dispose",
                             Signature = "public partial void Dispose()",
-                            Implementation = (writer, in _) => { writer.AppendLine("writer.AppendPreprocessorSymbol(\"#endif\");"); },
+                            Implementation = (writer, in _) =>
+                            {
+                                writer.AppendIndentedSource(
+                                    """
+                                    if (isEmpty)
+                                    {
+                                        return;
+                                    }
+
+                                    writer.AppendPreprocessorSymbol("endif");
+                                    """);
+                            },
                             Dependencies = [CODE_WRITER + ".AppendPreprocessorSymbol(string)"],
                             Trivia = new TriviaSource
                             {

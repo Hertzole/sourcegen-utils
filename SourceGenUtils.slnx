@@ -8,7 +8,7 @@
         <Project
                 Path="tests/SourceGenUtils.WrapperGenerator/SourceGenUtils.WrapperGenerator/SourceGenUtils.WrapperGenerator.csproj"/>
     </Folder>
-    <Project Path="src/DocsGenerator/DocsGenerator.csproj"/>
+    <Project Path="src/SourceGenUtils.DocsGenerator/SourceGenUtils.DocsGenerator.csproj"/>
     <Project Path="src/SourceGenUtils.Trimmer/SourceGenUtils.Trimmer.csproj"/>
     <Project Path="src/SourceGenUtils/SourceGenUtils.csproj"/>
 </Solution>

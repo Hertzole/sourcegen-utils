@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using Hertzole.SourceGenUtils;
+using SourceGenUtils.WrapperGenerator;
 
 namespace DocsGenerator;
 
@@ -136,7 +137,7 @@ public static partial class Program
 
         if (type.Type.Trivia != null && !string.IsNullOrEmpty(type.Type.Trivia.Remarks))
         {
-            sb.AppendLine("## Remarks").AppendLine().AppendLine(Format(type.Type.Trivia.Remarks)).AppendLine();
+            sb.AppendLine("### Remarks").AppendLine().AppendLine(Format(type.Type.Trivia.Remarks)).AppendLine();
         }
 
         AppendConstructors(sb, in type);
@@ -172,7 +173,7 @@ public static partial class Program
         }
 
         sb.Append('#', depth);
-        sb.AppendLine("## Examples").AppendLine();
+        sb.AppendLine("### Examples").AppendLine();
 
         sb.AppendLine(FixLangWords(FixCode(example.Trim().Replace("<!code>", "<code>").Replace("<code>", "```csharp title=\"C#\"").Replace("</code>", "```"))))
           .AppendLine();
@@ -330,38 +331,84 @@ public static partial class Program
                 hasWrittenTitle = true;
             }
 
-            bool isImplicit = method.Signature.Contains("implicit", StringComparison.Ordinal);
-
-            string name;
-            if (isImplicit)
-            {
-                name = OperatorRegex().Replace(FixGenerics(ShortenTypes(method.Signature)), "Implicit($2 to $1)");
-            }
-            else
-            {
-                name = method.Name switch
-                {
-                    "==" or "op_Equality" => $"Equality({FixGenerics(ShortenTypes(method.ParameterTypesKey))})",
-                    "!=" or "op_Inequality" => $"Inequality({FixGenerics(ShortenTypes(method.ParameterTypesKey))})",
-                    _ => method.Name
-                };
-            }
-
-            AppendMethod(sb, method, name);
+            AppendMethod(sb, method);
         }
     }
 
-    [GeneratedRegex(@".*?operator ([^(]*)\(([^)]*) [^)]*\)")]
-    private static partial Regex OperatorRegex();
-
-    private static void AppendMethod(StringBuilder sb, MethodSource method, string? name = null)
+    private static void AppendMethod(StringBuilder sb, MethodSource method)
     {
-        if (string.IsNullOrEmpty(name))
+        SourceMethodSignature signature = SourceMethodSignature.FromSignature(method.Signature);
+
+        if (signature.IsExplicitImplementation)
         {
-            name = $"{method.Name}({FixGenerics(ShortenTypes(method.ParameterTypesKey))})";
+            return;
         }
 
-        sb.AppendLine($"### {name}").AppendLine();
+        List<SourceParameterInfo> methodParams = new List<SourceParameterInfo>();
+        SourceParameterInfo.FromSignature(method.Signature, methodParams);
+
+        sb.Append("### ");
+
+        if (signature.IsOperator)
+        {
+            bool isConversion = signature.IsImplicit || signature.IsExplicit;
+
+            if (signature.IsImplicit)
+            {
+                sb.Append("Implicit ");
+            }
+            else if (signature.IsExplicit)
+            {
+                sb.Append("Explicit ");
+            }
+            else if (signature.Name.Equals("==", StringComparison.Ordinal) || signature.Name.Equals("op_Equality", StringComparison.Ordinal) ||
+                     signature.Name.Equals("Equality", StringComparison.Ordinal))
+            {
+                sb.Append("Equality");
+            }
+            else if (signature.Name.Equals("!=", StringComparison.Ordinal) || signature.Name.Equals("op_Inequality", StringComparison.Ordinal) ||
+                     signature.Name.Equals("Inequality", StringComparison.Ordinal))
+            {
+                sb.Append("Inequality");
+            }
+
+            sb.Append('(');
+            if (isConversion)
+            {
+                sb.Append(FixGenerics(ShortenTypes(methodParams[0].Type)));
+                sb.Append(" to ");
+                sb.Append(FixGenerics(ShortenTypes(signature.ReturnType.ToString())));
+                goto closeMethod;
+            }
+
+            goto appendParams;
+        }
+
+        sb.Append(signature.Name).Append('(');
+
+        appendParams:
+        for (int i = 0; i < methodParams.Count; i++)
+        {
+            if (methodParams[i].IsOut)
+            {
+                sb.Append("out ");
+            }
+
+            if (methodParams[i].IsRef)
+            {
+                sb.Append("ref ");
+            }
+
+            sb.Append(FixGenerics(ShortenTypes(methodParams[i].Type)));
+
+            if (i < methodParams.Count - 1)
+            {
+                sb.Append(", ");
+            }
+        }
+
+        closeMethod:
+        sb.AppendLine(")").AppendLine();
 
         TriviaSource? trivia = method.Trivia;
 
@@ -384,7 +431,7 @@ public static partial class Program
                 }
             }
 
-            AppendExample(sb, trivia.Example, 2);
+            AppendExample(sb, trivia.Example, 1);
 
             if (!string.IsNullOrEmpty(trivia.Remarks))
             {

@@ -23,7 +23,7 @@ public enum MethodFlags
     HasRefParameter = 1 << 10
 }
 
-internal readonly ref struct SourceMethodSignature
+public readonly ref struct SourceMethodSignature
 {
     private readonly MethodFlags flags;
     private readonly BindingFlags bindingFlags;
@@ -284,7 +284,7 @@ internal readonly ref struct SourceMethodSignature
         }
     }
 
-    public void AppendFlags(CodeWriter writer)
+    internal void AppendFlags(CodeWriter writer)
     {
         writer.AppendBindingFlags(bindingFlags);
     }

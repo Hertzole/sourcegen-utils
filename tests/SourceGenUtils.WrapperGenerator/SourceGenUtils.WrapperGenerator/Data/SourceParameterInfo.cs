@@ -1,16 +1,27 @@
 using System;
+using System.Collections.Generic;
 using Hertzole.SourceGen;
 
 namespace SourceGenUtils.WrapperGenerator;
 
-internal readonly record struct SourceParameterInfo(string Type, string Name, bool IsOut, bool IsRef, string? DefaultValue)
+public readonly record struct SourceParameterInfo(string Type, string Name, bool IsOut, bool IsRef, string? DefaultValue)
 {
     public bool IsReferenceValue
     {
         get { return IsRef || IsOut; }
     }
 
-    public static void FromSignature(ReadOnlySpan<char> signature, in ArrayBuilder<SourceParameterInfo> builder)
+    public static void FromSignature(ReadOnlySpan<char> signature, IList<SourceParameterInfo> builder)
+    {
+        FromSignatureInternal(signature, builder, static (infos, info) => infos.Add(info));
+    }
+
+    internal static void FromSignature(ReadOnlySpan<char> signature, in ArrayBuilder<SourceParameterInfo> builder)
+    {
+        FromSignatureInternal(signature, builder, static (infos, info) => infos.Add(info));
+    }
+
+    private static void FromSignatureInternal<TArg>(ReadOnlySpan<char> signature, TArg arg, Action<TArg, SourceParameterInfo> action)
     {
         signature = signature.Slice(signature.IndexOf('(') + 1);
         int fail = 0;
@@ -63,7 +74,7 @@ internal readonly record struct SourceParameterInfo(string Type, string Name, bo
                 nameSlice = nameSlice.Slice(0, defaultIndex);
             }
 
-            builder.Add(new SourceParameterInfo(typeSlice.ToString(), nameSlice.ToString(), isOut, isRef,
+            action.Invoke(arg, new SourceParameterInfo(typeSlice.ToString(), nameSlice.ToString(), isOut, isRef,
                 defaultSlice.IsEmpty ? string.Empty : defaultSlice.ToString()));
 
             signature = signature.Slice(end + 1).Trim();

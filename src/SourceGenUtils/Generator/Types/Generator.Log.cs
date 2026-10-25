@@ -41,7 +41,8 @@ partial class Generator
             ],
             Trivia = new TriviaSource
             {
-                Summary = "Provides debug-only logging that writes to a log file.",
+                Summary =
+                    "Provides debug-only logging that writes to a log file. The file will be located in the current directory, which usually is the directory where your solution file is located.",
                 Remarks = "All calls to this class are compiled out in release builds.",
                 Example = LOG_EXAMPLE
             },

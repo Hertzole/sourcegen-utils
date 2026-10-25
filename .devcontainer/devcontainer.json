@@ -1,0 +1,17 @@
+{
+  "name": "SourceGenUtils",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "cd docs && npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "DavidAnson.vscode-markdownlint",
+        "unified.vscode-mdx",
+        "unifiedjs.vscode-mdx",
+        "astro-build.astro-vscode"
+      ]
+    }
+  }
+}

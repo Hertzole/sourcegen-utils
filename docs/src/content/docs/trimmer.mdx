@@ -1,0 +1,27 @@
+---
+title: Trimmer
+description: How to use the trimmer utility to remove dead code on build.
+---
+
+The SourceGenUtils trimmer runs automatically as an MSBuild task after `CoreCompile`, removing unused types, methods,
+properties, and fields from the `Hertzole.SourceGen` namespace in your assembly. It also strips optional attributes.
+
+## Configuration
+
+Properties (set in your `.csproj`):
+
+| Property | Default | Description |
+|---|---|---|
+| `SourceGenUtilsTrim` | `true` | Enable/disable trimming. |
+| `SourceGenUtilsRemoveGeneratedCodeAttribute` | `true` | Remove `GeneratedCodeAttribute`. |
+| `SourceGenUtilsRemoveCodeCoverageAttribute` | `true` | Remove `ExcludeFromCodeCoverageAttribute`. |
+| `SourceGenUtilsTrimVerbose` | `false` | Log trimming progress.<br/>(mostly just for debug purposes) |
+
+```xml
+<PropertyGroup>
+  <SourceGenUtilsTrim>true</SourceGenUtilsTrim>
+  <SourceGenUtilsTrimVerbose>true</SourceGenUtilsTrimVerbose>
+</PropertyGroup>
+```
+
+Set `SourceGenUtilsTrim` to `false` to skip trimming entirely.

@@ -1,0 +1,25 @@
+---
+title: SourceGen Utils
+description: A collection of utilities for C# source generators
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+SourceGen Utils is a collection of utilities for C# source generators that get emitted directly into your source generator assembly, thus **zero dependencies**! 
+
+- **Zero dependencies** - Your assembly can be distributed as a single `dll` file without any additional dependencies
+- **Only use what you need** - The generator emits lightweight shells and implements only the methods you use; the [trimmer](/trimmer) removes the rest.
+- **High performance utilities** - The utilities are designed to be high performance and low allocation using `ArrayPool<T>` and `Span<T>` where possible.
+- **Thread-safe pools** - The included object pools are designed to be thread-safe and can be used in multi-threaded source generators.
+
+<LinkCard
+  title="Get started"
+  href="/getting-started/"
+  description="Install SourceGen Utils and start using it in your source generators."
+/>
+
+<LinkCard
+  title="Explore API"
+  href="/api/"
+  description="Browse the SourceGen Utils API documentation."
+/>

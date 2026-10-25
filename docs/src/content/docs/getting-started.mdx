@@ -1,0 +1,40 @@
+---
+title: Getting Started
+description: Install SourceGen Utils and start using it in your source generators.
+---
+
+## Installation
+
+You can install the project from [NuGet](https://www.nuget.org/packages/Hertzole.SourceGenUtils):
+
+```sh
+dotnet add package Hertzole.SourceGenUtils
+```
+
+Or as a package reference:
+
+```xml title="Project.csproj"
+<PackageReference Include="Hertzole.SourceGenUtils" Version="*" />
+```
+
+All generated types live in the `Hertzole.SourceGen` namespace.
+
+## Quick Example
+
+```csharp title="Example.cs"
+using Hertzole.SourceGen;
+
+using var writer = new CodeWriter();
+writer
+    .AppendNamespace("MyApp.Models")
+    .AppendLine("public class User");
+
+using (writer.WithBlock())
+{
+    writer.AppendLine("public string Name { get; set; }");
+}
+
+Console.WriteLine(writer.ToString());
+```
+
+Dispose `CodeWriter` (and pools/scopes) to return buffers. See the [API reference](/api) for details.

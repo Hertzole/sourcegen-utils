@@ -1,0 +1,29 @@
+:root {
+    --sl-content-width: 100%;
+    --sl-text-5xl: 2.1875rem;
+    --sl-text-4xl: 1.8125rem;
+    --sl-text-3xl: 1.5rem;
+}
+
+.content-panel {
+    padding: 1rem;
+}
+
+.sl-heading-wrapper.level-h2 {
+    margin-top: 3rem;
+    width: fit-content;
+}
+
+.sl-heading-wrapper.level-h2:first-child {
+    margin-top: 0;
+}
+
+.sl-heading-wrapper.level-h2:after {
+    content: "";
+    display: block;
+    height: 0.2rem;
+    width: calc(100% - (var(--sl-anchor-icon-space)));
+    background-color: var(--sl-color-accent);
+    margin-top: 0.5rem;
+    /* box-shadow: 0.1rem 0.1rem 0.245rem rgba(0, 0, 0, 0.5); */
+}

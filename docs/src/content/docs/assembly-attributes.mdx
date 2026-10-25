@@ -1,0 +1,18 @@
+---
+title: Assembly Attributes
+description: Apply assembly-level attributes to your source generator for polyfills.
+---
+
+There are assembly-level attributes that can be applied to your source generator assembly to enable polyfills for certain features:
+
+- **EnableRecordSupport** - Enables support for C# 9 [record types](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/record) in your source generator assembly
+- **EnableRequiredSupport** - Enables support for C# 11 [required members](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/required) in your source generator assembly
+
+When applied, they will emit polyfills for the features in your source generator assembly.
+
+```csharp title="AssemblyInfo.cs"
+using Hertzole.SourceGen;
+
+[assembly: EnableRecordSupport]
+[assembly: EnableRequiredSupport]
+```

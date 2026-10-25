@@ -1,0 +1,63 @@
+on:
+  push:
+    branches:
+      - master
+      - main
+
+concurrency:
+  group: "docs"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: latest
+
+      - name: Setup .NET
+        uses: fast-actions/setup-dotnet@v1
+        with:
+          sdk-version: "10.x"
+
+      - name: Build docs
+        run: dotnet run --project dotnet run --project src/SourceGenUtils.DocsGenerator/SourceGenUtils.DocsGenerator.csproj docs/src/content/docs/api/
+
+      - run: npm ci
+        working-directory: docs
+
+      - run: npm run build
+        working-directory: docs
+
+      - name: Upload documentation
+        id: upload-docs
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs_output
+          path: docs/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5 # or specific "vX.X.X" version tag for this action
+

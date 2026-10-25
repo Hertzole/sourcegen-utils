@@ -22,6 +22,7 @@ export default defineConfig({
 						{ label: 'Getting Started', slug: 'getting-started' },
 						{ label: 'Trimmer', slug: 'trimmer' },
 						{ label: 'Assembly Attributes', slug: 'assembly-attributes' },
+						{ label: 'Changelog', slug: 'changelog' },
 					],
 				},
 				{

@@ -118,7 +118,7 @@ public static partial class Program
         sb.AppendLine("title: " + type.Name);
         if (!string.IsNullOrEmpty(type.Summary))
         {
-            sb.AppendLine("description: " + FixGenerics(DescriptionTypeRegex().Replace(type.Summary, "$1"))).Replace("&lt;", "<").Replace("&gt;", ">")
+            sb.AppendLine("description: " + FixGenerics(FixCode(DescriptionTypeRegex().Replace(type.Summary, "$1")))).Replace("&lt;", "<").Replace("&gt;", ">")
               .Replace("&amp;", "&");
         }
 

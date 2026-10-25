@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -79,6 +80,79 @@ public class ArrayBuilderTests : GeneratorTests
 
         // Assert
         Assert.That(builder.ToString(), Is.EqualTo(message));
+    }
+
+    [Test]
+    public void Insert()
+    {
+        // Arrange
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>(
+                "var builder = new ArrayBuilder<int>(); builder.AddRange(ReadOnlySpan<int>.Empty); builder.Insert(0, 0); Use(builder[0]); builder.ToArray();");
+
+        int[] source = { 1, 2, 3, 4, 5 };
+        const int to_insert = 9;
+        const int to_insert_index = 2;
+        int[] expected = { 1, 2, to_insert, 3, 4, 5 };
+        builder.AddRange(source);
+
+        // Act
+        builder.Insert(to_insert_index, to_insert);
+
+        // Assert
+        Assert.That(builder.ToArray(), Is.EqualTo(expected));
+        Assert.That(builder[to_insert_index], Is.EqualTo(to_insert));
+    }
+
+    [Test]
+    public void InsertRange_Span()
+    {
+        // Arrange
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>(
+                "var builder = new ArrayBuilder<int>(); builder.AddRange(ReadOnlySpan<int>.Empty); builder.InsertRange(0, ReadOnlySpan<int>.Empty); Use(builder[0]); builder.ToArray();");
+
+        int[] source = { 1, 2, 3, 4, 5 };
+        int[] toInsert = { 10, 11, 12, 13 };
+        const int to_insert_index = 2;
+        int[] expected = { 1, 2, 10, 11, 12, 13, 3, 4, 5 };
+        builder.AddRange(source);
+
+        // Act
+        builder.InsertRange(to_insert_index, toInsert);
+
+        // Assert
+        Assert.That(builder.ToArray(), Is.EqualTo(expected));
+    }
+
+    public static IEnumerable InsertRangeCases
+    {
+        get
+        {
+            yield return new TestCaseData(new List<int> { 10, 11, 12, 13 }).SetName("List");
+            yield return new TestCaseData(Enumerable.Range(10, 4)).SetName("Enumerable");
+        }
+    }
+
+    [Test]
+    [TestCaseSource(nameof(InsertRangeCases))]
+    public void InsertRange_IEnumerable(IEnumerable<int> value)
+    {
+        // Arrange
+        using ArrayBuilder<int> builder =
+            GetWrapper<int>(
+                "var builder = new ArrayBuilder<int>(); builder.AddRange(ReadOnlySpan<int>.Empty); builder.InsertRange(0, new List<int>()); Use(builder[0]); builder.ToArray();");
+
+        int[] source = { 1, 2, 3, 4, 5 };
+        const int to_insert_index = 2;
+        int[] expected = { 1, 2, 10, 11, 12, 13, 3, 4, 5 };
+        builder.AddRange(source);
+
+        // Act
+        builder.InsertRange(to_insert_index, value);
+
+        // Assert
+        Assert.That(builder.ToArray(), Is.EqualTo(expected));
     }
 
     [Test]
@@ -312,6 +386,28 @@ public class ArrayBuilderTests : GeneratorTests
 
         // Assert
         Assert.That(actual, Is.EqualTo($"{Constants.ARRAY_BUILDER}<{nameof(Byte)}>[{values.Length}]"));
+    }
+
+    [Test]
+    [TestCase(0)]
+    [TestCase(10)]
+    [TestCase(64)]
+    public void CopyTo(int offset)
+    {
+        // Arrange
+        using ArrayBuilder<char> builder =
+            GetWrapper<char>(
+                "var builder = new ArrayBuilder<char>(); builder.AddRange(ReadOnlySpan<char>.Empty); builder.CopyTo(new char[builder.Count], 0); Use(builder[0]);");
+
+        char[] source = Fake.Random.Chars(count: 32);
+        builder.AddRange(source);
+
+        // Act
+        char[] destination = new char[builder.Count + offset];
+        builder.CopyTo(destination, offset);
+
+        // Assert
+        Assert.That(destination.AsSpan(offset, builder.Count).ToArray(), Is.EqualTo(source));
     }
 
     [Test]

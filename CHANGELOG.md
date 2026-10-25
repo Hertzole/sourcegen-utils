@@ -5,6 +5,12 @@
 - Assembly trimmer to automatically remove all unused types and members from SourceGen Utils
 - `ArrayBuilder<T>.RemoveRange(int start, int count)` to remove a range of elements from the builder
 - `ArrayBuilder<T>.ReplaceAll(T toReplace, T newValue)` to replace all occurrences of a value in the builder
+- `ArrayBuilder<T>.Insert(int index, T value)` to insert a value at a specific index in the builder
+- `ArrayBuilder<T>.InsertRange(int index, ReadonlySpan<T> values)` and
+  `ArrayBuilder<T>.InsertRange(int index, IEnumerable<T> values)` to insert a range of values at a specific index in the
+  builder
+- `ArrayBuilder<T>.CopyTo(int offset)` to copy the contents of the builder to a destination array starting at a specific
+  offset
 
 ### Fixed
 

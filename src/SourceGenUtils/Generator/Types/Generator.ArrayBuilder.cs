@@ -4,6 +4,7 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
+    private static TriviaSource insertRangeTrivia;
     private const string ARRAY_BUILDER_EXAMPLE =
         """
         The following example demonstrates how to add, remove, consume, and dispose the array builder.
@@ -90,6 +91,16 @@ partial class Generator
             OBJECT_POOL + ".ObjectPool(System.Func<T>, System.Action<T>, System.Action<T>, System.Action<T>)",
             OBJECT_POOL + ".Get()"
         ];
+
+        insertRangeTrivia = new TriviaSource
+        {
+            Summary = "Inserts multiple items into the specified index and shifts the items after to the right.",
+            Parameters = new Dictionary<string, string>
+            {
+                ["index"] = "The zero-based index at which to insert the items.",
+                ["items"] = "The items to insert."
+            }
+        };
 
         return new TypeSource
         {
@@ -221,7 +232,8 @@ partial class Generator
                         {
                             ["item"] = "The item to add."
                         }
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -236,7 +248,8 @@ partial class Generator
                         {
                             ["items"] = "The items to add."
                         }
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -251,7 +264,89 @@ partial class Generator
                         {
                             ["items"] = "The items to add."
                         }
+                    },
+                    Attributes = AggressiveInlineAttribute
+                },
+                new MethodSource
+                {
+                    Name = "Insert",
+                    Signature = "public partial void Insert(int index, T item)",
+                    Implementation = (codeWriter, in _) =>
+                    {
+                        codeWriter.AppendIndentedSource(
+                            """
+                            writer.EnsureCapacity(writer.size + 1);
+                            global::System.Array.Copy(writer.array, index, writer.array, index + 1, writer.size - index);
+                            writer.array[index] = item;
+                            writer.size++;
+                            """);
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Inserts an item into the specified index and shifts the items after it to the right.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["index"] = "The zero-based index at which to insert the item.",
+                            ["item"] = "The item to insert."
+                        }
                     }
+                },
+                new MethodSource
+                {
+                    Name = "InsertRange",
+                    Signature = "public partial void InsertRange(int index, global::System.ReadOnlySpan<T> items)",
+                    Implementation = (codeWriter, in _) =>
+                    {
+                        codeWriter.AppendIndentedSource(
+                            $$"""
+                              int count = items.Length;
+
+                              if (count == 0)
+                              {
+                                  return;
+                              }
+
+                              writer.EnsureCapacity(writer.size + count);
+                              global::System.Array.Copy(writer.array, index, writer.array, index + count, writer.size - index);
+                              items.CopyTo({{GLOBAL_MEMORY_EXT}}.AsSpan(writer.array, index, count));
+                              writer.size += count;
+                              """);
+                    },
+                    Trivia = insertRangeTrivia
+                },
+                new MethodSource
+                {
+                    Name = "InsertRange",
+                    Signature = "public partial void InsertRange(int index, global::System.Collections.Generic.IEnumerable<T> items)",
+                    Implementation = (codeWriter, in _) =>
+                    {
+                        codeWriter.AppendIndentedSource(
+                            """
+                            if (items is global::System.Collections.Generic.ICollection<T> c)
+                            {
+                                int count = c.Count;
+                                if (count > 0)
+                                {
+                                    writer.EnsureCapacity(writer.size + count);
+                                    global::System.Array.Copy(writer.array, index, writer.array, index + count, writer.size - index);
+                                    c.CopyTo(writer.array, index);
+                                    writer.size += count;
+                                }
+                            }
+                            else
+                            {
+                                using (global::System.Collections.Generic.IEnumerator<T> en = items.GetEnumerator())
+                                {
+                                    while (en.MoveNext())
+                                    {
+                                        Insert(index++, en.Current);
+                                    }
+                                }
+                            }
+                            """);
+                    },
+                    Trivia = insertRangeTrivia,
+                    Dependencies = [$"{ARRAY_BUILDER}.Insert(int, T)"]
                 },
                 new MethodSource
                 {
@@ -294,7 +389,8 @@ partial class Generator
                         {
                             ["index"] = "The zero-based index of the item to remove."
                         }
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -356,7 +452,8 @@ partial class Generator
                         {
                             ["item"] = "The item to check for."
                         }
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -372,7 +469,8 @@ partial class Generator
                         {
                             ["item"] = "The item to check for."
                         }
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -383,7 +481,8 @@ partial class Generator
                     Trivia = new TriviaSource
                     {
                         Summary = "Removes all items from the builder."
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -407,7 +506,8 @@ partial class Generator
                     {
                         Summary = "Returns a read-only span over the builder's contents.",
                         Returns = "A read-only span over the builder's contents."
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -440,7 +540,27 @@ partial class Generator
                     {
                         Summary = "Returns a new immutable array with the builder's contents.",
                         Returns = "A new immutable array with the builder's contents."
-                    }
+                    },
+                    Attributes = AggressiveInlineAttribute
+                },
+                new MethodSource
+                {
+                    Name = "CopyTo",
+                    Signature = "public partial void CopyTo(T[] destination, int destinationIndex)",
+                    Implementation = (codeWriter, in _) =>
+                    {
+                        codeWriter.AppendLine("global::System.Array.Copy(writer.array, 0, destination, destinationIndex, writer.size);");
+                    },
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Copies the contents of this array builder to the specified array.",
+                        Parameters = new Dictionary<string, string>
+                        {
+                            ["destination"] = "The array to copy the contents to.",
+                            ["destinationIndex"] = "The index into the destination array to which the first copied element is written."
+                        }
+                    },
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {

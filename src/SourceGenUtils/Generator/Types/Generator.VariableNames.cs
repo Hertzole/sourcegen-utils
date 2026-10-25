@@ -328,7 +328,7 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "UppercaseStart",
-                    Signature = $"public static partial void UppercaseStart({GLOBAL_R_SPAN}<char> value, global::System.Span<char> destination)",
+                    Signature = $"public static partial void UppercaseStart({GLOBAL_R_SPAN}<char> value, {GLOBAL_SPAN}<char> destination)",
                     Implementation = (writer, in _) =>
                     {
                         writer.AppendLine("if (value.Length == 0)");
@@ -356,7 +356,7 @@ partial class Generator
                         Parameters = new Dictionary<string, string>
                         {
                             ["value"] = "The input value.",
-                            ["destination"] = builder_destination_trivia
+                            ["destination"] = destination_trivia
                         }
                     }
                 },

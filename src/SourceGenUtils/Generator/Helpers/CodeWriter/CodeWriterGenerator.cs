@@ -574,11 +574,11 @@ internal static partial class CodeWriterGenerator
                           <!code>
                           public void Method1()
                           {
-                              Console.WriteLine(\"Hello World!\");
+                              Console.WriteLine("Hello World!");
                           }
                           public void Method2()
                           {
-                              Console.WriteLine(\"Hello World!\");
+                              Console.WriteLine("Hello World!");
                           }
                           </code>
 
@@ -617,12 +617,12 @@ internal static partial class CodeWriterGenerator
                           <!code>
                           public void Method1()
                           {
-                              Console.WriteLine(\"Hello World!\");
+                              Console.WriteLine("Hello World!");
                           }
 
                           public void Method2()
                           {
-                              Console.WriteLine(\"Hello World!\");
+                              Console.WriteLine("Hello World!");
                           }
                           </code>
                           """,
@@ -740,7 +740,7 @@ internal static partial class CodeWriterGenerator
                             {
                                 using (writer.WithCondition("DEBUG"))
                                 {
-                                    writer.AppendLine($"System.Diagnostics.WriteLine({message});");
+                                    writer.AppendLine($"System.Diagnostics.Debug.WriteLine({message});");
                                 }
                             }
                         }
@@ -751,7 +751,7 @@ internal static partial class CodeWriterGenerator
                         public void Method()
                         {
                         #if DEBUG
-                            System.Diagnostics.WriteLine(\"Calling method!\");
+                            System.Diagnostics.Debug.WriteLine(\"Calling method!\");
                         #endif
                             // TODO: Method stuff
                         }

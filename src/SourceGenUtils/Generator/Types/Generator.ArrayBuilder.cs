@@ -4,7 +4,6 @@ namespace Hertzole.SourceGenUtils;
 
 partial class Generator
 {
-    private static TriviaSource insertRangeTrivia;
     private const string ARRAY_BUILDER_EXAMPLE =
         """
         The following example demonstrates how to add, remove, consume, and dispose the array builder.
@@ -92,9 +91,9 @@ partial class Generator
             OBJECT_POOL + ".Get()"
         ];
 
-        insertRangeTrivia = new TriviaSource
+        TriviaSource insertRangeTrivia = new TriviaSource
         {
-            Summary = "Inserts multiple items into the specified index and shifts the items after to the right.",
+            Summary = "Inserts multiple items into the specified index and shifts the items after the newly inserted items to the right.",
             Parameters = new Dictionary<string, string>
             {
                 ["index"] = "The zero-based index at which to insert the items.",

@@ -12,9 +12,11 @@ zero unused code - only what you call gets generated.
   generation
 - **Performant** - heavy use of spans and pools in generated code
 
+[Check out the documentation to see all features!](https://hertzole.se/sourcegen-utils)
+
 ## Installation
 
-### NuGet
+### [NuGet](https://www.nuget.org/packages/Hertzole.SourceGenUtils)
 
 ```sh
 dotnet add package Hertzole.SourceGenUtils

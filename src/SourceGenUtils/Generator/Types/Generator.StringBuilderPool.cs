@@ -80,7 +80,7 @@ partial class Generator
                     Dependencies = CreatePoolGetOutDependencies(STRING_BUILDER_POOL, builder),
                     Trivia = new TriviaSource
                     {
-                        Summary = $"Retrieves a {stringBuilderTriviaRef}from the pool and wraps it in a disposable scope that returns it automatically.",
+                        Summary = $"Retrieves a {stringBuilderTriviaRef} from the pool and wraps it in a disposable scope that returns it automatically.",
                         Parameters = new Dictionary<string, string>
                         {
                             ["item"] = $"When this method returns, contains the {stringBuilderTriviaRef} retrieved from the pool."

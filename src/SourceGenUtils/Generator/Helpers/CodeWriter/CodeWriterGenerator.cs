@@ -143,7 +143,7 @@ internal static partial class CodeWriterGenerator
                     Signature = "public int Indent",
                     Trivia = new TriviaSource
                     {
-                        Summary = "The current indent. Each indent is 4 spaces/1 tab."
+                        Summary = "The current indent. Each indent is 4 spaces (equivalent to one tab)."
                     }
                 }
             },
@@ -704,7 +704,6 @@ internal static partial class CodeWriterGenerator
                     writer.AppendLine($"return new global::{NAMESPACE}.CodeWriter.ConditionalScope(this, condition);");
                 },
                 Dependencies = [CODE_WRITER + ".ConditionalScope.ConditionalScope(Hertzole.SourceGen.CodeWriter, string)", throw_if_disposed],
-                //TODO: Show output
                 Trivia = new TriviaSource
                 {
                     Summary =
@@ -715,7 +714,7 @@ internal static partial class CodeWriterGenerator
                     },
                     Returns = "A disposable scope that closes the conditional block when disposed.",
                     Remarks =
-                        "You can write <c>#if CONDITION</c>, <c>if CONDITION</c> or just <c>CONDITION</c> and the  condition will be wrapped in <c>#if</c> and <c>#endif</c> no matter what.",
+                        "You can write <c>#if CONDITION</c>, <c>if CONDITION</c> or just <c>CONDITION</c> and the condition will be wrapped in <c>#if</c> and <c>#endif</c>, as long as the provided string isn't null or empty",
                     Example =
                         """
                         The following example demonstrates how to use <c>WithCondition</c> to wrap the content in a preprocessor conditional block.
@@ -740,7 +739,7 @@ internal static partial class CodeWriterGenerator
                             {
                                 using (writer.WithCondition("DEBUG"))
                                 {
-                                    writer.AppendLine($"System.Diagnostics.Debug.WriteLine({message});");
+                                    writer.AppendLine($"System.Diagnostics.Debug.WriteLine(\"{message}\");");
                                 }
                             }
                         }
@@ -751,7 +750,7 @@ internal static partial class CodeWriterGenerator
                         public void Method()
                         {
                         #if DEBUG
-                            System.Diagnostics.Debug.WriteLine(\"Calling method!\");
+                            System.Diagnostics.Debug.WriteLine("Calling method!");
                         #endif
                             // TODO: Method stuff
                         }

@@ -24,7 +24,7 @@ jobs:
           sdk-version: "10.x"
 
       - name: Build docs
-        run: dotnet run --project dotnet run --project src/SourceGenUtils.DocsGenerator/SourceGenUtils.DocsGenerator.csproj docs/src/content/docs/api/
+        run: dotnet run --project src/SourceGenUtils.DocsGenerator/SourceGenUtils.DocsGenerator.csproj docs/src/content/docs/api/
 
       - run: npm ci
         working-directory: docs

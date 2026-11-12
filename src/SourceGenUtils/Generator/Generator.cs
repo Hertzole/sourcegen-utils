@@ -298,7 +298,7 @@ public sealed partial class Generator : IIncrementalGenerator
                 return false;
             }
 
-            if (maes.Name is not IdentifierNameSyntax name)
+            if (maes.Name is not SimpleNameSyntax name)
             {
                 return false;
             }

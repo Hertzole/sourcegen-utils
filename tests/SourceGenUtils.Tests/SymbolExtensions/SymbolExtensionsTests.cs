@@ -1,3 +1,4 @@
+using System;
 using Hertzole.SourceGen.Wrappers;
 using Microsoft.CodeAnalysis;
 using NUnit.Framework;
@@ -97,6 +98,82 @@ public class SymbolExtensionsTests : GeneratorTests
     }
 
     [Test]
+    public void HasAttribute_Generic()
+    {
+        // Arrange
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.HasAttribute<SerializableAttribute>(null);");
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool result = extensions.HasAttribute<SerializableAttribute>(symbol);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void HasAttribute_Type()
+    {
+        // Arrange
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.HasAttribute(null, typeof(object));");
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool result = extensions.HasAttribute(symbol, typeof(SerializableAttribute));
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void HasAttribute_GenericAndType()
+    {
+        // Arrange
+        SymbolExtensions extensions =
+            CompileWrapper("SymbolExtensions.HasAttribute(null, typeof(object)); SymbolExtensions.HasAttribute<SerializableAttribute>(null);");
+
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool genericResult = extensions.HasAttribute<SerializableAttribute>(symbol);
+        bool typeResult = extensions.HasAttribute(symbol, typeof(SerializableAttribute));
+
+        // Assert
+        Assert.That(genericResult, Is.True);
+        Assert.That(typeResult, Is.True);
+    }
+
+    [Test]
     public void TryGetAttribute_IsAttribute()
     {
         // Arrange
@@ -151,6 +228,100 @@ public class SymbolExtensionsTests : GeneratorTests
         // Assert
         Assert.That(attribute, Is.Null);
         return result;
+    }
+
+    [Test]
+    public void TryGetAttribute_Generic()
+    {
+        // Arrange
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.TryGetAttribute<SerializableAttribute>(null, out var attribute);");
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool result = extensions.TryGetAttribute<SerializableAttribute>(symbol, out AttributeData? attribute);
+
+        // Assert
+        Assert.That(result, Is.True);
+        Assert.That(attribute, Is.Not.Null);
+        Assert.That(attribute!.AttributeClass, Is.Not.Null);
+        Assert.That(attribute.AttributeClass!.Name, Is.EqualTo("SerializableAttribute"));
+        Assert.That(attribute.AttributeClass!.ContainingNamespace!.Name, Is.EqualTo("System"));
+    }
+
+    [Test]
+    public void TryGetAttribute_Type()
+    {
+        // Arrange
+        SymbolExtensions extensions = CompileWrapper("SymbolExtensions.TryGetAttribute(null, typeof(SerializableAttribute), out var attribute);");
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool result = extensions.TryGetAttribute(symbol, typeof(SerializableAttribute), out AttributeData? attribute);
+
+        // Assert
+        Assert.That(result, Is.True);
+        Assert.That(attribute, Is.Not.Null);
+        Assert.That(attribute!.AttributeClass, Is.Not.Null);
+        Assert.That(attribute.AttributeClass!.Name, Is.EqualTo("SerializableAttribute"));
+        Assert.That(attribute.AttributeClass!.ContainingNamespace!.Name, Is.EqualTo("System"));
+    }
+
+    [Test]
+    public void TryGetAttribute_GenericAndType()
+    {
+        // Arrange
+        SymbolExtensions extensions =
+            CompileWrapper(
+                "SymbolExtensions.TryGetAttribute<SerializableAttribute>(null, out _); SymbolExtensions.TryGetAttribute(null, typeof(SerializableAttribute), out var attribute);");
+
+        const string source = """
+                              using System;
+
+                              namespace Test.Tester
+                              {
+                                  [Serializable]
+                                  public class TestClass { }
+                              }
+                              """;
+
+        INamedTypeSymbol symbol = CompileTypeToSymbol(source);
+
+        // Act
+        bool genericResult = extensions.TryGetAttribute<SerializableAttribute>(symbol, out AttributeData? genericAttribute);
+        bool typeResult = extensions.TryGetAttribute(symbol, typeof(SerializableAttribute), out AttributeData? typeAttribute);
+
+        // Assert
+        DoAssert(genericResult, genericAttribute);
+        DoAssert(typeResult, typeAttribute);
+
+        static void DoAssert(bool result, AttributeData? attribute)
+        {
+            Assert.That(result, Is.True);
+            Assert.That(attribute, Is.Not.Null);
+            Assert.That(attribute!.AttributeClass, Is.Not.Null);
+            Assert.That(attribute.AttributeClass!.Name, Is.EqualTo("SerializableAttribute"));
+            Assert.That(attribute.AttributeClass!.ContainingNamespace!.Name, Is.EqualTo("System"));
+        }
     }
 
     private static SymbolExtensions CompileWrapper(string usage)

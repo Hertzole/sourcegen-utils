@@ -39,32 +39,59 @@ partial class Generator
 
     private static TypeSource CreateSymbolExtensions()
     {
+        const string has_attribute_type_impl =
+            $$"""
+              string? fullName = attributeType.FullName;
+              if (string.IsNullOrWhiteSpace(fullName))
+              {
+                  return false;
+              }
+
+              return HasAttribute(symbol, {{GLOBAL_MEMORY_EXT}}.AsSpan(fullName));
+              """;
+
+        const string try_get_attribute_type_impl =
+            $$"""
+              string? fullName = attributeType.FullName;
+              if (string.IsNullOrWhiteSpace(fullName))
+              {
+                  attribute = null;
+                  return false;
+              }
+
+              return TryGetAttribute(symbol, {{GLOBAL_MEMORY_EXT}}.AsSpan(fullName), out attribute);
+              """;
+
+        const string has_attribute_summary = "Determines whether the given symbol has the specified attribute.";
+        const string has_attribute_return = $"{TRIVIA_TRUE} if the symbol has the specified attribute; otherwise {TRIVIA_FALSE}.";
+        KeyValuePair<string, string> symbolTrivia = new KeyValuePair<string, string>("symbol", "The symbol to check.");
+        KeyValuePair<string, string> attributeNameTrivia = new KeyValuePair<string, string>("fullAttributeTypeName",
+            "The name of the attribute to check for. It needs to include the full namespace and type name. E.g <c>My.Namespace.MyAttribute</c>. It may also include the <c>global::</c> prefix.");
+
+        KeyValuePair<string, string> symbolTypeTrivia = new KeyValuePair<string, string>("attributeType", "The type of the attribute to check for.");
+
         TriviaSource hasAttributeTrivia = new TriviaSource
         {
-            Summary = "Determines whether the given symbol has the specified attribute.",
-            Returns = $"{TRIVIA_TRUE} if the symbol has the specified attribute; otherwise {TRIVIA_FALSE}.",
-            Parameters = new Dictionary<string, string>
-            {
-                { "symbol", "The symbol to check." },
-                {
-                    "fullAttributeTypeName",
-                    "The name of the attribute to check for. It needs to include the full namespace and type name. E.g <c>My.Namespace.MyAttribute</c>. It may also include the <c>global::</c> prefix."
-                }
-            }
+            Summary = has_attribute_summary,
+            Returns = has_attribute_return,
+            Parameters = new Dictionary<string, string>()
         };
+
+        hasAttributeTrivia.Parameters.Add(symbolTrivia.Key, symbolTrivia.Value);
+        hasAttributeTrivia.Parameters.Add(attributeNameTrivia.Key, attributeNameTrivia.Value);
+
+        const string try_get_attribute_summary = "Determines whether the given symbol has the specified attribute, and returns the attribute if it does.";
+        KeyValuePair<string, string> outAttributeTrivia = new KeyValuePair<string, string>("attribute",
+            $"When this method returns, contains the attribute with the specified name, if the attribute was found; otherwise, {TRIVIA_NULL}. This parameter is passed uninitialized.");
 
         TriviaSource tryGetAttributeTrivia = new TriviaSource
         {
-            Summary = "Determines whether the given symbol has the specified attribute, and returns the attribute if it does.",
+            Summary = try_get_attribute_summary,
             Returns = hasAttributeTrivia.Returns,
             Parameters = new Dictionary<string, string>(hasAttributeTrivia.Parameters)
-            {
-                {
-                    "attribute",
-                    $"When this method returns, contains the attribute with the specified name, if the attribute was found; otherwise, {TRIVIA_NULL}. This parameter is passed uninitialized."
-                }
-            }
         };
+
+        tryGetAttributeTrivia.Parameters.Add(outAttributeTrivia.Key, outAttributeTrivia.Value);
 
         return new TypeSource
         {
@@ -174,6 +201,52 @@ partial class Generator
                 new MethodSource
                 {
                     Name = "HasAttribute",
+                    Signature = $"public static partial bool HasAttribute<T>(this {GLOBAL_MS_CODE}.ISymbol symbol) where T : global::System.Attribute",
+                    Implementation = (writer, in context) =>
+                    {
+                        if (context.HasCalledMethod($"{SYMBOL_EXTENSIONS}.HasAttribute({MS_CODE}.ISymbol, System.Type)"))
+                        {
+                            writer.AppendLine("return HasAttribute(symbol, typeof(T));");
+                        }
+                        else
+                        {
+                            writer.AppendLine("global::System.Type attributeType = typeof(T);");
+                            writer.AppendIndentedSource(has_attribute_type_impl);
+                        }
+                    },
+                    EmptyStub = "return false;",
+                    Dependencies = [$"{SYMBOL_EXTENSIONS}.HasAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = has_attribute_summary,
+                        Returns = has_attribute_return,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { symbolTrivia.Key, symbolTrivia.Value }
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "HasAttribute",
+                    Signature = $"public static partial bool HasAttribute(this {GLOBAL_MS_CODE}.ISymbol symbol, global::System.Type attributeType)",
+                    Implementation = (writer, in _) => { writer.AppendIndentedSource(has_attribute_type_impl); },
+                    EmptyStub = "return false;",
+                    Dependencies = [$"{SYMBOL_EXTENSIONS}.HasAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = has_attribute_summary,
+                        Returns = has_attribute_return,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { symbolTrivia.Key, symbolTrivia.Value },
+                            { symbolTypeTrivia.Key, symbolTypeTrivia.Value }
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "HasAttribute",
                     Signature = $"public static partial bool HasAttribute(this {MS_CODE}.ISymbol symbol, string fullAttributeTypeName)",
                     Implementation = (writer, in _) =>
                     {
@@ -181,7 +254,8 @@ partial class Generator
                     },
                     Dependencies = [$"{SYMBOL_EXTENSIONS}.HasAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>)"],
                     Trivia = hasAttributeTrivia,
-                    EmptyStub = "return false;"
+                    EmptyStub = "return false;",
+                    Attributes = AggressiveInlineAttribute
                 },
                 new MethodSource
                 {
@@ -190,7 +264,58 @@ partial class Generator
                     Implementation = (writer, in _) => { writer.AppendLine("return TryGetAttribute(symbol, fullAttributeTypeName, out _);"); },
                     EmptyStub = "return false;",
                     Dependencies = [$"{SYMBOL_EXTENSIONS}.TryGetAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>, {MS_CODE}.AttributeData)"],
-                    Trivia = hasAttributeTrivia
+                    Trivia = hasAttributeTrivia,
+                    Attributes = AggressiveInlineAttribute
+                },
+                new MethodSource
+                {
+                    Name = "TryGetAttribute",
+                    Signature =
+                        $"public static partial bool TryGetAttribute<T>(this {GLOBAL_MS_CODE}.ISymbol symbol, out {GLOBAL_MS_CODE}.AttributeData? attribute) where T : global::System.Attribute",
+                    Implementation = (writer, in context) =>
+                    {
+                        if (context.HasCalledMethod($"{SYMBOL_EXTENSIONS}.TryGetAttribute({MS_CODE}.ISymbol, System.Type, {MS_CODE}.AttributeData)"))
+                        {
+                            writer.AppendLine("return TryGetAttribute(symbol, typeof(T), out attribute);");
+                        }
+                        else
+                        {
+                            writer.AppendLine("global::System.Type attributeType = typeof(T);");
+                            writer.AppendIndentedSource(try_get_attribute_type_impl);
+                        }
+                    },
+                    EmptyStub = "attribute = null; return false;",
+                    Dependencies = [$"{SYMBOL_EXTENSIONS}.TryGetAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>, {MS_CODE}.AttributeData)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = try_get_attribute_summary,
+                        Returns = tryGetAttributeTrivia.Returns,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { symbolTrivia.Key, symbolTrivia.Value },
+                            { outAttributeTrivia.Key, outAttributeTrivia.Value }
+                        }
+                    }
+                },
+                new MethodSource
+                {
+                    Name = "TryGetAttribute",
+                    Signature =
+                        $"public static partial bool TryGetAttribute(this {GLOBAL_MS_CODE}.ISymbol symbol, global::System.Type attributeType, out {GLOBAL_MS_CODE}.AttributeData? attribute)",
+                    Implementation = (writer, in _) => { writer.AppendIndentedSource(try_get_attribute_type_impl); },
+                    EmptyStub = "attribute = null; return false;",
+                    Dependencies = [$"{SYMBOL_EXTENSIONS}.TryGetAttribute({MS_CODE}.ISymbol, {R_SPAN}<char>, {MS_CODE}.AttributeData)"],
+                    Trivia = new TriviaSource
+                    {
+                        Summary = try_get_attribute_summary,
+                        Returns = tryGetAttributeTrivia.Returns,
+                        Parameters = new Dictionary<string, string>
+                        {
+                            { symbolTrivia.Key, symbolTrivia.Value },
+                            { symbolTypeTrivia.Key, symbolTypeTrivia.Value },
+                            { outAttributeTrivia.Key, outAttributeTrivia.Value }
+                        }
+                    }
                 },
                 new MethodSource
                 {

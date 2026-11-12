@@ -699,28 +699,32 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                         AppendParameterNames(method, to_instance);
                         writer.AppendLine("];");
 
+                        bool isGenericMethod = signature.Name.IndexOf('<') >= 0;
+                        if (isGenericMethod)
+                        {
+                            writer.Append("global::System.Reflection.MethodInfo __methodInfo = ");
+                            AppendMethodInfoField(writer, method, in signature, nameBuilder);
+                            writer.AppendLine("!;");
+                            writer.Append("__methodInfo = __methodInfo.MakeGenericMethod(");
+                            AppendGenericMethodParameters(writer, signature.Name);
+                            writer.AppendLine(");");
+                        }
+
                         if (!signature.IsVoidReturnType)
                         {
                             writer.Append("object? __callResult = ");
                         }
 
-                        writer.Append(SanitizeMethodName(method.Name));
-
-                        if (signature.IsExplicitImplementation)
+                        if (isGenericMethod)
                         {
-                            nameBuilder.Clear();
-                            nameBuilder.AddRange(signature.ReturnType);
-                            SanitizeExplicitName(nameBuilder);
-
-                            writer.Append('_').Append(nameBuilder);
+                            writer.Append("__methodInfo.Invoke(");
+                        }
+                        else
+                        {
+                            AppendMethodInfoField(writer, method, in signature, nameBuilder);
+                            writer.Append("!.Invoke(");
                         }
 
-                        if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
-                        {
-                            writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
-                        }
-
-                        writer.Append("_MethodInfo!.Invoke(");
                         if (!signature.IsStatic)
                         {
                             writer.Append("Instance, ");
@@ -859,6 +863,57 @@ public sealed class WrapperGenerator : IIncrementalGenerator
                     break;
                 }
             }
+        }
+    }
+
+    private static void AppendMethodInfoField(CodeWriter writer,
+        MethodSource method,
+        in SourceMethodSignature signature,
+        ArrayBuilder<char> nameBuilder)
+    {
+        writer.Append(SanitizeMethodName(method.Name));
+
+        if (signature.IsExplicitImplementation)
+        {
+            nameBuilder.Clear();
+            nameBuilder.AddRange(signature.ReturnType);
+            SanitizeExplicitName(nameBuilder);
+
+            writer.Append('_').Append(nameBuilder);
+        }
+
+        if (!string.IsNullOrWhiteSpace(method.ParameterTypesKey))
+        {
+            writer.Append(FormatParameterTypesKey(method.ParameterTypesKey));
+        }
+
+        writer.Append("_MethodInfo");
+    }
+
+    private static void AppendGenericMethodParameters(CodeWriter writer, ReadOnlySpan<char> methodName)
+    {
+        int start = methodName.IndexOf('<');
+        int end = methodName.LastIndexOf('>');
+        if (start < 0 || end <= start)
+        {
+            return;
+        }
+
+        ReadOnlySpan<char> parameters = methodName.Slice(start + 1, end - start - 1);
+        while (true)
+        {
+            int comma = parameters.IndexOf(',');
+            writer.Append("typeof(");
+            writer.Append(comma < 0 ? parameters.Trim() : parameters.Slice(0, comma).Trim());
+            writer.Append(')');
+
+            if (comma < 0)
+            {
+                return;
+            }
+
+            writer.Append(", ");
+            parameters = parameters.Slice(comma + 1);
         }
     }
 

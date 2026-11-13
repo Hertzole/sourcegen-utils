@@ -54,7 +54,7 @@ public static class RoslynHelper
         compilation = GetCompilation(MAIN, source);
         AssertNoErrorsInCompilation(compilation);
         SyntaxTree tree = compilation.SyntaxTrees.Single(static x => x.ToString() != MAIN);
-        return tree.GetRoot().DescendantNodes().OfType<TypeDeclarationSyntax>().Single();
+        return tree.GetRoot().DescendantNodes().OfType<TypeDeclarationSyntax>().Last();
     }
 
     public static CSharpCompilation GetCompilation(params string[] sources)

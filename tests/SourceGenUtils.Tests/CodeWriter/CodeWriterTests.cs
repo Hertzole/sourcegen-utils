@@ -3,6 +3,7 @@ using System.Collections;
 using System.Globalization;
 using System.Text;
 using Hertzole.SourceGen.Wrappers;
+using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 
 namespace SourceGenUtils.Tests;
@@ -283,6 +284,129 @@ internal partial class CodeWriterTests : GeneratorTests
         {
             writer.AppendLine(message);
         }
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    [TestCase(true, true, false, TestName = "Include Namespace & Append Namespace (no self)")]
+    [TestCase(true, false, false, TestName = "Include Namespace & Do Not Append Namespace (no self)")]
+    [TestCase(false, true, false, TestName = "Do Not Include Namespace & Append Namespace (no self)")]
+    [TestCase(false, false, false, TestName = "Do Not Include Namespace & Do Not Append Namespace (no self)")]
+    [TestCase(true, true, true, TestName = "Include Namespace & Append Namespace (include self)")]
+    [TestCase(true, false, true, TestName = "Include Namespace & Do Not Append Namespace (include self)")]
+    [TestCase(false, true, true, TestName = "Do Not Include Namespace & Append Namespace (include self)")]
+    [TestCase(false, false, true, TestName = "Do Not Include Namespace & Do Not Append Namespace (include self)")]
+    public void WithContainingTypes(bool includeNamespace, bool appendNamespace, bool includeSelf)
+    {
+        // Arrange
+        StringBuilder sb = new StringBuilder();
+        if (includeNamespace)
+        {
+            sb.AppendLine("namespace Test.Namespace;");
+        }
+
+        sb.AppendLine("public partial class A { public partial class B { public partial struct C { public partial class D { } } } }");
+
+        INamedTypeSymbol symbol = RoslynHelper.CompileTypeToSymbol(sb.ToString());
+        CodeWriter writer = CompileCodeWriter(false,
+            "var writer = new CodeWriter().AppendLine(\"\").Append(\"\"); writer.WithContainingTypes((Microsoft.CodeAnalysis.ISymbol)null!); writer.ToString();");
+
+        using Hertzole.SourceGenUtils.CodeWriter codeWriter = new Hertzole.SourceGenUtils.CodeWriter();
+
+        if (includeNamespace && appendNamespace)
+        {
+            codeWriter.AppendNamespace("Test.Namespace");
+        }
+
+        codeWriter.AppendLine("partial class A");
+        using (codeWriter.WithBlock())
+        {
+            codeWriter.AppendLine("partial class B");
+            using (codeWriter.WithBlock())
+            {
+                codeWriter.AppendLine("partial struct C");
+                using (codeWriter.WithBlock())
+                {
+                    // If includeSelf, also write the provided symbol.
+                    // Otherwise, skip it.
+                    if (includeSelf)
+                    {
+                        codeWriter.AppendLine("partial class D");
+                        using (codeWriter.WithBlock())
+                        {
+                            codeWriter.AppendLine("// Inner");
+                        }
+                    }
+                    else
+                    {
+                        codeWriter.AppendLine("// Inner");
+                    }
+                }
+            }
+        }
+
+        codeWriter.AppendLine("// Outer");
+
+        string expected = codeWriter.ToString();
+
+        // Act
+        using (writer.WithContainingTypes(symbol, appendNamespace, includeSelf))
+        {
+            writer.AppendLine("// Inner");
+        }
+
+        writer.Append("// Outer");
+
+        // Assert
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void WithContainingTypes_SingleType([Values] bool includeSelf)
+    {
+        // Arrange
+        INamedTypeSymbol symbol = RoslynHelper.CompileTypeToSymbol("public partial class A { }");
+        CodeWriter writer = CompileCodeWriter(false,
+            "var writer = new CodeWriter().AppendLine(\"\").Append(\"\"); writer.WithContainingTypes((Microsoft.CodeAnalysis.ISymbol)null!); writer.ToString();");
+
+        using Hertzole.SourceGenUtils.CodeWriter codeWriter = new Hertzole.SourceGenUtils.CodeWriter();
+
+        if (includeSelf)
+        {
+            codeWriter.AppendLine("partial class A");
+            using (codeWriter.WithBlock())
+            {
+                codeWriter.AppendLine("// Inner");
+            }
+        }
+        else
+        {
+            codeWriter.AppendLine("// Inner");
+        }
+
+        codeWriter.AppendLine("// Outer");
+
+        string expected = codeWriter.ToString();
+        // If includeSelf
+        //    partial class A
+        //    {
+        //        // Inner
+        //    }
+        //    // Outer
+        // 
+        // If not includeSelf
+        //     // Inner
+        //     // Outer
+
+        // Act
+        using (writer.WithContainingTypes(symbol, includeSelf: includeSelf))
+        {
+            writer.AppendLine("// Inner");
+        }
+
+        writer.Append("// Outer");
 
         // Assert
         Assert.That(writer.ToString(), Is.EqualTo(expected));

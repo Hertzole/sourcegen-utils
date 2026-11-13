@@ -1,3 +1,13 @@
+## 1.4.0 - Unreleased
+
+### Added
+
+- `SymbolExtensions.HasAttribute<T>(ISymbol symbol)`, `SymbolExtensions.HasAttribute(ISymbol symbol, Type typeToCheck)`,
+  `SymbolExtensions.TryGetAttribute<T>(ISymbol symbol, out AttributeData attribute)`,
+  `SymbolExtensions.TryGetAttribute(ISymbol symbol, Type typeToCheck, out AttributeData attribute)`
+- `CodeWriter.WithContainingTypes(ISymbol symbol, bool appendNamespace, bool includeSelf)` for appending all containing
+  types of a symbol to the writer
+
 ## 1.3.0 - 2026-10-25
 
 ### Added

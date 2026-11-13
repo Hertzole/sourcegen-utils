@@ -347,6 +347,139 @@ internal static partial class CodeWriterGenerator
                             }
                         }
                     ]
+                },
+                ["ContainingTypesScope"] = new TypeSource
+                {
+                    Signature = "internal readonly partial struct ContainingTypesScope : global::System.IDisposable",
+                    Trivia = new TriviaSource
+                    {
+                        Summary = "Disposable scope that appends all containing types for a symbol. Opens the types on creation and closes them on disposal."
+                    },
+                    Fields = new Dictionary<string, FieldSource>
+                    {
+                        ["writer"] = new FieldSource
+                        {
+                            Signature = $"private readonly global::{NAMESPACE}.CodeWriter writer;",
+                            Dependencies = [CODE_WRITER + ".ContainingTypesScope.ContainingTypesScope"]
+                        },
+                        ["count"] = new FieldSource
+                        {
+                            Signature = "private readonly int count;",
+                            Dependencies = [CODE_WRITER + ".ContainingTypesScope.ContainingTypesScope"]
+                        },
+                        ["isEmpty"] = new FieldSource
+                        {
+                            Signature = "private readonly bool isEmpty;",
+                            Dependencies = [CODE_WRITER + ".ContainingTypesScope.ContainingTypesScope"]
+                        }
+                    },
+                    Methods =
+                    [
+                        new MethodSource
+                        {
+                            Name = "ContainingTypesScope",
+                            Signature =
+                                $"public partial ContainingTypesScope({GLOBAL_CODE_WRITER} writer, {GLOBAL_MS_CODE}.ISymbol symbol, bool appendNamespace = true, bool includeSelf = false)",
+                            Implementation = (writer, in _) =>
+                            {
+                                writer.AppendIndentedSource(
+                                    $$"""
+                                      this.writer = writer;
+                                      count = 0;
+                                      isEmpty = false;
+
+                                      {{GLOBAL_MS_CODE}}.ITypeSymbol? targetType;
+                                      if (symbol is {{GLOBAL_MS_CODE}}.ITypeSymbol typeSymbol)
+                                      {
+                                          targetType = includeSelf ? typeSymbol : typeSymbol.ContainingType;
+                                      }
+                                      else
+                                      {
+                                          targetType = symbol == null ? null : symbol.ContainingType;
+                                      }
+
+                                      if (targetType == null)
+                                      {
+                                          isEmpty = true;
+                                          return;
+                                      }
+
+                                      if (appendNamespace)
+                                      {
+                                          writer.AppendNamespace(targetType.ContainingNamespace);
+                                      }
+
+                                      count = AppendType(writer, targetType);
+
+                                      static int AppendType({{GLOBAL_CODE_WRITER}} writer, {{GLOBAL_MS_CODE}}.ITypeSymbol type)
+                                      {
+                                          int depth = 1;
+                                          if (type.ContainingType != null)
+                                          {
+                                              depth = AppendType(writer, type.ContainingType) + 1;
+                                          }
+
+                                          writer.Append({{GLOBAL_SYMBOL_EXTENSIONS}}.GetDeclarationString(type, true));
+                                          writer.Append(' ');
+                                          writer.Append(type.ToDisplayString({{GLOBAL_MS_CODE}}.SymbolDisplayFormat.MinimallyQualifiedFormat));
+                                          writer.AppendLine();
+                                          writer.AppendLine('{');
+                                          writer.Indent++;
+
+                                          return depth;
+                                      }
+                                      """);
+                            },
+                            Dependencies =
+                            [
+                                CODE_WRITER + ".ContainingTypesScope.Dispose()",
+                                $"{CODE_WRITER}.AppendNamespace({MS_CODE}.INamespaceSymbol)",
+                                CODE_WRITER + ".Append(string)",
+                                CODE_WRITER + ".Append(char)",
+                                CODE_WRITER + ".AppendLine()",
+                                CODE_WRITER + ".AppendLine(char)",
+                                $"{SYMBOL_EXTENSIONS}.GetDeclarationString({MS_CODE}.ITypeSymbol, bool)"
+                            ],
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Creates a new containing types scope that appends all containing types for the specified symbol.",
+                                Parameters = new Dictionary<string, string>
+                                {
+                                    ["writer"] = "The code writer to write to.",
+                                    ["symbol"] = "The symbol whose containing types to append.",
+                                    ["appendNamespace"] = $"If {TRIVIA_TRUE}, the namespace declaration will be appended.",
+                                    ["includeSelf"] =
+                                        $"If {TRIVIA_TRUE}, the provided symbol will be included in the containing types. Keep {TRIVIA_FALSE} to write your own type declaration for the provided symbol."
+                                }
+                            }
+                        },
+                        new MethodSource
+                        {
+                            Name = "Dispose",
+                            Signature = "public partial void Dispose()",
+                            Implementation = (writer, in _) =>
+                            {
+                                writer.AppendIndentedSource(
+                                    """
+                                    if (isEmpty)
+                                    {
+                                        return;
+                                    }
+
+                                    for (int i = 0; i < count; i++)
+                                    {
+                                        writer.Indent--;
+                                        writer.AppendLine('}');
+                                    }
+                                    """);
+                            },
+                            Dependencies = [CODE_WRITER + ".AppendLine(char)"],
+                            Trivia = new TriviaSource
+                            {
+                                Summary = "Closes all containing type blocks and restores indentation."
+                            }
+                        }
+                    ]
                 }
             }
         };
@@ -779,6 +912,80 @@ internal static partial class CodeWriterGenerator
                             System.Diagnostics.Debug.WriteLine("Calling method!");
                         #endif
                             // TODO: Method stuff
+                        }
+                        </code>
+                        """
+                }
+            },
+            new MethodSource
+            {
+                Name = "WithContainingTypes",
+                Signature =
+                    $"public partial {GLOBAL_CODE_WRITER}.ContainingTypesScope WithContainingTypes({GLOBAL_MS_CODE}.ISymbol symbol, bool appendNamespace = true, bool includeSelf = false)",
+                EmptyStub = "return default;",
+                Implementation = (writer, in _) =>
+                {
+                    writer.AppendLine(disposed_call);
+                    writer.AppendLine($"return new {GLOBAL_CODE_WRITER}.ContainingTypesScope(this, symbol, appendNamespace, includeSelf);");
+                },
+                Dependencies = [$"{CODE_WRITER}.ContainingTypesScope.ContainingTypesScope({CODE_WRITER}, {MS_CODE}.ISymbol, bool, bool)", throw_if_disposed],
+                Trivia = new TriviaSource
+                {
+                    Summary = "Appends all containing types for the specified symbol. Returns a disposable scope that closes the types when disposed.",
+                    Parameters = new Dictionary<string, string>
+                    {
+                        ["symbol"] = "The symbol whose containing types to append.",
+                        ["appendNamespace"] = $"If {TRIVIA_TRUE}, the namespace declaration will be appended.",
+                        ["includeSelf"] =
+                            $"If {TRIVIA_TRUE}, the provided symbol will be included in the containing types. Keep {TRIVIA_FALSE} to write your own type declaration for the provided symbol."
+                    },
+                    Returns = "A disposable scope that closes the containing types when disposed.",
+                    Example =
+                        """
+                        The following example demonstrates how to use <c>WithContainingTypes</c> to append all containing types for a symbol and write inside them.
+
+                        <code>
+                        using Hertzole.SourceGen;
+                        using Microsoft.CodeAnalysis;
+
+                        public class SourceGenerator
+                        {
+                            public string Generate(INamedTypeSymbol symbol)
+                            {
+                                using CodeWriter writer = new CodeWriter();
+
+                                writer.AppendLine("using System;");
+                                // Appends the namespace and all containing types for the symbol.
+                                using (writer.WithContainingTypes(symbol, includeSelf: true))
+                                {
+                                    writer.AppendLine("public void MyMethod()");
+                                    using (writer.WithBlock())
+                                    {
+                                        writer.AppendLine("Console.WriteLine(\"Hello World!\");");
+                                    }
+                                }
+
+                                return writer.ToString();
+                            }
+                        }
+                        </code>
+
+                        The output from the writer would be:
+                        <!code>
+                        using System;
+
+                        namespace My.Namespace
+                        {
+                            partial class Outer
+                            {
+                                partial class Inner
+                                {
+                                    public void MyMethod()
+                                    {
+                                        Console.WriteLine("Hello World!");
+                                    }
+                                }
+                            }
                         }
                         </code>
                         """
